@@ -27,10 +27,8 @@ import javax.security.auth.x500.X500Principal;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.List;
@@ -136,6 +134,10 @@ public class MainForm {
             if (selectedRsaTab == pkcs11Tab) {
                 String certAlias = checkNotNull(certificatesComboBox).getSelectionModel().getSelectedItem();
                 String keyAlias = checkNotNull(privateKeysComboBox).getSelectionModel().getSelectedItem();
+
+                if (pkcs11KeyStore == null) {
+                    throw new RuntimeException("PKCS#11 store not loaded");
+                }
                 Certificate certificate = PkiUtil.getCertificateFromKeyStore(checkNotNull(pkcs11KeyStore), certAlias);
                 PrivateKey key = (PrivateKey)PkiUtil.getKeyFromKeyStore(pkcs11KeyStore, keyAlias);
                 Mode mode = checkNotNull(rsaPkcsEncryptWithPublicKeyCheckBox).isSelected()
@@ -264,27 +266,70 @@ public class MainForm {
         }
     }
 
-    public void generateAes256Key() throws Exception {
-        byte[] key = Cryptor.generateAESKeyRaw();
-        String base64EncodedKey = Base64.getEncoder().encodeToString(key);
-        checkNotNull(generatedAes256KeyTextField).textProperty().set(base64EncodedKey);
+    public void generateAes256Key() {
+        try {
+            byte[] key = Cryptor.generateAESKeyRaw();
+            String base64EncodedKey = Base64.getEncoder().encodeToString(key);
+            checkNotNull(generatedAes256KeyTextField).textProperty().set(base64EncodedKey);
+        } catch (Exception e) {
+            LOGGER.error("AES-256 key generation error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
     }
 
     public void generateAes256Iv() {
-        byte[] iv = Cryptor.generateAESIV();
-        String base64EncodedIv = Base64.getEncoder().encodeToString(iv);
-        checkNotNull(generatedAes256IvTextField).textProperty().set(base64EncodedIv);
+        try {
+            byte[] iv = Cryptor.generateAESIV();
+            String base64EncodedIv = Base64.getEncoder().encodeToString(iv);
+            checkNotNull(generatedAes256IvTextField).textProperty().set(base64EncodedIv);
+        } catch (Exception e) {
+            LOGGER.error("AES-256 IV generation error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
     }
 
-    public void generateSelfSignedCertificate() throws NoSuchAlgorithmException, CertificateException {
-        KeyPair keyPair = PkiUtil.generateRsa2048KeyPair();
-        X500Principal subject = new X500Principal("CN=Self-Generated Certificate");
-        X509Certificate certificate = PkiUtil.generateSelfSignedCertificate(keyPair, subject);
+    public void generateSelfSignedCertificate() {
+        try {
+            KeyPair keyPair = PkiUtil.generateRsa2048KeyPair();
+            X500Principal subject = new X500Principal("CN=Self-Generated Certificate");
+            X509Certificate certificate = PkiUtil.generateSelfSignedCertificate(keyPair, subject);
 
-        String certificateStr = PkiUtil.getCertificateAsPem(certificate);
-        String keyStr = PkiUtil.getKeyAsPem(keyPair.getPrivate());
+            String certificateStr = PkiUtil.getCertificateAsPem(certificate);
+            String keyStr = PkiUtil.getKeyAsPem(keyPair.getPrivate());
 
-        checkNotNull(generatedCertificateTextArea).textProperty().set(certificateStr);
-        checkNotNull(generatedPrivateKeyTextArea).textProperty().set(keyStr);
+            checkNotNull(generatedCertificateTextArea).textProperty().set(certificateStr);
+            checkNotNull(generatedPrivateKeyTextArea).textProperty().set(keyStr);
+        } catch (Exception e) {
+            LOGGER.error("Self-Signed certificate generation error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void testPkcs11Keys() {
+        try {
+            String certAlias = checkNotNull(certificatesComboBox).getSelectionModel().getSelectedItem();
+            String keyAlias = checkNotNull(privateKeysComboBox).getSelectionModel().getSelectedItem();
+
+            if (pkcs11KeyStore == null) {
+                throw new RuntimeException("PKCS#11 store not loaded");
+            }
+            Certificate certificate = PkiUtil.getCertificateFromKeyStore(checkNotNull(pkcs11KeyStore), certAlias);
+            PrivateKey key = (PrivateKey)PkiUtil.getKeyFromKeyStore(pkcs11KeyStore, keyAlias);
+
+            String encryptTestResult = PkiUtil.testKeyPairMatchByEncrypting(certificate.getPublicKey(), key) ? "SUCCESS" : "FAIL";
+            String signTestResult = PkiUtil.testKeyPairMatchBySigning(certificate.getPublicKey(), key) ? "SUCCESS" : "FAIL";
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION,
+                    String.format("Encryption test: %s.\nSignature test: %s", encryptTestResult, signTestResult),
+                    ButtonType.OK);
+            alert.showAndWait();
+        } catch (Exception e) {
+            LOGGER.error("PKCS11 keys test error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
     }
 }
