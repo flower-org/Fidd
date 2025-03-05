@@ -52,6 +52,8 @@ import static com.fidd.cryptor.transform.RsaTransformerProvider.Mode;
 public class MainForm {
     final static Logger LOGGER = LoggerFactory.getLogger(MainForm.class);
 
+    final static String KEY_NOT_SUPPORTED = "Selected key(s) not supported";
+
     @Nullable Stage mainStage;
     @FXML @Nullable TextField pkcs11LibTextField;
     @FXML @Nullable TextField pkcs11TokenPinTextField;
@@ -237,7 +239,7 @@ public class MainForm {
 
                 checkNotNull(ciphertextTextArea).textProperty().set(ciphertext64);
             } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR, "Selection not supported", ButtonType.OK);
+                Alert alert = new Alert(Alert.AlertType.ERROR, KEY_NOT_SUPPORTED, ButtonType.OK);
                 alert.showAndWait();
             }
         } catch (Exception e) {
@@ -259,7 +261,7 @@ public class MainForm {
 
                 checkNotNull(plaintextTextArea).textProperty().set(plaintext);
             } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR, "Selection not supported", ButtonType.OK);
+                Alert alert = new Alert(Alert.AlertType.ERROR, KEY_NOT_SUPPORTED, ButtonType.OK);
                 alert.showAndWait();
             }
         } catch (Exception e) {
@@ -282,7 +284,7 @@ public class MainForm {
 
                 checkNotNull(signSignatureTextArea).textProperty().set(signature64);
             } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR, "Selection not supported", ButtonType.OK);
+                Alert alert = new Alert(Alert.AlertType.ERROR, KEY_NOT_SUPPORTED, ButtonType.OK);
                 alert.showAndWait();
             }
         } catch (Exception e) {
@@ -310,7 +312,7 @@ public class MainForm {
                     alert.showAndWait();
                 }
             } else {
-                Alert alert = new Alert(Alert.AlertType.ERROR, "Selection not supported", ButtonType.OK);
+                Alert alert = new Alert(Alert.AlertType.ERROR, KEY_NOT_SUPPORTED, ButtonType.OK);
                 alert.showAndWait();
             }
         } catch (Exception e) {
