@@ -95,7 +95,7 @@ public class RsaTransformerProvider implements TransformerProvider {
         // Create a new array with the length of the key (4 bytes) + key length + key + other length + other
         byte[] result = new byte[4 + key.length + data.length];
 
-        // Prepend the length of the key (4 bytes)
+        // Prepend the length of the key (4 bytes) - BigEndian order to match ByteBuffer.putInt(keyLength)
         int keyLength = key.length;
         result[0] = (byte) (keyLength >> 24);
         result[1] = (byte) (keyLength >> 16);
@@ -136,7 +136,7 @@ public class RsaTransformerProvider implements TransformerProvider {
                 }
             } else if (encryptionFormat == EncryptionFormat.RSA_AES_256_HYBRID) {
                 try {
-                    // Read the length of the key (first 4 bytes)
+                    // Read the length of the key (first 4 bytes) - BigEndian order to match ByteBuffer.getInt()
                     int keyLength = ((input[0] & 0xFF) << 24) | ((input[1] & 0xFF) << 16) | ((input[2] & 0xFF) << 8) | (input[3] & 0xFF);
                     byte[] encryptedKeyIv = new byte[keyLength];
                     System.arraycopy(input, 4, encryptedKeyIv, 0, keyLength);
