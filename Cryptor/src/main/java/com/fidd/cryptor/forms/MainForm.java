@@ -395,6 +395,8 @@ public class MainForm {
 
     protected void loadCertificateFromFile(File certificateFile) throws IOException {
         fileCertificate = PkiUtil.getCertificateFromStream(new FileInputStream(certificateFile));
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Certificate successfully loaded: " + certificateFile.getPath(), ButtonType.OK);
+        alert.showAndWait();
     }
 
     public void openPrivateKeyFile() {
@@ -428,6 +430,8 @@ public class MainForm {
 
     protected void loadPrivateKeyFromFile(File keyFile) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         fileKey = PkiUtil.getPrivateKeyFromStream(new FileInputStream(keyFile));
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Key successfully loaded: " + keyFile.getPath(), ButtonType.OK);
+        alert.showAndWait();
     }
 
     public void testPkcs11Keys() {
