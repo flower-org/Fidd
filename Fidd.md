@@ -177,7 +177,9 @@ Below is the summary of files/objects that are not using standard end-to-end enc
     - `subscriber_public_keys.yaml` in `FIDD_SUB_PRIV`  
   
 - *Bogus keys* supplied for all subscribers except for the intended recipient:  
-    - Objects with type `SUBSCRIBER_KEY_UPDATE`  
+    - Objects with type `SUBSCRIBER_KEY_UPDATE`
+ 
+- Even better, we can omit the public keys altogether.
   
 ## P.S.  
   
