@@ -155,8 +155,8 @@
                                                          </rowConstraints>
                                                           <children>
                                                              <Button mnemonicParsing="false" onAction="#testRawKeys" text="Test Keys" />
-                                                             <CheckBox mnemonicParsing="false" selected="true" text="Encrypt with Public Key" GridPane.columnIndex="1" />
-                                                             <CheckBox mnemonicParsing="false" selected="true" text="Use RSA/AES-256 hybrid" GridPane.columnIndex="2" />
+                                                             <CheckBox fx:id="rsaRawEncryptWithPublicKeyCheckBox" mnemonicParsing="false" selected="true" text="Encrypt with Public Key" GridPane.columnIndex="1" />
+                                                             <CheckBox fx:id="rsaRawUseRsaAesHybridCheckBox" mnemonicParsing="false" selected="true" text="Use RSA/AES-256 hybrid" GridPane.columnIndex="2" />
                                                           </children>
                                                        </GridPane>
                                                     </children>

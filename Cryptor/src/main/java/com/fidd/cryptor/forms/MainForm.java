@@ -79,6 +79,9 @@ public class MainForm {
     @FXML @Nullable CheckBox rsaPkcsEncryptWithPublicKeyCheckBox;
     @FXML @Nullable CheckBox rsaPkcsUseRsaAesHybridCheckBox;
 
+    @FXML @Nullable CheckBox rsaRawEncryptWithPublicKeyCheckBox;
+    @FXML @Nullable CheckBox rsaRawUseRsaAesHybridCheckBox;
+
     @FXML @Nullable TextArea rawCertificateTextArea;
     @FXML @Nullable TextArea rawPrivateKeyTextArea;
 
@@ -152,7 +155,7 @@ public class MainForm {
                 Mode mode = checkNotNull(rsaPkcsEncryptWithPublicKeyCheckBox).isSelected()
                         ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
                 RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaPkcsUseRsaAesHybridCheckBox).isSelected()
-                        ? RsaTransformerProvider.EncryptionFormat.RSA : RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID;
+                        ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
                 return new RsaTransformerProvider(certificate.getPublicKey(), key, mode, encryptionFormat);
             } else if (selectedRsaTab == filesTab) {
                 return TransformerProvider.of(null, null, null, null);
@@ -163,10 +166,10 @@ public class MainForm {
                     Certificate certificate = PkiUtil.getCertificateFromString(certificateStr);
                     PrivateKey key = PkiUtil.getPrivateKeyFromString(keyStr);
 
-                    Mode mode = checkNotNull(rsaPkcsEncryptWithPublicKeyCheckBox).isSelected()
+                    Mode mode = checkNotNull(rsaRawEncryptWithPublicKeyCheckBox).isSelected()
                             ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
-                    RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaPkcsUseRsaAesHybridCheckBox).isSelected()
-                            ? RsaTransformerProvider.EncryptionFormat.RSA : RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID;
+                    RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaRawUseRsaAesHybridCheckBox).isSelected()
+                            ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
                     return new RsaTransformerProvider(certificate.getPublicKey(), key, mode, encryptionFormat);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
