@@ -110,12 +110,20 @@ public class PkiUtil {
     }
 
     public static X509Certificate getCertificateFromString(String certStr) {
-        try {
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            return (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(certStr.getBytes()));
-        } catch (CertificateException e) {
-            throw new RuntimeException(e);
-        }
+        return getCertificateFromStream(new ByteArrayInputStream(certStr.getBytes()));
+    }
+
+    public static PrivateKey getPrivateKeyFromStream(InputStream keyStream) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        PemReader pemReader = new PemReader(new InputStreamReader(keyStream));
+        PemObject pemObject = pemReader.readPemObject();
+        byte[] content = pemObject.getContent();
+        PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(content);
+        return keyFactory.generatePrivate(privateKeySpec);
+    }
+
+    public static PrivateKey getPrivateKeyFromString(String keyStr) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
+        return getPrivateKeyFromStream(new ByteArrayInputStream(keyStr.getBytes()));
     }
 
     public static KeyStore loadTrustStore(X509Certificate cert) {
@@ -183,15 +191,8 @@ public class PkiUtil {
 
     public static KeyManagerFactory getKeyManagerFromPem(InputStream certificateStream, InputStream keyStream, String keyPassword) {
         try {
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            X509Certificate cert = (X509Certificate) cf.generateCertificate(certificateStream);
-
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PemReader pemReader = new PemReader(new InputStreamReader(keyStream));
-            PemObject pemObject = pemReader.readPemObject();
-            byte[] content = pemObject.getContent();
-            PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(content);
-            PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
+            X509Certificate cert = getCertificateFromStream(certificateStream);
+            PrivateKey privateKey = getPrivateKeyFromStream(keyStream);
 
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             keyStore.load(null, null);

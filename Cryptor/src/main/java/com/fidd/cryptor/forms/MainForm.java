@@ -22,12 +22,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.security.auth.x500.X500Principal;
 
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
@@ -72,6 +78,9 @@ public class MainForm {
 
     @FXML @Nullable CheckBox rsaPkcsEncryptWithPublicKeyCheckBox;
     @FXML @Nullable CheckBox rsaPkcsUseRsaAesHybridCheckBox;
+
+    @FXML @Nullable TextArea rawCertificateTextArea;
+    @FXML @Nullable TextArea rawPrivateKeyTextArea;
 
     @Nullable KeyStore pkcs11KeyStore;
 
@@ -148,7 +157,20 @@ public class MainForm {
             } else if (selectedRsaTab == filesTab) {
                 return TransformerProvider.of(null, null, null, null);
             } else if (selectedRsaTab == rawTab) {
-                return TransformerProvider.of(null, null, null, null);
+                try {
+                    String certificateStr = checkNotNull(rawCertificateTextArea).textProperty().get();
+                    String keyStr = checkNotNull(rawPrivateKeyTextArea).textProperty().get();
+                    Certificate certificate = PkiUtil.getCertificateFromString(certificateStr);
+                    PrivateKey key = PkiUtil.getPrivateKeyFromString(keyStr);
+
+                    Mode mode = checkNotNull(rsaPkcsEncryptWithPublicKeyCheckBox).isSelected()
+                            ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
+                    RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaPkcsUseRsaAesHybridCheckBox).isSelected()
+                            ? RsaTransformerProvider.EncryptionFormat.RSA : RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID;
+                    return new RsaTransformerProvider(certificate.getPublicKey(), key, mode, encryptionFormat);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             } else {
                 // Unknown RSA mode
                 return TransformerProvider.of(null, null, null, null);
@@ -319,17 +341,37 @@ public class MainForm {
             Certificate certificate = PkiUtil.getCertificateFromKeyStore(checkNotNull(pkcs11KeyStore), certAlias);
             PrivateKey key = (PrivateKey)PkiUtil.getKeyFromKeyStore(pkcs11KeyStore, keyAlias);
 
-            String encryptTestResult = PkiUtil.testKeyPairMatchByEncrypting(certificate.getPublicKey(), key) ? "SUCCESS" : "FAIL";
-            String signTestResult = PkiUtil.testKeyPairMatchBySigning(certificate.getPublicKey(), key) ? "SUCCESS" : "FAIL";
-
-            Alert alert = new Alert(Alert.AlertType.INFORMATION,
-                    String.format("Encryption test: %s.\nSignature test: %s", encryptTestResult, signTestResult),
-                    ButtonType.OK);
-            alert.showAndWait();
+            testKeys(certificate, key);
         } catch (Exception e) {
             LOGGER.error("PKCS11 keys test error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
             alert.showAndWait();
         }
+    }
+
+    public void testRawKeys() {
+        try {
+            String certificateStr = checkNotNull(rawCertificateTextArea).textProperty().get();
+            String keyStr = checkNotNull(rawPrivateKeyTextArea).textProperty().get();
+            Certificate certificate = PkiUtil.getCertificateFromString(certificateStr);
+            PrivateKey key = PkiUtil.getPrivateKeyFromString(keyStr);
+
+            testKeys(certificate, key);
+        } catch (Exception e) {
+            LOGGER.error("Raw keys test error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    protected void testKeys(Certificate certificate, PrivateKey key) throws NoSuchPaddingException,
+            IllegalBlockSizeException, NoSuchAlgorithmException, BadPaddingException, InvalidKeyException, SignatureException {
+        String encryptTestResult = PkiUtil.testKeyPairMatchByEncrypting(certificate.getPublicKey(), key) ? "SUCCESS" : "FAIL";
+        String signTestResult = PkiUtil.testKeyPairMatchBySigning(certificate.getPublicKey(), key) ? "SUCCESS" : "FAIL";
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION,
+                String.format("Encryption test: %s.\nSignature test: %s", encryptTestResult, signTestResult),
+                ButtonType.OK);
+        alert.showAndWait();
     }
 }

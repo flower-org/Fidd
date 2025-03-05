@@ -142,8 +142,8 @@
                                                     <children>
                                                        <Label text="Certificate" GridPane.rowIndex="1" />
                                                        <Label text="Private Key" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                       <TextArea prefHeight="200.0" prefWidth="200.0" GridPane.rowIndex="2" />
-                                                       <TextArea prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                       <TextArea fx:id="rawCertificateTextArea" prefHeight="200.0" prefWidth="200.0" GridPane.rowIndex="2" />
+                                                       <TextArea fx:id="rawPrivateKeyTextArea" prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                                        <GridPane>
                                                          <columnConstraints>
                                                            <ColumnConstraints hgrow="SOMETIMES" maxWidth="155.0" minWidth="155.0" prefWidth="155.0" />
@@ -154,7 +154,7 @@
                                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                                          </rowConstraints>
                                                           <children>
-                                                             <Button mnemonicParsing="false" text="Test Keys" />
+                                                             <Button mnemonicParsing="false" onAction="#testRawKeys" text="Test Keys" />
                                                              <CheckBox mnemonicParsing="false" selected="true" text="Encrypt with Public Key" GridPane.columnIndex="1" />
                                                              <CheckBox mnemonicParsing="false" selected="true" text="Use RSA/AES-256 hybrid" GridPane.columnIndex="2" />
                                                           </children>
