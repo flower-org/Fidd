@@ -99,11 +99,11 @@
                                                     <children>
                                                        <Label text="Certificate:" GridPane.rowIndex="1" />
                                                        <Label text="Private Key:" GridPane.rowIndex="2" />
-                                                       <Button mnemonicParsing="false" text="Open" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                       <Button mnemonicParsing="false" text="Open" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                                       <TextField GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                                                       <TextField GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                                                       <Button mnemonicParsing="false" text="Test Keys" />
+                                                       <Button mnemonicParsing="false" onAction="#openCertificateFile" text="Open" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                       <Button mnemonicParsing="false" onAction="#openPrivateKeyFile" text="Open" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                       <TextField fx:id="fileCertificateTextField" onKeyPressed="#loadCertificateFile" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                                                       <TextField fx:id="filePrivateKeyTextField" onKeyPressed="#loadPrivateKeyFile" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                                                       <Button mnemonicParsing="false" onAction="#testFileKeys" text="Test Keys" />
                                                        <GridPane GridPane.columnIndex="2">
                                                          <columnConstraints>
                                                            <ColumnConstraints hgrow="SOMETIMES" maxWidth="200.0" minWidth="200.0" prefWidth="200.0" />
@@ -113,8 +113,8 @@
                                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                                          </rowConstraints>
                                                           <children>
-                                                             <CheckBox mnemonicParsing="false" selected="true" text="Encrypt with Public Key" />
-                                                             <CheckBox mnemonicParsing="false" selected="true" text="Use RSA/AES-256 hybrid" GridPane.columnIndex="1" />
+                                                             <CheckBox fx:id="rsaFileEncryptWithPublicKeyCheckBox" mnemonicParsing="false" selected="true" text="Encrypt with Public Key" />
+                                                             <CheckBox fx:id="rsaFileUseRsaAesHybridCheckBox" mnemonicParsing="false" selected="true" text="Use RSA/AES-256 hybrid" GridPane.columnIndex="1" />
                                                           </children>
                                                        </GridPane>
                                                     </children>

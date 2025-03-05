@@ -16,6 +16,9 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -27,6 +30,9 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.security.auth.x500.X500Principal;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -36,6 +42,7 @@ import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
 import java.util.List;
 
@@ -79,13 +86,21 @@ public class MainForm {
     @FXML @Nullable CheckBox rsaPkcsEncryptWithPublicKeyCheckBox;
     @FXML @Nullable CheckBox rsaPkcsUseRsaAesHybridCheckBox;
 
-    @FXML @Nullable CheckBox rsaRawEncryptWithPublicKeyCheckBox;
-    @FXML @Nullable CheckBox rsaRawUseRsaAesHybridCheckBox;
-
     @FXML @Nullable TextArea rawCertificateTextArea;
     @FXML @Nullable TextArea rawPrivateKeyTextArea;
 
+    @FXML @Nullable CheckBox rsaRawEncryptWithPublicKeyCheckBox;
+    @FXML @Nullable CheckBox rsaRawUseRsaAesHybridCheckBox;
+
+    @FXML @Nullable TextField fileCertificateTextField;
+    @FXML @Nullable TextField filePrivateKeyTextField;
+
+    @FXML @Nullable CheckBox rsaFileEncryptWithPublicKeyCheckBox;
+    @FXML @Nullable CheckBox rsaFileUseRsaAesHybridCheckBox;
+
     @Nullable KeyStore pkcs11KeyStore;
+    @Nullable Certificate fileCertificate;
+    @Nullable PrivateKey fileKey;
 
     public MainForm() {
         //This form is created automatically.
@@ -158,7 +173,21 @@ public class MainForm {
                         ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
                 return new RsaTransformerProvider(certificate.getPublicKey(), key, mode, encryptionFormat);
             } else if (selectedRsaTab == filesTab) {
-                return TransformerProvider.of(null, null, null, null);
+                try {
+                    if (fileCertificate == null) {
+                        throw new RuntimeException("Certificate not loaded");
+                    }
+                    if (fileKey == null) {
+                        throw new RuntimeException("Key not loaded");
+                    }
+                    Mode mode = checkNotNull(rsaFileEncryptWithPublicKeyCheckBox).isSelected()
+                            ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
+                    RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaFileUseRsaAesHybridCheckBox).isSelected()
+                            ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
+                    return new RsaTransformerProvider(fileCertificate.getPublicKey(), fileKey, mode, encryptionFormat);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             } else if (selectedRsaTab == rawTab) {
                 try {
                     String certificateStr = checkNotNull(rawCertificateTextArea).textProperty().get();
@@ -333,6 +362,72 @@ public class MainForm {
         }
     }
 
+    public void openCertificateFile() {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Certificate (*.crt)", "*.crt"));
+            fileChooser.setTitle("Load Certificate");
+            File certificateFile = fileChooser.showOpenDialog(checkNotNull(mainStage));
+            checkNotNull(fileCertificateTextField).textProperty().set(certificateFile.getPath());
+
+            loadCertificateFromFile(certificateFile);
+        } catch (Exception e) {
+            LOGGER.error("Error opening certificate file", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void loadCertificateFile(KeyEvent event) {
+        try {
+            if (event.getCode() == KeyCode.ENTER) {
+                File certificateFile = new File(checkNotNull(fileCertificateTextField).textProperty().get());
+                loadCertificateFromFile(certificateFile);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error loading certificate from file", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    protected void loadCertificateFromFile(File certificateFile) throws IOException {
+        fileCertificate = PkiUtil.getCertificateFromStream(new FileInputStream(certificateFile));
+    }
+
+    public void openPrivateKeyFile() {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Key (*.key)", "*.key"));
+            fileChooser.setTitle("Load Key");
+            File keyFile = fileChooser.showOpenDialog(checkNotNull(mainStage));
+            checkNotNull(filePrivateKeyTextField).textProperty().set(keyFile.getPath());
+
+            loadPrivateKeyFromFile(keyFile);
+        } catch (Exception e) {
+            LOGGER.error("Error opening private key file", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void loadPrivateKeyFile(KeyEvent event) {
+        try {
+            if (event.getCode() == KeyCode.ENTER) {
+                File keyFile = new File(checkNotNull(filePrivateKeyTextField).textProperty().get());
+                loadPrivateKeyFromFile(keyFile);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error loading private key from file", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    protected void loadPrivateKeyFromFile(File keyFile) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+        fileKey = PkiUtil.getPrivateKeyFromStream(new FileInputStream(keyFile));
+    }
+
     public void testPkcs11Keys() {
         try {
             String certAlias = checkNotNull(certificatesComboBox).getSelectionModel().getSelectedItem();
@@ -362,6 +457,22 @@ public class MainForm {
             testKeys(certificate, key);
         } catch (Exception e) {
             LOGGER.error("Raw keys test error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void testFileKeys() {
+        try {
+            if (fileCertificate == null) {
+                throw new RuntimeException("Certificate not loaded");
+            }
+            if (fileKey == null) {
+                throw new RuntimeException("Key not loaded");
+            }
+            testKeys(fileCertificate, fileKey);
+        } catch (Exception e) {
+            LOGGER.error("File keys test error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
             alert.showAndWait();
         }
