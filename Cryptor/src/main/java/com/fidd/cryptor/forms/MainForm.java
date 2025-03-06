@@ -5,8 +5,10 @@ import com.fidd.cryptor.transform.RsaTransformerProvider;
 import com.fidd.cryptor.transform.SignatureChecker;
 import com.fidd.cryptor.transform.Transformer;
 import com.fidd.cryptor.transform.TransformerProvider;
+import com.fidd.cryptor.utils.CertificateChooserUserPreferencesManager;
 import com.fidd.cryptor.utils.Cryptor;
 import com.fidd.cryptor.utils.PkiUtil;
+import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -112,6 +114,11 @@ public class MainForm {
         alert.showAndWait();
     }
 
+    public void init() {
+        loadCertificateChooserPreferences();
+        setCertificateChooserPreferencesHandlers();
+    }
+
     public void quit() { checkNotNull(mainStage).close(); }
 
     public void loadPkcs11() {
@@ -158,6 +165,70 @@ public class MainForm {
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
             alert.showAndWait();
         }
+    }
+
+    public void setCertificateChooserPreferencesHandlers() {
+        checkNotNull(pkcs11LibTextField).textProperty().addListener(this::certificateChooserTextChanged);
+        checkNotNull(aes256KeyTextField).textProperty().addListener(this::certificateChooserTextChanged);
+        checkNotNull(aes256IvTextField).textProperty().addListener(this::certificateChooserTextChanged);
+        checkNotNull(fileCertificateTextField).textProperty().addListener(this::certificateChooserTextChanged);
+        checkNotNull(filePrivateKeyTextField).textProperty().addListener(this::certificateChooserTextChanged);
+
+        checkNotNull(rawCertificateTextArea).textProperty().addListener(this::certificateChooserTextChanged);;
+        checkNotNull(rawPrivateKeyTextArea).textProperty().addListener(this::certificateChooserTextChanged);
+
+        checkNotNull(certificatesComboBox).valueProperty().addListener(this::certificateChooserTextChanged);
+        checkNotNull(privateKeysComboBox).valueProperty().addListener(this::certificateChooserTextChanged);
+
+        checkNotNull(aes256IvCheckBox).selectedProperty().addListener(this::certificateChooserBoolChanged);
+    }
+
+    public void certificateChooserTextChanged(ObservableValue<? extends String> observable, String _old, String _new) {
+        updateCertificateChooserPreferences();
+    }
+
+    public void certificateChooserBoolChanged(ObservableValue<? extends Boolean> observable, Boolean _old, Boolean _new) {
+        updateCertificateChooserPreferences();
+    }
+
+    public void updateCertificateChooserPreferences() {
+        String pkcs11LibraryPath = checkNotNull(pkcs11LibTextField).textProperty().get();
+        String pkcs11CertificateAlias = checkNotNull(certificatesComboBox).valueProperty().get();
+        String pkcs11PrivateKeyAlias = checkNotNull(privateKeysComboBox).valueProperty().get();
+
+        String fileCertificate = checkNotNull(fileCertificateTextField).textProperty().get();
+        String filePrivateKey = checkNotNull(filePrivateKeyTextField).textProperty().get();
+
+        String rawCertificate = checkNotNull(rawCertificateTextArea).textProperty().get();
+        String rawPrivateKey = checkNotNull(rawPrivateKeyTextArea).textProperty().get();
+
+        String aesKey = checkNotNull(aes256KeyTextField).textProperty().get();
+        String aesIvCheckbox = checkNotNull(aes256IvTextField).textProperty().get();
+        boolean aesIv = checkNotNull(aes256IvCheckBox).selectedProperty().get();
+
+        CertificateChooserUserPreferencesManager.updateUserPreferences(pkcs11LibraryPath, pkcs11CertificateAlias,
+                    pkcs11PrivateKeyAlias,
+                    fileCertificate, filePrivateKey,
+                    rawCertificate, rawPrivateKey,
+                    aesKey, aesIvCheckbox, Boolean.toString(aesIv));
+    }
+
+    public void loadCertificateChooserPreferences() {
+        checkNotNull(pkcs11LibTextField).textProperty().set(CertificateChooserUserPreferencesManager.pkcs11LibraryPath());
+        checkNotNull(certificatesComboBox).getSelectionModel().select(CertificateChooserUserPreferencesManager.pkcs11CertificateAlias());
+        checkNotNull(privateKeysComboBox).getSelectionModel().select(CertificateChooserUserPreferencesManager.pkcs11PrivateKeyAlias());
+
+        checkNotNull(fileCertificateTextField).textProperty().set(CertificateChooserUserPreferencesManager.fileCertificate());
+        checkNotNull(filePrivateKeyTextField).textProperty().set(CertificateChooserUserPreferencesManager.filePrivateKey());
+
+        checkNotNull(rawCertificateTextArea).textProperty().set(CertificateChooserUserPreferencesManager.rawCertificate());
+        checkNotNull(rawPrivateKeyTextArea).textProperty().set(CertificateChooserUserPreferencesManager.rawPrivateKey());
+
+        checkNotNull(aes256KeyTextField).textProperty().set(CertificateChooserUserPreferencesManager.aesKey());
+        String ivCheckboxStr = CertificateChooserUserPreferencesManager.aesIvCheckbox();
+        boolean ivCheckbox = StringUtils.isBlank(ivCheckboxStr) ? false : Boolean.parseBoolean(ivCheckboxStr);
+        checkNotNull(aes256IvCheckBox).selectedProperty().set(ivCheckbox);
+        checkNotNull(aes256IvTextField).textProperty().set(CertificateChooserUserPreferencesManager.aesIv());
     }
 
     protected TransformerProvider getCurrentTransformerProvider() {
@@ -218,7 +289,7 @@ public class MainForm {
             byte[] aes256Key = Base64.getDecoder().decode(aes256Base64Key);
 
             byte[] aes256Iv;
-            if (checkNotNull(aes256IvCheckBox).isSelected()) {
+            if (checkNotNull(aes256IvCheckBox).selectedProperty().get()) {
                 String aes256Base64Iv = checkNotNull(aes256IvTextField).textProperty().get();
                 aes256Iv = Base64.getDecoder().decode(aes256Base64Iv);
             } else {
@@ -384,12 +455,22 @@ public class MainForm {
         }
     }
 
-    public void loadCertificateFile(KeyEvent event) {
+    public void loadCertificateFileKey(KeyEvent event) {
         try {
             if (event.getCode() == KeyCode.ENTER) {
-                File certificateFile = new File(checkNotNull(fileCertificateTextField).textProperty().get());
-                loadCertificateFromFile(certificateFile);
+                loadCertificateFile();
             }
+        } catch (Exception e) {
+            LOGGER.error("Error loading certificate from file", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void loadCertificateFile() {
+        try {
+            File certificateFile = new File(checkNotNull(fileCertificateTextField).textProperty().get());
+            loadCertificateFromFile(certificateFile);
         } catch (Exception e) {
             LOGGER.error("Error loading certificate from file", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
@@ -419,12 +500,22 @@ public class MainForm {
         }
     }
 
-    public void loadPrivateKeyFile(KeyEvent event) {
+    public void loadPrivateKeyFileKey(KeyEvent event) {
         try {
             if (event.getCode() == KeyCode.ENTER) {
-                File keyFile = new File(checkNotNull(filePrivateKeyTextField).textProperty().get());
-                loadPrivateKeyFromFile(keyFile);
+                loadPrivateKeyFile();
             }
+        } catch (Exception e) {
+            LOGGER.error("Error loading private key from file", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void loadPrivateKeyFile() {
+        try {
+            File keyFile = new File(checkNotNull(filePrivateKeyTextField).textProperty().get());
+            loadPrivateKeyFromFile(keyFile);
         } catch (Exception e) {
             LOGGER.error("Error loading private key from file", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);

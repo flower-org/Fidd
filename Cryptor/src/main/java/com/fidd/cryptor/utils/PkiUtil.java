@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.URL;
+import java.security.DigestInputStream;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -41,6 +42,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
@@ -61,6 +63,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HexFormat;
 import java.util.List;
 
 public class PkiUtil {
@@ -519,5 +522,30 @@ public class PkiUtil {
         byte[] decryptedData = decrypt(encryptedData, privateKey);
 
         return new String(decryptedData).equals(new String(data));
+    }
+
+    public static byte[] getSha256(byte[] bytes) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        return digest.digest(bytes);
+
+    }
+
+    public static String getSha256Hex(byte[] bytes) throws NoSuchAlgorithmException {
+        return HexFormat.of().formatHex(getSha256(bytes));
+    }
+
+    public static byte[] getSha256(File file) throws NoSuchAlgorithmException, IOException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        try (InputStream fis = new FileInputStream(file)) {
+            DigestInputStream dis = new DigestInputStream(fis, digest);
+            while (dis.read() != -1) {
+                // Here we're reading file stream to update hash
+            }
+        }
+        return digest.digest();
+    }
+
+    public static String getSha256Hex(File file) throws NoSuchAlgorithmException, IOException {
+        return HexFormat.of().formatHex(getSha256(file));
     }
 }
