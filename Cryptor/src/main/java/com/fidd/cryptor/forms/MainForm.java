@@ -85,20 +85,14 @@ public class MainForm {
     @FXML @Nullable CheckBox aes256IvCheckBox;
     @FXML @Nullable TextField aes256IvTextField;
 
-    @FXML @Nullable CheckBox rsaPkcsEncryptWithPublicKeyCheckBox;
-    @FXML @Nullable CheckBox rsaPkcsUseRsaAesHybridCheckBox;
-
     @FXML @Nullable TextArea rawCertificateTextArea;
     @FXML @Nullable TextArea rawPrivateKeyTextArea;
-
-    @FXML @Nullable CheckBox rsaRawEncryptWithPublicKeyCheckBox;
-    @FXML @Nullable CheckBox rsaRawUseRsaAesHybridCheckBox;
 
     @FXML @Nullable TextField fileCertificateTextField;
     @FXML @Nullable TextField filePrivateKeyTextField;
 
-    @FXML @Nullable CheckBox rsaFileEncryptWithPublicKeyCheckBox;
-    @FXML @Nullable CheckBox rsaFileUseRsaAesHybridCheckBox;
+    @FXML @Nullable CheckBox rsaEncryptWithPublicKeyCheckBox;
+    @FXML @Nullable CheckBox rsaUseRsaAesHybridCheckBox;
 
     @Nullable KeyStore pkcs11KeyStore;
     @Nullable Certificate fileCertificate;
@@ -121,38 +115,48 @@ public class MainForm {
     public void quit() { checkNotNull(mainStage).close(); }
 
     public void loadPkcs11() {
-        String pkcs11Lib = checkNotNull(pkcs11LibTextField).textProperty().get();
-        String pkcs11TokenPin = checkNotNull(pkcs11TokenPinTextField).textProperty().get();
+        try {
+            String pkcs11Lib = checkNotNull(pkcs11LibTextField).textProperty().get();
+            String pkcs11TokenPin = checkNotNull(pkcs11TokenPinTextField).textProperty().get();
 
-        if (StringUtils.isBlank(pkcs11Lib)) {
-            Alert alert = new Alert(Alert.AlertType.ERROR, "PKCS#11 Library Path is empty", ButtonType.OK);
+            if (StringUtils.isBlank(pkcs11Lib)) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "PKCS#11 Library Path is empty", ButtonType.OK);
+                alert.showAndWait();
+                return;
+            }
+
+            pkcs11KeyStore = PkiUtil.loadPKCS11KeyStore(pkcs11Lib, pkcs11TokenPin);
+
+            List<String> keyAliases = PkiUtil.getKeyAliasesFromKeyStore(pkcs11KeyStore);
+            List<String> certificateAliases = PkiUtil.getCertificateAliasesFromKeyStore(pkcs11KeyStore);
+
+            String certificateBefore = checkNotNull(certificatesComboBox).valueProperty().get();
+            String keyBefore = checkNotNull(privateKeysComboBox).valueProperty().get();
+
+            checkNotNull(certificatesComboBox).getItems().clear();
+            checkNotNull(certificatesComboBox).getItems().addAll(certificateAliases);
+            if (!certificateAliases.isEmpty()) {
+                if (!certificateAliases.contains(certificateBefore)) {
+                    certificateBefore = certificateAliases.get(0);
+                }
+                checkNotNull(certificatesComboBox).valueProperty().set(certificateBefore);
+            }
+
+            checkNotNull(privateKeysComboBox).getItems().clear();
+            checkNotNull(privateKeysComboBox).getItems().addAll(keyAliases);
+            if (!keyAliases.isEmpty()) {
+                if (!keyAliases.contains(keyBefore)) {
+                    keyBefore = keyAliases.get(0);
+                }
+                checkNotNull(privateKeysComboBox).valueProperty().set(keyBefore);
+            }
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "PKCS#11 successfully loaded", ButtonType.OK);
             alert.showAndWait();
-        }
-
-        pkcs11KeyStore = PkiUtil.loadPKCS11KeyStore(pkcs11Lib, pkcs11TokenPin);
-
-        List<String> keyAliases = PkiUtil.getKeyAliasesFromKeyStore(pkcs11KeyStore);
-        List<String> certificateAliases = PkiUtil.getCertificateAliasesFromKeyStore(pkcs11KeyStore);
-
-        String certificateBefore = checkNotNull(certificatesComboBox).valueProperty().get();
-        String keyBefore = checkNotNull(privateKeysComboBox).valueProperty().get();
-
-        checkNotNull(certificatesComboBox).getItems().clear();
-        checkNotNull(certificatesComboBox).getItems().addAll(certificateAliases);
-        if (!certificateAliases.isEmpty()) {
-            if (!certificateAliases.contains(certificateBefore)) {
-                certificateBefore = certificateAliases.get(0);
-            }
-            checkNotNull(certificatesComboBox).valueProperty().set(certificateBefore);
-        }
-
-        checkNotNull(privateKeysComboBox).getItems().clear();
-        checkNotNull(privateKeysComboBox).getItems().addAll(keyAliases);
-        if (!keyAliases.isEmpty()) {
-            if (!keyAliases.contains(keyBefore)) {
-                keyBefore = keyAliases.get(0);
-            }
-            checkNotNull(privateKeysComboBox).valueProperty().set(keyBefore);
+        } catch (Exception e) {
+            LOGGER.error("Error loading PKCS#11", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
         }
     }
 
@@ -169,9 +173,9 @@ public class MainForm {
                 }
                 Certificate certificate = PkiUtil.getCertificateFromKeyStore(checkNotNull(pkcs11KeyStore), certAlias);
                 PrivateKey key = (PrivateKey)PkiUtil.getKeyFromKeyStore(pkcs11KeyStore, keyAlias);
-                Mode mode = checkNotNull(rsaPkcsEncryptWithPublicKeyCheckBox).isSelected()
+                Mode mode = checkNotNull(rsaEncryptWithPublicKeyCheckBox).isSelected()
                         ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
-                RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaPkcsUseRsaAesHybridCheckBox).isSelected()
+                RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaUseRsaAesHybridCheckBox).isSelected()
                         ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
                 return new RsaTransformerProvider(certificate.getPublicKey(), key, mode, encryptionFormat);
             } else if (selectedRsaTab == filesTab) {
@@ -182,9 +186,9 @@ public class MainForm {
                     if (fileKey == null) {
                         throw new RuntimeException("Key not loaded");
                     }
-                    Mode mode = checkNotNull(rsaFileEncryptWithPublicKeyCheckBox).isSelected()
+                    Mode mode = checkNotNull(rsaEncryptWithPublicKeyCheckBox).isSelected()
                             ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
-                    RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaFileUseRsaAesHybridCheckBox).isSelected()
+                    RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaUseRsaAesHybridCheckBox).isSelected()
                             ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
                     return new RsaTransformerProvider(fileCertificate.getPublicKey(), fileKey, mode, encryptionFormat);
                 } catch (Exception e) {
@@ -197,9 +201,9 @@ public class MainForm {
                     Certificate certificate = PkiUtil.getCertificateFromString(certificateStr);
                     PrivateKey key = PkiUtil.getPrivateKeyFromString(keyStr);
 
-                    Mode mode = checkNotNull(rsaRawEncryptWithPublicKeyCheckBox).isSelected()
+                    Mode mode = checkNotNull(rsaEncryptWithPublicKeyCheckBox).isSelected()
                             ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
-                    RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaRawUseRsaAesHybridCheckBox).isSelected()
+                    RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaUseRsaAesHybridCheckBox).isSelected()
                             ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
                     return new RsaTransformerProvider(certificate.getPublicKey(), key, mode, encryptionFormat);
                 } catch (Exception e) {
