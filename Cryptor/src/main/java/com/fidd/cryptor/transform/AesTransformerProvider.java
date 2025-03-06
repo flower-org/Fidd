@@ -55,4 +55,8 @@ public class AesTransformerProvider implements TransformerProvider {
     @Nullable @Override public Transformer getSignTransformer() { return null; }
 
     @Nullable @Override public SignatureChecker getSignatureChecker() { return null; }
+
+    @Nullable @Override public CsrSigner getCsrSigner() { return null; }
+
+    @Nullable @Override public CertificateVerifier getCertificateVerifier() { return null; }
 }

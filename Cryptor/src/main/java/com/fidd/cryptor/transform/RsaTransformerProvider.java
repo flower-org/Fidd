@@ -16,6 +16,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
+import java.security.cert.X509Certificate;
 
 public class RsaTransformerProvider implements TransformerProvider {
     private static final String ALGORITHM = "AES";
@@ -31,13 +32,16 @@ public class RsaTransformerProvider implements TransformerProvider {
         RSA_AES_256_HYBRID
     }
 
+    private final X509Certificate certificate;
     private final PublicKey publicKey;
     private final PrivateKey privateKey;
     private final Mode mode;
     private final EncryptionFormat encryptionFormat;
 
-    public RsaTransformerProvider(PublicKey publicKey, PrivateKey privateKey, Mode mode,
+    public RsaTransformerProvider(PublicKey publicKey, PrivateKey privateKey, X509Certificate certificate,
+                                  Mode mode,
                                   EncryptionFormat encryptionFormat) {
+        this.certificate = certificate;
         this.publicKey = publicKey;
         this.privateKey = privateKey;
         this.mode = mode;
@@ -198,5 +202,17 @@ public class RsaTransformerProvider implements TransformerProvider {
                 throw new RuntimeException(e);
             }
         };
+    }
+
+    @Nullable
+    @Override
+    public CsrSigner getCsrSigner() {
+        return csr -> PkiUtil.signCsr(csr, privateKey, certificate);
+    }
+
+    @Nullable
+    @Override
+    public CertificateVerifier getCertificateVerifier() {
+        return childCertificate -> PkiUtil.verifyCertificateSignature(childCertificate, certificate);
     }
 }

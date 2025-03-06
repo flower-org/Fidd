@@ -1,13 +1,17 @@
 package com.fidd.cryptor.forms;
 
 import com.fidd.cryptor.transform.AesTransformerProvider;
+import com.fidd.cryptor.transform.CertificateVerifier;
+import com.fidd.cryptor.transform.CsrSigner;
 import com.fidd.cryptor.transform.RsaTransformerProvider;
 import com.fidd.cryptor.transform.SignatureChecker;
 import com.fidd.cryptor.transform.Transformer;
 import com.fidd.cryptor.transform.TransformerProvider;
 import com.fidd.cryptor.utils.CertificateChooserUserPreferencesManager;
 import com.fidd.cryptor.utils.Cryptor;
+import com.fidd.cryptor.utils.JavaFxUtils;
 import com.fidd.cryptor.utils.PkiUtil;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -23,6 +27,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +40,11 @@ import javax.security.auth.x500.X500Principal;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -96,6 +105,12 @@ public class MainForm {
     @FXML @Nullable CheckBox rsaEncryptWithPublicKeyCheckBox;
     @FXML @Nullable CheckBox rsaUseRsaAesHybridCheckBox;
 
+    @FXML @Nullable CheckBox base64CryptPlaintextCheckBox;
+    @FXML @Nullable CheckBox base64SignPlaintextCheckBox;
+
+    @FXML @Nullable TextArea csrSignPlaintextTextArea;
+    @FXML @Nullable TextArea signedCertificateTextArea;
+
     @Nullable KeyStore pkcs11KeyStore;
     @Nullable Certificate fileCertificate;
     @Nullable PrivateKey fileKey;
@@ -117,6 +132,65 @@ public class MainForm {
     public void init() {
         loadCertificateChooserPreferences();
         setCertificateChooserPreferencesHandlers();
+        initBase64CheckBoxes();
+    }
+
+    public void initBase64CheckBoxes() {
+        checkNotNull(base64CryptPlaintextCheckBox).selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observableValue, Boolean _old, Boolean _new) {
+                try {
+                    boolean selected = checkNotNull(base64CryptPlaintextCheckBox).selectedProperty().get();
+                    if (selected) {
+                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Encode content?");
+                        if (result == JavaFxUtils.YesNo.YES) {
+                            String text = checkNotNull(plaintextTextArea).textProperty().get();
+                            String text64 = Base64.getEncoder().encodeToString(text.getBytes());
+                            checkNotNull(plaintextTextArea).textProperty().set(text64);
+                        }
+                    } else {
+                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Decode content?");
+                        if (result == JavaFxUtils.YesNo.YES) {
+                            String text64 = checkNotNull(plaintextTextArea).textProperty().get();
+                            String text = new String(Base64.getDecoder().decode(text64));
+                            checkNotNull(plaintextTextArea).textProperty().set(text);
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Base64 operation error", e);
+                    Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+                    alert.showAndWait();
+                }
+            }
+        });
+
+        checkNotNull(base64SignPlaintextCheckBox).selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observableValue, Boolean _old, Boolean _new) {
+                try {
+                    boolean selected = checkNotNull(base64SignPlaintextCheckBox).selectedProperty().get();
+                    if (selected) {
+                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Encode content?");
+                        if (result == JavaFxUtils.YesNo.YES) {
+                            String text = checkNotNull(signPlaintextTextArea).textProperty().get();
+                            String text64 = Base64.getEncoder().encodeToString(text.getBytes());
+                            checkNotNull(signPlaintextTextArea).textProperty().set(text64);
+                        }
+                    } else {
+                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Decode content?");
+                        if (result == JavaFxUtils.YesNo.YES) {
+                            String text64 = checkNotNull(signPlaintextTextArea).textProperty().get();
+                            String text = new String(Base64.getDecoder().decode(text64));
+                            checkNotNull(signPlaintextTextArea).textProperty().set(text);
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Base64 operation error", e);
+                    Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+                    alert.showAndWait();
+                }
+            }
+        });
     }
 
     public void quit() { checkNotNull(mainStage).close(); }
@@ -248,7 +322,7 @@ public class MainForm {
                         ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
                 RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaUseRsaAesHybridCheckBox).isSelected()
                         ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
-                return new RsaTransformerProvider(certificate.getPublicKey(), key, mode, encryptionFormat);
+                return new RsaTransformerProvider(certificate.getPublicKey(), key, (X509Certificate)certificate, mode, encryptionFormat);
             } else if (selectedRsaTab == filesTab) {
                 try {
                     if (fileCertificate == null) {
@@ -261,7 +335,7 @@ public class MainForm {
                             ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
                     RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaUseRsaAesHybridCheckBox).isSelected()
                             ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
-                    return new RsaTransformerProvider(fileCertificate.getPublicKey(), fileKey, mode, encryptionFormat);
+                    return new RsaTransformerProvider(fileCertificate.getPublicKey(), fileKey, (X509Certificate)fileCertificate, mode, encryptionFormat);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -269,20 +343,20 @@ public class MainForm {
                 try {
                     String certificateStr = checkNotNull(rawCertificateTextArea).textProperty().get();
                     String keyStr = checkNotNull(rawPrivateKeyTextArea).textProperty().get();
-                    Certificate certificate = PkiUtil.getCertificateFromString(certificateStr);
+                    X509Certificate certificate = PkiUtil.getCertificateFromString(certificateStr);
                     PrivateKey key = PkiUtil.getPrivateKeyFromString(keyStr);
 
                     Mode mode = checkNotNull(rsaEncryptWithPublicKeyCheckBox).isSelected()
                             ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
                     RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaUseRsaAesHybridCheckBox).isSelected()
                             ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
-                    return new RsaTransformerProvider(certificate.getPublicKey(), key, mode, encryptionFormat);
+                    return new RsaTransformerProvider(certificate.getPublicKey(), key, certificate, mode, encryptionFormat);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             } else {
                 // Unknown RSA mode
-                return TransformerProvider.of(null, null, null, null);
+                return TransformerProvider.of(null, null, null, null, null, null);
             }
         } else if (selectedMainTab == aes256Tab) {
             String aes256Base64Key = checkNotNull(aes256KeyTextField).textProperty().get();
@@ -298,7 +372,7 @@ public class MainForm {
             return new AesTransformerProvider(aes256Key, aes256Iv);
         } else {
             // Unknown scheme
-            return TransformerProvider.of(null, null, null, null);
+            return TransformerProvider.of(null, null, null, null, null, null);
         }
     }
 
@@ -307,8 +381,7 @@ public class MainForm {
             Transformer encryptTransformer = getCurrentTransformerProvider().getEncryptTransformer();
 
             if (encryptTransformer != null) {
-                String plaintext = checkNotNull(plaintextTextArea).textProperty().get();
-                byte[] plaintextBytes = plaintext.getBytes(StandardCharsets.UTF_8);
+                byte[] plaintextBytes = getCryptPlaintextBytes();
                 byte[] ciphertextBytes = encryptTransformer.transform(plaintextBytes);
                 String ciphertext64 = Base64.getEncoder().encodeToString(ciphertextBytes);
 
@@ -333,6 +406,9 @@ public class MainForm {
                 byte[] ciphertextBytes = Base64.getDecoder().decode(ciphertext64);
                 byte[] plaintextBytes = decryptTransformer.transform(ciphertextBytes);
                 String plaintext = new String(plaintextBytes);
+                if (checkNotNull(base64CryptPlaintextCheckBox).selectedProperty().get()) {
+                    plaintext = Base64.getEncoder().encodeToString(plaintext.getBytes());
+                }
 
                 checkNotNull(plaintextTextArea).textProperty().set(plaintext);
             } else {
@@ -346,14 +422,46 @@ public class MainForm {
         }
     }
 
+    protected byte[] getCryptPlaintextBytes() {
+        String plaintext = checkNotNull(plaintextTextArea).textProperty().get();
+        byte[] plaintextBytes;
+        if (checkNotNull(base64CryptPlaintextCheckBox).selectedProperty().get()) {
+            plaintextBytes = Base64.getDecoder().decode(plaintext);
+        } else {
+            plaintextBytes = plaintext.getBytes(StandardCharsets.UTF_8);
+        }
+        return plaintextBytes;
+    }
+
+    protected byte[] getSignPlaintextBytes() {
+        String plaintext = checkNotNull(signPlaintextTextArea).textProperty().get();
+        byte[] plaintextBytes;
+        if (checkNotNull(base64SignPlaintextCheckBox).selectedProperty().get()) {
+            plaintextBytes = Base64.getDecoder().decode(plaintext);
+        } else {
+            plaintextBytes = plaintext.getBytes(StandardCharsets.UTF_8);
+        }
+        return plaintextBytes;
+    }
+
+    public void sha256Text() {
+        try {
+            byte[] plaintextBytes = getSignPlaintextBytes();
+            String sha256Hex = PkiUtil.getSha256Hex(plaintextBytes);
+            checkNotNull(signSignatureTextArea).textProperty().set(sha256Hex);
+        } catch (Exception e) {
+            LOGGER.error("Signage error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
     public void signText() {
         try {
             Transformer signTransformer = getCurrentTransformerProvider().getSignTransformer();
 
             if (signTransformer != null) {
-                String plaintext = checkNotNull(signPlaintextTextArea).textProperty().get();
-                byte[] plaintextBytes = plaintext.getBytes(StandardCharsets.UTF_8);
-
+                byte[] plaintextBytes = getSignPlaintextBytes();
                 byte[] signatureBytes = signTransformer.transform(plaintextBytes);
                 String signature64 = Base64.getEncoder().encodeToString(signatureBytes);
 
@@ -374,8 +482,7 @@ public class MainForm {
             SignatureChecker signTransformer = getCurrentTransformerProvider().getSignatureChecker();
 
             if (signTransformer != null) {
-                String plaintext = checkNotNull(signPlaintextTextArea).textProperty().get();
-                byte[] plaintextBytes = plaintext.getBytes(StandardCharsets.UTF_8);
+                byte[] plaintextBytes = getSignPlaintextBytes();
                 String signature = checkNotNull(signSignatureTextArea).textProperty().get();
                 byte[] signatureBytes = Base64.getDecoder().decode(signature);
 
@@ -392,6 +499,50 @@ public class MainForm {
             }
         } catch (Exception e) {
             LOGGER.error("Signage error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void saveCryptPlaintext() {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Text files (*.txt)", "*.txt"));
+            fileChooser.setTitle("Save Crypt Plaintext");
+            File saveFile = fileChooser.showSaveDialog(checkNotNull(mainStage));
+            if (!saveFile.getName().endsWith(".txt")) {
+                saveFile = new File(saveFile.getPath()  + ".txt");
+            }
+
+            byte[] plaintextBytes = getCryptPlaintextBytes();
+            saveByteArrayToFile(plaintextBytes, saveFile);
+        } catch (Exception e) {
+            LOGGER.error("Encryption error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    protected void saveByteArrayToFile(byte[] data, File file) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(data);
+        }
+    }
+
+    public void saveSignPlaintext() {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Text files (*.txt)", "*.txt"));
+            fileChooser.setTitle("Save Sign Plaintext");
+            File saveFile = fileChooser.showSaveDialog(checkNotNull(mainStage));
+            if (!saveFile.getName().endsWith(".txt")) {
+                saveFile = new File(saveFile.getPath()  + ".txt");
+            }
+
+            byte[] plaintextBytes = getSignPlaintextBytes();
+            saveByteArrayToFile(plaintextBytes, saveFile);
+        } catch (Exception e) {
+            LOGGER.error("Save sign plaintext error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
             alert.showAndWait();
         }
@@ -588,5 +739,100 @@ public class MainForm {
                 String.format("Encryption test: %s.\nSignature test: %s", encryptTestResult, signTestResult),
                 ButtonType.OK);
         alert.showAndWait();
+    }
+
+    public void loadCsr() {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("CSR request (*.req)", "*.req"));
+            fileChooser.setTitle("Load CSR request");
+            File csrFile = fileChooser.showOpenDialog(mainStage);
+            String csr = Files.readString(csrFile.toPath());
+
+            PEMParser pemParser = new PEMParser(new StringReader(csr));
+            PKCS10CertificationRequest pkcs10 = (PKCS10CertificationRequest)pemParser.readObject();
+
+            checkNotNull(csrSignPlaintextTextArea).textProperty().set(csr);
+        } catch (Exception e) {
+            LOGGER.error("CSR load error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void signCsr() {
+        try {
+            CsrSigner csrSigner = getCurrentTransformerProvider().getCsrSigner();
+            if (csrSigner != null) {
+                String csrString = checkNotNull(csrSignPlaintextTextArea).textProperty().get();
+                PEMParser pemParser = new PEMParser(new StringReader(csrString));
+                PKCS10CertificationRequest csr = (PKCS10CertificationRequest)pemParser.readObject();
+                X509Certificate certificate = csrSigner.signCsr(csr);
+
+                String certificateStr = PkiUtil.getCertificateAsPem(certificate);
+                checkNotNull(signedCertificateTextArea).textProperty().set(certificateStr);
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR, KEY_NOT_SUPPORTED, ButtonType.OK);
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            LOGGER.error("CSR signage error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void checkSignedCertificate() {
+        try {
+            CertificateVerifier certificateVerifier = getCurrentTransformerProvider().getCertificateVerifier();
+            if (certificateVerifier != null) {
+                String signedCertificateString = checkNotNull(signedCertificateTextArea).textProperty().get();
+                if (!StringUtils.isBlank(signedCertificateString)) {
+                    X509Certificate certificate = PkiUtil.getCertificateFromString(signedCertificateString);
+                    if (certificateVerifier.verifyCertificateSignature(certificate)) {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Certificate valid", ButtonType.OK);
+                        alert.showAndWait();
+                    } else {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Certificate validation failed", ButtonType.OK);
+                        alert.showAndWait();
+                    }
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Certificate is empty", ButtonType.OK);
+                    alert.showAndWait();
+                }
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR, KEY_NOT_SUPPORTED, ButtonType.OK);
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            LOGGER.error("CSR check error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void saveSignedCertificate() {
+        try {
+            String signedCertificateString = checkNotNull(signedCertificateTextArea).textProperty().get();
+            if (!StringUtils.isBlank(signedCertificateString)) {
+                FileChooser fileChooser = new FileChooser();
+                fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Certificate files (*.crt)", "*.crt"));
+                fileChooser.setTitle("Save signed certificate");
+                File saveFile = fileChooser.showSaveDialog(checkNotNull(mainStage));
+                if (!saveFile.getName().endsWith(".crt")) {
+                    saveFile = new File(saveFile.getPath()  + ".crt");
+                }
+
+                byte[] certBytes = signedCertificateString.getBytes();
+                saveByteArrayToFile(certBytes, saveFile);
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Certificate is empty", ButtonType.OK);
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            LOGGER.error("CSR save error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
     }
 }
