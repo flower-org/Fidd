@@ -27,7 +27,6 @@ import javafx.scene.input.KeyEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
-import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +41,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.InvalidKeyException;
@@ -510,6 +508,8 @@ public class MainForm {
             fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Text files (*.txt)", "*.txt"));
             fileChooser.setTitle("Save Crypt Plaintext");
             File saveFile = fileChooser.showSaveDialog(checkNotNull(mainStage));
+            if (saveFile == null) { return; }
+
             if (!saveFile.getName().endsWith(".txt")) {
                 saveFile = new File(saveFile.getPath()  + ".txt");
             }
@@ -535,6 +535,8 @@ public class MainForm {
             fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Text files (*.txt)", "*.txt"));
             fileChooser.setTitle("Save Sign Plaintext");
             File saveFile = fileChooser.showSaveDialog(checkNotNull(mainStage));
+            if (saveFile == null) { return; }
+
             if (!saveFile.getName().endsWith(".txt")) {
                 saveFile = new File(saveFile.getPath()  + ".txt");
             }
@@ -596,6 +598,8 @@ public class MainForm {
             fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Certificate (*.crt)", "*.crt"));
             fileChooser.setTitle("Load Certificate");
             File certificateFile = fileChooser.showOpenDialog(checkNotNull(mainStage));
+            if (certificateFile == null) { return; }
+
             checkNotNull(fileCertificateTextField).textProperty().set(certificateFile.getPath());
 
             loadCertificateFromFile(certificateFile);
@@ -641,6 +645,8 @@ public class MainForm {
             fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Key (*.key)", "*.key"));
             fileChooser.setTitle("Load Key");
             File keyFile = fileChooser.showOpenDialog(checkNotNull(mainStage));
+            if (keyFile == null) { return; }
+
             checkNotNull(filePrivateKeyTextField).textProperty().set(keyFile.getPath());
 
             loadPrivateKeyFromFile(keyFile);
@@ -747,14 +753,33 @@ public class MainForm {
             fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("CSR request (*.req)", "*.req"));
             fileChooser.setTitle("Load CSR request");
             File csrFile = fileChooser.showOpenDialog(mainStage);
-            String csr = Files.readString(csrFile.toPath());
+            if (csrFile == null) { return; }
 
-            PEMParser pemParser = new PEMParser(new StringReader(csr));
-            PKCS10CertificationRequest pkcs10 = (PKCS10CertificationRequest)pemParser.readObject();
+            String csr = Files.readString(csrFile.toPath());
+            PKCS10CertificationRequest pkcs10 = PkiUtil.loadCsr(csr);
 
             checkNotNull(csrSignPlaintextTextArea).textProperty().set(csr);
         } catch (Exception e) {
             LOGGER.error("CSR load error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void loadSignedCertificate() {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Certificate (*.crt)", "*.crt"));
+            fileChooser.setTitle("Load certificate");
+            File csrFile = fileChooser.showOpenDialog(mainStage);
+            if (csrFile == null) { return; }
+
+            PkiUtil.getCertificateFromStream(new FileInputStream(csrFile));
+
+            String csr = Files.readString(csrFile.toPath());
+            checkNotNull(signedCertificateTextArea).textProperty().set(csr);
+        } catch (Exception e) {
+            LOGGER.error("Certificate load error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
             alert.showAndWait();
         }
@@ -765,8 +790,12 @@ public class MainForm {
             CsrSigner csrSigner = getCurrentTransformerProvider().getCsrSigner();
             if (csrSigner != null) {
                 String csrString = checkNotNull(csrSignPlaintextTextArea).textProperty().get();
-                PEMParser pemParser = new PEMParser(new StringReader(csrString));
-                PKCS10CertificationRequest csr = (PKCS10CertificationRequest)pemParser.readObject();
+                if (StringUtils.isBlank(csrString)) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "CSR is empty", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+                PKCS10CertificationRequest csr = PkiUtil.loadCsr(csrString);
                 X509Certificate certificate = csrSigner.signCsr(csr);
 
                 String certificateStr = PkiUtil.getCertificateAsPem(certificate);
@@ -819,6 +848,8 @@ public class MainForm {
                 fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Certificate files (*.crt)", "*.crt"));
                 fileChooser.setTitle("Save signed certificate");
                 File saveFile = fileChooser.showSaveDialog(checkNotNull(mainStage));
+                if (saveFile == null) { return; }
+
                 if (!saveFile.getName().endsWith(".crt")) {
                     saveFile = new File(saveFile.getPath()  + ".crt");
                 }

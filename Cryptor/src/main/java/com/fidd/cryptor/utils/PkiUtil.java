@@ -6,6 +6,7 @@ import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -30,10 +31,13 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
 import java.math.BigInteger;
 import java.net.URL;
 import java.security.DigestInputStream;
@@ -581,5 +585,18 @@ public class PkiUtil {
         } catch (CertificateException | OperatorCreationException | NoSuchAlgorithmException | IOException | InvalidKeySpecException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static PKCS10CertificationRequest loadCsr(File f) throws IOException {
+        return loadCsr(new FileReader(f));
+    }
+
+    public static PKCS10CertificationRequest loadCsr(String csr) throws IOException {
+        return loadCsr(new StringReader(csr));
+    }
+
+    public static PKCS10CertificationRequest loadCsr(Reader reader) throws IOException {
+        PEMParser pemParser = new PEMParser(reader);
+        return (PKCS10CertificationRequest)pemParser.readObject();
     }
 }
