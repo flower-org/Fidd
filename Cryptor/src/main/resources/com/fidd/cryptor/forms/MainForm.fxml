@@ -186,9 +186,9 @@
        </AnchorPane>
             <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
              <children>
-                 <TabPane tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                 <TabPane fx:id="functionTabPane" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                      <tabs>
-                         <Tab text="Crypt text">
+                         <Tab fx:id="cryptTextFunctionTab" text="Crypt text">
                              <content>
                                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                      <children>
@@ -212,7 +212,7 @@
                                           <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" />
                                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="110.0" minWidth="110.0" prefWidth="110.0" />
                                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="110.0" minWidth="110.0" prefWidth="110.0" />
-                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="110.0" minWidth="110.0" prefWidth="110.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="125.0" minWidth="125.0" prefWidth="125.0" />
                                                      </columnConstraints>
                                                      <rowConstraints>
                                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
@@ -225,7 +225,7 @@
                                                 <Insets />
                                              </GridPane.margin>
                                           </CheckBox>
-                                          <Button mnemonicParsing="false" onAction="#saveCryptPlaintext" text="Save" GridPane.columnIndex="3">
+                                          <Button mnemonicParsing="false" onAction="#saveCryptPlaintext" text="Save plaintext" GridPane.columnIndex="3">
                                              <GridPane.margin>
                                                 <Insets left="10.0" />
                                              </GridPane.margin>
@@ -278,7 +278,7 @@
                                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="135.0" minWidth="135.0" prefWidth="135.0" />
                                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="210.0" minWidth="210.0" prefWidth="210.0" />
                                           <ColumnConstraints hgrow="SOMETIMES" maxWidth="90.0" minWidth="90.0" prefWidth="90.0" />
-                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="110.0" minWidth="110.0" prefWidth="110.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="115.0" minWidth="115.0" prefWidth="115.0" />
                                                      </columnConstraints>
                                                      <rowConstraints>
                                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
@@ -291,7 +291,7 @@
                                                 <Insets />
                                              </GridPane.margin>
                                           </CheckBox>
-                                          <Button mnemonicParsing="false" onAction="#saveSignPlaintext" text="Save" GridPane.columnIndex="4" />
+                                          <Button mnemonicParsing="false" onAction="#saveSignPlaintext" text="Save plaintext" GridPane.columnIndex="4" />
                                           <Button mnemonicParsing="false" onAction="#sha256Text" text="SHA-256" GridPane.columnIndex="3">
                                              <GridPane.margin>
                                                 <Insets left="5.0" />
@@ -307,14 +307,153 @@
                                      </padding></AnchorPane>
                              </content>
                          </Tab>
-                         <Tab text="Crypt file">
+                         <Tab fx:id="cryptFileFunctionTab" text="Crypt file">
                              <content>
-                                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+                                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                     <children>
+                                         <GridPane layoutX="77.0" layoutY="65.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                             <columnConstraints>
+                                                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                             </columnConstraints>
+                                             <rowConstraints>
+                                                 <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                 <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                             </rowConstraints>
+                                             <children>
+                                                 <GridPane>
+                                                     <columnConstraints>
+                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="110.0" minWidth="110.0" prefWidth="110.0" />
+                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="110.0" minWidth="110.0" prefWidth="110.0" />
+                                                     </columnConstraints>
+                                                     <rowConstraints>
+                                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                     </rowConstraints>
+                                                     <children>
+                                                         <Button mnemonicParsing="false" onAction="#encryptFile" text="-&gt; Encrypt -&gt;" />
+                                                         <Button mnemonicParsing="false" onAction="#decryptFile" text="&lt;- Decrypt &lt;-" GridPane.columnIndex="1" />
+                                                     </children>
+                                                 </GridPane>
+                                                 <GridPane GridPane.columnIndex="1">
+                                                     <columnConstraints>
+                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="200.0" minWidth="200.0" prefWidth="200.0" />
+                                                         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                     </columnConstraints>
+                                                     <rowConstraints>
+                                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                     </rowConstraints>
+                                                     <children>
+                                                         <CheckBox fx:id="rsaFileEncryptWithPublicKeyCheckBox" mnemonicParsing="false" selected="true" text="Encrypt with Public Key" />
+                                                         <CheckBox fx:id="rsaFileUseRsaAesHybridCheckBox" mnemonicParsing="false" selected="true" text="Use RSA/AES-256 hybrid" GridPane.columnIndex="1" />
+                                                     </children>
+                                                 </GridPane>
+                                    <GridPane GridPane.rowIndex="1">
+                                      <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                      </columnConstraints>
+                                      <rowConstraints>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                      </rowConstraints>
+                                       <children>
+                                          <Button mnemonicParsing="false" onAction="#openCryptPlainFile" text="Plain file" />
+                                          <TextField fx:id="rsaCryptPlainFileTextField" GridPane.columnIndex="1">
+                                             <GridPane.margin>
+                                                <Insets right="10.0" />
+                                             </GridPane.margin>
+                                          </TextField>
+                                       </children>
+                                    </GridPane>
+                                    <GridPane GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                      <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="90.0" minWidth="90.0" prefWidth="90.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                      </columnConstraints>
+                                      <rowConstraints>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                      </rowConstraints>
+                                       <children>
+                                          <Button mnemonicParsing="false" onAction="#openCryptCipherFile" text="Cipher file" />
+                                          <TextField fx:id="rsaCryptCipherFileTextField" GridPane.columnIndex="1" />
+                                       </children>
+                                    </GridPane>
+                                             </children>
+                                         </GridPane>
+                                     </children>
+                                     <padding>
+                                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                     </padding></AnchorPane>
                              </content>
                          </Tab>
                          <Tab text="Sign file">
                              <content>
-                                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+                                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                     <children>
+                                         <GridPane layoutX="77.0" layoutY="65.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                             <columnConstraints>
+                                                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                             </columnConstraints>
+                                             <rowConstraints>
+                                                 <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                 <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                             </rowConstraints>
+                                             <children>
+                                                 <GridPane>
+                                                     <columnConstraints>
+                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="135.0" minWidth="135.0" prefWidth="135.0" />
+                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="210.0" minWidth="210.0" prefWidth="210.0" />
+                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="90.0" minWidth="90.0" prefWidth="90.0" />
+                                                     </columnConstraints>
+                                                     <rowConstraints>
+                                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                     </rowConstraints>
+                                                     <children>
+                                                         <Button mnemonicParsing="false" onAction="#signFile" text="Sign (PrivateKey)" />
+                                                         <Button mnemonicParsing="false" onAction="#checkFileSignature" text="Check signature (Public Key)" GridPane.columnIndex="1" />
+                                                         <Button mnemonicParsing="false" onAction="#sha256File" text="SHA-256" GridPane.columnIndex="2">
+                                                             <GridPane.margin>
+                                                                 <Insets left="5.0" />
+                                                             </GridPane.margin>
+                                                         </Button>
+                                                     </children>
+                                                 </GridPane>
+                                                 <GridPane GridPane.rowIndex="1">
+                                                     <columnConstraints>
+                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" />
+                                                         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                     </columnConstraints>
+                                                     <rowConstraints>
+                                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                     </rowConstraints>
+                                                     <children>
+                                                         <Button mnemonicParsing="false" onAction="#openSignPlainFile" text="Plain file" />
+                                                         <TextField fx:id="rsaSignPlainFileTextField" GridPane.columnIndex="1">
+                                                             <GridPane.margin>
+                                                                 <Insets right="10.0" />
+                                                             </GridPane.margin>
+                                                         </TextField>
+                                                     </children>
+                                                 </GridPane>
+                                                 <GridPane GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                                     <columnConstraints>
+                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="110.0" minWidth="110.0" prefWidth="110.0" />
+                                                         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                     </columnConstraints>
+                                                     <rowConstraints>
+                                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                     </rowConstraints>
+                                                     <children>
+                                                         <Button mnemonicParsing="false" onAction="#openSignHashFile" text="Sign/hash file" />
+                                                         <TextField fx:id="rsaSignHashFileTextField" GridPane.columnIndex="1" />
+                                                     </children>
+                                                 </GridPane>
+                                             </children>
+                                         </GridPane>
+                                     </children>
+                                     <padding>
+                                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                     </padding></AnchorPane>
                              </content>
                          </Tab>
                          <Tab text="Sign CSR / Validate">

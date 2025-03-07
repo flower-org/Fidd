@@ -7,6 +7,12 @@ public interface TransformerProvider {
     @Nullable Transformer getDecryptTransformer();
     @Nullable Transformer getSignTransformer();
     @Nullable SignatureChecker getSignatureChecker();
+
+    @Nullable FileTransformer getEncryptFileTransformer();
+    @Nullable FileTransformer getDecryptFileTransformer();
+    @Nullable FileTransformer getSignFileTransformer();
+    @Nullable FileSignatureChecker getFileSignatureChecker();
+
     @Nullable CsrSigner getCsrSigner();
     @Nullable CertificateVerifier getCertificateVerifier();
 
@@ -15,6 +21,12 @@ public interface TransformerProvider {
         @Nullable Transformer decryptTransformer,
         @Nullable Transformer signTransformer,
         @Nullable SignatureChecker signatureChecker,
+
+        @Nullable FileTransformer encryptFileTransformer,
+        @Nullable FileTransformer decryptFileTransformer,
+        @Nullable FileTransformer signFileTransformer,
+        @Nullable FileSignatureChecker fileSignatureChecker,
+
         @Nullable CsrSigner csrSigner,
         @Nullable CertificateVerifier certificateVerifier
     ) {
@@ -23,6 +35,12 @@ public interface TransformerProvider {
             @Nullable @Override public Transformer getDecryptTransformer() { return decryptTransformer; }
             @Nullable @Override public Transformer getSignTransformer() { return signTransformer; }
             @Nullable @Override public SignatureChecker getSignatureChecker() { return signatureChecker; }
+
+            @Nullable @Override public FileTransformer getEncryptFileTransformer() { return encryptFileTransformer; }
+            @Nullable @Override public FileTransformer getDecryptFileTransformer() { return decryptFileTransformer; }
+            @Nullable @Override public FileTransformer getSignFileTransformer() { return signFileTransformer; }
+            @Nullable @Override public FileSignatureChecker getFileSignatureChecker() { return fileSignatureChecker; }
+
             @Nullable @Override public CsrSigner getCsrSigner() { return csrSigner; }
             @Nullable @Override public CertificateVerifier getCertificateVerifier() { return certificateVerifier; }
         };

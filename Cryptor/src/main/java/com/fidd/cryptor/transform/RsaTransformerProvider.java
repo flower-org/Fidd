@@ -206,6 +206,30 @@ public class RsaTransformerProvider implements TransformerProvider {
 
     @Nullable
     @Override
+    public FileTransformer getEncryptFileTransformer() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public FileTransformer getDecryptFileTransformer() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public FileTransformer getSignFileTransformer() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public FileSignatureChecker getFileSignatureChecker() {
+        return null;
+    }
+
+    @Nullable
+    @Override
     public CsrSigner getCsrSigner() {
         return csr -> PkiUtil.signCsr(csr, privateKey, certificate);
     }

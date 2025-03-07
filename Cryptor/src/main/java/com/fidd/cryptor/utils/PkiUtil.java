@@ -19,6 +19,8 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
@@ -31,6 +33,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -41,6 +44,7 @@ import java.io.StringReader;
 import java.math.BigInteger;
 import java.net.URL;
 import java.security.DigestInputStream;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -75,6 +79,9 @@ import java.util.HexFormat;
 import java.util.List;
 
 public class PkiUtil {
+    private static final int FILE_ENCRYPT_CHUNK_SIZE = 4096;
+    private static final String AES_TRANSFORMATION = "AES/CBC/PKCS5Padding";
+
     public static TrustManagerFactory getSystemTrustManager() {
         try {
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -598,5 +605,66 @@ public class PkiUtil {
     public static PKCS10CertificationRequest loadCsr(Reader reader) throws IOException {
         PEMParser pemParser = new PEMParser(reader);
         return (PKCS10CertificationRequest)pemParser.readObject();
+    }
+
+    public static void encryptFile(SecretKeySpec secretKey, IvParameterSpec iv, FileInputStream fis,
+                                   FileOutputStream fos, int length) throws NoSuchPaddingException, NoSuchAlgorithmException,
+            InvalidAlgorithmParameterException, InvalidKeyException, IOException, IllegalBlockSizeException, BadPaddingException {
+        Cipher cipher = Cipher.getInstance(AES_TRANSFORMATION);
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
+
+        byte[] inputBytes = new byte[FILE_ENCRYPT_CHUNK_SIZE];
+        int bytesRead;
+        int totalBytesRead = 0;
+
+        // Read and encrypt in chunks until the specified length is reached
+        while (totalBytesRead < length && (bytesRead = fis.read(inputBytes)) != -1) {
+            // Only process the bytes up to the specified length
+            int bytesToProcess = Math.min(bytesRead, length - totalBytesRead);
+            byte[] outputBytes = cipher.update(inputBytes, 0, bytesToProcess);
+            if (outputBytes != null) {
+                fos.write(outputBytes);
+            }
+            totalBytesRead += bytesToProcess;
+        }
+
+        // Finalize encryption if we have processed any bytes
+        if (totalBytesRead > 0) {
+            byte[] outputBytes = cipher.doFinal();
+            if (outputBytes != null) {
+                fos.write(outputBytes);
+            }
+        }
+    }
+
+    public static void decryptFile(SecretKeySpec secretKey, IvParameterSpec iv, FileInputStream fis,
+                                   FileOutputStream fos, int length) throws NoSuchPaddingException, NoSuchAlgorithmException,
+            InvalidAlgorithmParameterException, InvalidKeyException, IOException, IllegalBlockSizeException, BadPaddingException {
+        Cipher cipher = Cipher.getInstance(AES_TRANSFORMATION);
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
+
+        byte[] inputBytes = new byte[FILE_ENCRYPT_CHUNK_SIZE]; // Buffer size of 4KB
+        int bytesRead;
+        int totalBytesRead = 0;
+
+        // Read and decrypt in chunks until the specified length is reached
+        while (totalBytesRead < length && (bytesRead = fis.read(inputBytes)) != -1) {
+            // Only process the bytes up to the specified length
+            int bytesToProcess = Math.min(bytesRead, length - totalBytesRead);
+            byte[] outputBytes = cipher.update(inputBytes, 0, bytesToProcess);
+            if (outputBytes != null) {
+                fos.write(outputBytes);
+            }
+            totalBytesRead += bytesToProcess;
+        }
+
+        // Finalize decryption
+        if (totalBytesRead > 0) {
+            // If we have processed any bytes, finalize the decryption
+            byte[] outputBytes = cipher.doFinal(); // This handles padding
+            if (outputBytes != null) {
+                fos.write(outputBytes);
+            }
+        }
     }
 }

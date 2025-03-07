@@ -1,5 +1,7 @@
 package com.fidd.cryptor.transform;
 
+import com.fidd.cryptor.utils.PkiUtil;
+
 import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -7,6 +9,9 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -52,9 +57,47 @@ public class AesTransformerProvider implements TransformerProvider {
         };
     }
 
+    @Nullable
+    @Override
+    public FileTransformer getEncryptFileTransformer() {
+        return (inputFile, outputFile) -> {
+            try {
+                try (FileInputStream fis = new FileInputStream(inputFile);
+                     FileOutputStream fos = new FileOutputStream(outputFile)) {
+                    PkiUtil.encryptFile(secretKey, iv, fis, fos, (int)inputFile.length());
+                }
+            } catch (IOException | NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException
+                     | InvalidAlgorithmParameterException | BadPaddingException | InvalidKeyException e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    @Nullable
+    @Override
+    public FileTransformer getDecryptFileTransformer() {
+        return (inputFile, outputFile) -> {
+            try {
+                try (FileInputStream fis = new FileInputStream(inputFile);
+                     FileOutputStream fos = new FileOutputStream(outputFile)) {
+                    PkiUtil.decryptFile(secretKey, iv, fis, fos, (int)inputFile.length());
+                }
+            } catch (IOException | NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException
+                     | InvalidAlgorithmParameterException | BadPaddingException | InvalidKeyException e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    // -------------- BELOW FUNCTIONS UNSUPPORTED BY AES --------------
+
     @Nullable @Override public Transformer getSignTransformer() { return null; }
 
     @Nullable @Override public SignatureChecker getSignatureChecker() { return null; }
+
+    @Nullable @Override public FileTransformer getSignFileTransformer() { return null; }
+
+    @Nullable @Override public FileSignatureChecker getFileSignatureChecker() { return null; }
 
     @Nullable @Override public CsrSigner getCsrSigner() { return null; }
 

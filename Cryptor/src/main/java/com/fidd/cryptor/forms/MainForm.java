@@ -3,6 +3,7 @@ package com.fidd.cryptor.forms;
 import com.fidd.cryptor.transform.AesTransformerProvider;
 import com.fidd.cryptor.transform.CertificateVerifier;
 import com.fidd.cryptor.transform.CsrSigner;
+import com.fidd.cryptor.transform.FileTransformer;
 import com.fidd.cryptor.transform.RsaTransformerProvider;
 import com.fidd.cryptor.transform.SignatureChecker;
 import com.fidd.cryptor.transform.Transformer;
@@ -109,6 +110,18 @@ public class MainForm {
     @FXML @Nullable TextArea csrSignPlaintextTextArea;
     @FXML @Nullable TextArea signedCertificateTextArea;
 
+    @FXML @Nullable TextField rsaCryptPlainFileTextField;
+    @FXML @Nullable TextField rsaCryptCipherFileTextField;
+    @FXML @Nullable CheckBox rsaFileEncryptWithPublicKeyCheckBox;
+    @FXML @Nullable CheckBox rsaFileUseRsaAesHybridCheckBox;
+
+    @FXML @Nullable TextField rsaSignHashFileTextField;
+    @FXML @Nullable TextField rsaSignPlainFileTextField;
+
+    @FXML @Nullable TabPane functionTabPane;
+    @FXML @Nullable Tab cryptTextFunctionTab;
+    @FXML @Nullable Tab cryptFileFunctionTab;
+
     @Nullable KeyStore pkcs11KeyStore;
     @Nullable Certificate fileCertificate;
     @Nullable PrivateKey fileKey;
@@ -140,14 +153,14 @@ public class MainForm {
                 try {
                     boolean selected = checkNotNull(base64CryptPlaintextCheckBox).selectedProperty().get();
                     if (selected) {
-                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Encode content?");
+                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Encode plaintext?");
                         if (result == JavaFxUtils.YesNo.YES) {
                             String text = checkNotNull(plaintextTextArea).textProperty().get();
                             String text64 = Base64.getEncoder().encodeToString(text.getBytes());
                             checkNotNull(plaintextTextArea).textProperty().set(text64);
                         }
                     } else {
-                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Decode content?");
+                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Decode plaintext?");
                         if (result == JavaFxUtils.YesNo.YES) {
                             String text64 = checkNotNull(plaintextTextArea).textProperty().get();
                             String text = new String(Base64.getDecoder().decode(text64));
@@ -168,14 +181,14 @@ public class MainForm {
                 try {
                     boolean selected = checkNotNull(base64SignPlaintextCheckBox).selectedProperty().get();
                     if (selected) {
-                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Encode content?");
+                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Encode plaintext?");
                         if (result == JavaFxUtils.YesNo.YES) {
                             String text = checkNotNull(signPlaintextTextArea).textProperty().get();
                             String text64 = Base64.getEncoder().encodeToString(text.getBytes());
                             checkNotNull(signPlaintextTextArea).textProperty().set(text64);
                         }
                     } else {
-                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Decode content?");
+                        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Base64 Decode plaintext?");
                         if (result == JavaFxUtils.YesNo.YES) {
                             String text64 = checkNotNull(signPlaintextTextArea).textProperty().get();
                             String text = new String(Base64.getDecoder().decode(text64));
@@ -306,6 +319,18 @@ public class MainForm {
     protected TransformerProvider getCurrentTransformerProvider() {
         Tab selectedMainTab = checkNotNull(mainGroupTabPane).getSelectionModel().getSelectedItem();
         if (selectedMainTab == rsaTab) {
+            Tab selectedFunctionTab = checkNotNull(functionTabPane).getSelectionModel().getSelectedItem();
+
+            boolean encryptWithPublicKey = true;
+            boolean useRsaAesHybrid = true;
+            if (selectedFunctionTab == cryptTextFunctionTab) {
+                encryptWithPublicKey = checkNotNull(rsaEncryptWithPublicKeyCheckBox).isSelected();
+                useRsaAesHybrid = checkNotNull(rsaUseRsaAesHybridCheckBox).isSelected();
+            } else if (selectedFunctionTab == cryptFileFunctionTab) {
+                encryptWithPublicKey = checkNotNull(rsaFileEncryptWithPublicKeyCheckBox).isSelected();
+                useRsaAesHybrid = checkNotNull(rsaFileUseRsaAesHybridCheckBox).isSelected();
+            }
+
             Tab selectedRsaTab = checkNotNull(rsaTabPane).getSelectionModel().getSelectedItem();
             if (selectedRsaTab == pkcs11Tab) {
                 String certAlias = checkNotNull(certificatesComboBox).getSelectionModel().getSelectedItem();
@@ -316,9 +341,9 @@ public class MainForm {
                 }
                 Certificate certificate = PkiUtil.getCertificateFromKeyStore(checkNotNull(pkcs11KeyStore), certAlias);
                 PrivateKey key = (PrivateKey)PkiUtil.getKeyFromKeyStore(pkcs11KeyStore, keyAlias);
-                Mode mode = checkNotNull(rsaEncryptWithPublicKeyCheckBox).isSelected()
+                Mode mode = encryptWithPublicKey
                         ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
-                RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaUseRsaAesHybridCheckBox).isSelected()
+                RsaTransformerProvider.EncryptionFormat encryptionFormat = useRsaAesHybrid
                         ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
                 return new RsaTransformerProvider(certificate.getPublicKey(), key, (X509Certificate)certificate, mode, encryptionFormat);
             } else if (selectedRsaTab == filesTab) {
@@ -329,9 +354,9 @@ public class MainForm {
                     if (fileKey == null) {
                         throw new RuntimeException("Key not loaded");
                     }
-                    Mode mode = checkNotNull(rsaEncryptWithPublicKeyCheckBox).isSelected()
+                    Mode mode = encryptWithPublicKey
                             ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
-                    RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaUseRsaAesHybridCheckBox).isSelected()
+                    RsaTransformerProvider.EncryptionFormat encryptionFormat = useRsaAesHybrid
                             ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
                     return new RsaTransformerProvider(fileCertificate.getPublicKey(), fileKey, (X509Certificate)fileCertificate, mode, encryptionFormat);
                 } catch (Exception e) {
@@ -344,9 +369,9 @@ public class MainForm {
                     X509Certificate certificate = PkiUtil.getCertificateFromString(certificateStr);
                     PrivateKey key = PkiUtil.getPrivateKeyFromString(keyStr);
 
-                    Mode mode = checkNotNull(rsaEncryptWithPublicKeyCheckBox).isSelected()
+                    Mode mode = encryptWithPublicKey
                             ? Mode.PUBLIC_KEY_ENCRYPT : Mode.PRIVATE_KEY_ENCRYPT;
-                    RsaTransformerProvider.EncryptionFormat encryptionFormat = checkNotNull(rsaUseRsaAesHybridCheckBox).isSelected()
+                    RsaTransformerProvider.EncryptionFormat encryptionFormat = useRsaAesHybrid
                             ? RsaTransformerProvider.EncryptionFormat.RSA_AES_256_HYBRID : RsaTransformerProvider.EncryptionFormat.RSA;
                     return new RsaTransformerProvider(certificate.getPublicKey(), key, certificate, mode, encryptionFormat);
                 } catch (Exception e) {
@@ -354,7 +379,9 @@ public class MainForm {
                 }
             } else {
                 // Unknown RSA mode
-                return TransformerProvider.of(null, null, null, null, null, null);
+                return TransformerProvider.of(null, null, null, null,
+                        null, null, null, null,
+                        null, null);
             }
         } else if (selectedMainTab == aes256Tab) {
             String aes256Base64Key = checkNotNull(aes256KeyTextField).textProperty().get();
@@ -370,7 +397,9 @@ public class MainForm {
             return new AesTransformerProvider(aes256Key, aes256Iv);
         } else {
             // Unknown scheme
-            return TransformerProvider.of(null, null, null, null, null, null);
+            return TransformerProvider.of(null, null, null, null,
+                    null, null, null, null,
+                    null, null);
         }
     }
 
@@ -862,6 +891,181 @@ public class MainForm {
             }
         } catch (Exception e) {
             LOGGER.error("CSR save error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    // ------------------------------------------------------
+
+    public void encryptFile() {
+        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Encrypt will overwrite Cipher file. Continue?");
+        if (result == JavaFxUtils.YesNo.NO) { return; }
+
+        try {
+            FileTransformer encryptTransformer = getCurrentTransformerProvider().getEncryptFileTransformer();
+            if (encryptTransformer != null) {
+                String plainFileStr = checkNotNull(rsaCryptPlainFileTextField).textProperty().get();
+                if (StringUtils.isBlank(plainFileStr)) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Plain file not selected", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+                File plainFile = new File(plainFileStr);
+                if (!plainFile.exists()) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Plain file doesn't exist", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+
+                String cipherFileStr = checkNotNull(rsaCryptCipherFileTextField).textProperty().get();
+                if (StringUtils.isBlank(cipherFileStr)) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Cipher file not selected", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+                File cipherFile = new File(cipherFileStr);
+                encryptTransformer.transform(plainFile, cipherFile);
+
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "File encryption success", ButtonType.OK);
+                alert.showAndWait();
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR, KEY_NOT_SUPPORTED, ButtonType.OK);
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            LOGGER.error("File encrypt error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void decryptFile() {
+        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Decrypt will overwrite Plain file. Continue?");
+        if (result == JavaFxUtils.YesNo.NO) { return; }
+
+        try {
+            FileTransformer decryptTransformer = getCurrentTransformerProvider().getDecryptFileTransformer();
+            if (decryptTransformer != null) {
+                String cipherFileStr = checkNotNull(rsaCryptCipherFileTextField).textProperty().get();
+                if (StringUtils.isBlank(cipherFileStr)) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Cipher file not selected", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+                File cipherFile = new File(cipherFileStr);
+                if (!cipherFile.exists()) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Cipher file doesn't exist", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+
+                String plainFileStr = checkNotNull(rsaCryptPlainFileTextField).textProperty().get();
+                if (StringUtils.isBlank(plainFileStr)) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Plain file not selected", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+                File plainFile = new File(plainFileStr);
+
+                decryptTransformer.transform(cipherFile, plainFile);
+
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "File decryption success", ButtonType.OK);
+                alert.showAndWait();
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR, KEY_NOT_SUPPORTED, ButtonType.OK);
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            LOGGER.error("File decrypt error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void openCryptPlainFile() {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Any file (*.*)", "*.*"));
+            fileChooser.setTitle("Choose plain file");
+
+            File plainFile = fileChooser.showSaveDialog(mainStage);
+            if (plainFile == null) { return; }
+
+            checkNotNull(rsaCryptPlainFileTextField).textProperty().set(plainFile.getPath());
+        } catch (Exception e) {
+            LOGGER.error("Plain file open error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void openCryptCipherFile() {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Any file (*.*)", "*.*"));
+            fileChooser.setTitle("Choose cipher file");
+
+            File cipherFile = fileChooser.showSaveDialog(mainStage);
+            if (cipherFile == null) { return; }
+
+            checkNotNull(rsaCryptCipherFileTextField).textProperty().set(cipherFile.getPath());
+        } catch (Exception e) {
+            LOGGER.error("Cipher file open error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    // ------------------------------------------------------
+
+    public void signFile() {
+        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Sign will overwrite Sign/Hash file. Continue?");
+        if (result == JavaFxUtils.YesNo.NO) { return; }
+    }
+
+    public void checkFileSignature() {
+        //
+    }
+
+    public void sha256File() {
+        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("SHA-256 will overwrite Sign/Hash file. Continue?");
+        if (result == JavaFxUtils.YesNo.NO) { return; }
+    }
+
+    public void openSignPlainFile() {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Any file (*.*)", "*.*"));
+            fileChooser.setTitle("Open file to sign");
+
+            File fileToSign = fileChooser.showOpenDialog(mainStage);
+            if (fileToSign == null) { return; }
+
+            checkNotNull(rsaSignPlainFileTextField).textProperty().set(fileToSign.getPath());
+        } catch (Exception e) {
+            LOGGER.error("File to sign open error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void openSignHashFile() {
+        try {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Detached Signature (*.bin, *.sig)", "*.bin", "*.sig"));
+            fileChooser.setTitle("Save signature to file");
+
+            File signatureFile = fileChooser.showSaveDialog(mainStage);
+            if (signatureFile == null) { return; }
+
+            if (!signatureFile.getName().endsWith(".bin") && !signatureFile.getName().endsWith(".sig")) {
+                signatureFile = new File(signatureFile.getPath()  + ".bin");
+            }
+
+            checkNotNull(rsaSignHashFileTextField).textProperty().set(signatureFile.getPath());
+        } catch (Exception e) {
+            LOGGER.error("Signature file open error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
             alert.showAndWait();
         }
