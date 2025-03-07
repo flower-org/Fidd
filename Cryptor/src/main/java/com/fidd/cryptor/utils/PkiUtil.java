@@ -561,7 +561,8 @@ public class PkiUtil {
         return verifySignature(file, sign, publicKey);
     }
 
-    public static boolean testKeyPairMatchBySigning(PublicKey publicKey, PrivateKey privateKey) throws NoSuchAlgorithmException, SignatureException, InvalidKeyException {
+    public static boolean testKeyPairMatchBySigning(PublicKey publicKey, PrivateKey privateKey)
+            throws NoSuchAlgorithmException, SignatureException, InvalidKeyException {
         byte[] data = "Test data".getBytes();
         byte[] signature = signData(data, privateKey);
         return verifySignature(data, signature, publicKey);
