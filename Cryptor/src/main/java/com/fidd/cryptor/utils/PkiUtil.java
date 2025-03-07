@@ -43,6 +43,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigInteger;
 import java.net.URL;
+import java.nio.file.Files;
 import java.security.DigestInputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -80,6 +81,7 @@ import java.util.List;
 
 public class PkiUtil {
     private static final int FILE_ENCRYPT_CHUNK_SIZE = 4096;
+    private static final int FILE_SIGNATURE_CHUNK_SIZE = 4096;
     private static final String AES_TRANSFORMATION = "AES/CBC/PKCS5Padding";
 
     public static TrustManagerFactory getSystemTrustManager() {
@@ -515,11 +517,48 @@ public class PkiUtil {
         return signature.sign();
     }
 
+    public static byte[] signData(File file, PrivateKey privateKey) throws NoSuchAlgorithmException, SignatureException, InvalidKeyException, IOException {
+        Signature signature = Signature.getInstance("SHA256withRSA");
+        signature.initSign(privateKey);
+
+        // Read the file in chunks
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] buffer = new byte[FILE_SIGNATURE_CHUNK_SIZE]; // 4KB buffer
+            int bytesRead;
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                signature.update(buffer, 0, bytesRead);
+            }
+        }
+
+        return signature.sign();
+    }
+
     public static boolean verifySignature(byte[] data, byte[] sign, PublicKey publicKey) throws NoSuchAlgorithmException, SignatureException, InvalidKeyException {
         Signature signature = Signature.getInstance("SHA256WithRSA");
         signature.initVerify(publicKey);
         signature.update(data);
         return signature.verify(sign);
+    }
+
+    public static boolean verifySignature(File file, byte[] signatureBytes, PublicKey publicKey) throws InvalidKeyException, IOException, SignatureException, NoSuchAlgorithmException {
+        Signature signature = Signature.getInstance("SHA256withRSA");
+        signature.initVerify(publicKey);
+
+        // Read the file in chunks
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] buffer = new byte[4096]; // 4KB buffer
+            int bytesRead;
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                signature.update(buffer, 0, bytesRead);
+            }
+        }
+
+        return signature.verify(signatureBytes);
+    }
+
+    public static boolean verifySignature(File file, File signatureFile, PublicKey publicKey) throws IOException, SignatureException, NoSuchAlgorithmException, InvalidKeyException {
+        byte[] sign = Files.readAllBytes(signatureFile.toPath());
+        return verifySignature(file, sign, publicKey);
     }
 
     public static boolean testKeyPairMatchBySigning(PublicKey publicKey, PrivateKey privateKey) throws NoSuchAlgorithmException, SignatureException, InvalidKeyException {
@@ -562,6 +601,10 @@ public class PkiUtil {
 
     public static String getSha256Hex(File file) throws NoSuchAlgorithmException, IOException {
         return HexFormat.of().formatHex(getSha256(file));
+    }
+
+    public static String toHex(byte[] bytes) throws NoSuchAlgorithmException, IOException {
+        return HexFormat.of().formatHex(bytes);
     }
 
     public static X509Certificate signCsr(PKCS10CertificationRequest csr,

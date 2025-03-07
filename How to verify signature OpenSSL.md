@@ -8,7 +8,7 @@
 ### convert:
 `openssl x509 -in crt.crt -pubkey -noout > crt.pem`
 
-`base64 -d sign.64 > sign.bin`
+`base64 -d sign.64 > sign.sig`
 
 ### verify:
-`openssl dgst -sha256 -verify crt.pem -signature sign.bin data.file`
+`openssl dgst -sha256 -verify crt.pem -signature sign.sig data.file`

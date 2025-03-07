@@ -10,6 +10,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.DataInputStream;
 import java.io.FileOutputStream;
@@ -345,14 +346,38 @@ public class RsaTransformerProvider implements TransformerProvider {
 
     @Nullable
     @Override
-    public FileTransformer getSignFileTransformer() {
-        return null;
+    public FileToByteTransformer getSignFileTransformer() {
+        return input -> {
+            try {
+                return PkiUtil.signData(input, privateKey);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 
     @Nullable
     @Override
     public FileSignatureChecker getFileSignatureChecker() {
-        return null;
+        return new FileSignatureChecker() {
+            @Override
+            public boolean checkSignature(File text, byte[] signature) {
+                try {
+                    return PkiUtil.verifySignature(text, signature, publicKey);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @Override
+            public boolean checkSignature(File text, File signature) {
+                try {
+                    return PkiUtil.verifySignature(text, signature, publicKey);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
     }
 
     @Nullable

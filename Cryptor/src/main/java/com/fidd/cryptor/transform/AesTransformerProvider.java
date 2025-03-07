@@ -95,7 +95,7 @@ public class AesTransformerProvider implements TransformerProvider {
 
     @Nullable @Override public SignatureChecker getSignatureChecker() { return null; }
 
-    @Nullable @Override public FileTransformer getSignFileTransformer() { return null; }
+    @Nullable @Override public FileToByteTransformer getSignFileTransformer() { return null; }
 
     @Nullable @Override public FileSignatureChecker getFileSignatureChecker() { return null; }
 

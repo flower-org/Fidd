@@ -10,7 +10,7 @@ public interface TransformerProvider {
 
     @Nullable FileTransformer getEncryptFileTransformer();
     @Nullable FileTransformer getDecryptFileTransformer();
-    @Nullable FileTransformer getSignFileTransformer();
+    @Nullable FileToByteTransformer getSignFileTransformer();
     @Nullable FileSignatureChecker getFileSignatureChecker();
 
     @Nullable CsrSigner getCsrSigner();
@@ -24,7 +24,7 @@ public interface TransformerProvider {
 
         @Nullable FileTransformer encryptFileTransformer,
         @Nullable FileTransformer decryptFileTransformer,
-        @Nullable FileTransformer signFileTransformer,
+        @Nullable FileToByteTransformer signFileTransformer,
         @Nullable FileSignatureChecker fileSignatureChecker,
 
         @Nullable CsrSigner csrSigner,
@@ -38,7 +38,7 @@ public interface TransformerProvider {
 
             @Nullable @Override public FileTransformer getEncryptFileTransformer() { return encryptFileTransformer; }
             @Nullable @Override public FileTransformer getDecryptFileTransformer() { return decryptFileTransformer; }
-            @Nullable @Override public FileTransformer getSignFileTransformer() { return signFileTransformer; }
+            @Nullable @Override public FileToByteTransformer getSignFileTransformer() { return signFileTransformer; }
             @Nullable @Override public FileSignatureChecker getFileSignatureChecker() { return fileSignatureChecker; }
 
             @Nullable @Override public CsrSigner getCsrSigner() { return csrSigner; }

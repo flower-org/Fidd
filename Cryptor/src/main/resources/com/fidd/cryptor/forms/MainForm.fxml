@@ -397,6 +397,7 @@
                                              <rowConstraints>
                                                  <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                                  <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                 <RowConstraints vgrow="SOMETIMES" />
                                              </rowConstraints>
                                              <children>
                                                  <GridPane>
@@ -448,6 +449,7 @@
                                                          <TextField fx:id="rsaSignHashFileTextField" GridPane.columnIndex="1" />
                                                      </children>
                                                  </GridPane>
+                                    <TextArea fx:id="rsaSignHashFileTextArea" prefHeight="200.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                              </children>
                                          </GridPane>
                                      </children>

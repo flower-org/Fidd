@@ -3,6 +3,8 @@ package com.fidd.cryptor.forms;
 import com.fidd.cryptor.transform.AesTransformerProvider;
 import com.fidd.cryptor.transform.CertificateVerifier;
 import com.fidd.cryptor.transform.CsrSigner;
+import com.fidd.cryptor.transform.FileSignatureChecker;
+import com.fidd.cryptor.transform.FileToByteTransformer;
 import com.fidd.cryptor.transform.FileTransformer;
 import com.fidd.cryptor.transform.RsaTransformerProvider;
 import com.fidd.cryptor.transform.SignatureChecker;
@@ -123,6 +125,8 @@ public class MainForm {
     @FXML @Nullable TabPane functionTabPane;
     @FXML @Nullable Tab cryptTextFunctionTab;
     @FXML @Nullable Tab cryptFileFunctionTab;
+
+    @FXML @Nullable TextArea rsaSignHashFileTextArea;
 
     @Nullable KeyStore pkcs11KeyStore;
     @Nullable Certificate fileCertificate;
@@ -1040,17 +1044,145 @@ public class MainForm {
     // ------------------------------------------------------
 
     public void signFile() {
-        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Sign will overwrite Sign/Hash file. Continue?");
-        if (result == JavaFxUtils.YesNo.NO) { return; }
+        try {
+            FileToByteTransformer signFileTransformer = getCurrentTransformerProvider().getSignFileTransformer();
+            if (signFileTransformer != null) {
+                String plainFileName = checkNotNull(rsaSignPlainFileTextField).textProperty().get();
+                if (StringUtils.isBlank(plainFileName)) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Plain file not selected", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+                File plainFile = new File(plainFileName);
+                if (!plainFile.exists()) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Plain file doesn't exist", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+
+                String signFileName = checkNotNull(rsaSignHashFileTextField).textProperty().get();
+                File signFile = null;
+                if (!StringUtils.isBlank(signFileName)) {
+                    signFile = new File(signFileName);
+                }
+
+                if (signFile != null) {
+                    JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Sign will overwrite Sign/Hash file. Continue?");
+                    if (result == JavaFxUtils.YesNo.NO) { return; }
+                }
+
+                byte[] signature = signFileTransformer.transform(plainFile);
+                if (signFile != null) {
+                    Files.write(signFile.toPath(), signature);
+                }
+                String signature64 = Base64.getEncoder().encodeToString(signature);
+                checkNotNull(rsaSignHashFileTextArea).textProperty().set(signature64);
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR, KEY_NOT_SUPPORTED, ButtonType.OK);
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            LOGGER.error("File signage error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
     }
 
     public void checkFileSignature() {
-        //
+        try {
+            FileSignatureChecker fileSignatureChecker = getCurrentTransformerProvider().getFileSignatureChecker();
+
+            if (fileSignatureChecker != null) {
+                String plainFileName = checkNotNull(rsaSignPlainFileTextField).textProperty().get();
+                if (StringUtils.isBlank(plainFileName)) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Plain file not selected", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+                File plainFile = new File(plainFileName);
+                if (!plainFile.exists()) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Plain file doesn't exist", ButtonType.OK);
+                    alert.showAndWait();
+                    return;
+                }
+
+                String signFileName = checkNotNull(rsaSignHashFileTextField).textProperty().get();
+                File signFile = new File(signFileName);
+                if (signFile.exists()) {
+                    if (fileSignatureChecker.checkSignature(plainFile, signFile)) {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Signature File OK", ButtonType.OK);
+                        alert.showAndWait();
+                    } else {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Signature File INVALID", ButtonType.OK);
+                        alert.showAndWait();
+                    }
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.WARNING, "Signature File not found", ButtonType.OK);
+                    alert.showAndWait();
+                }
+
+                String signature = checkNotNull(rsaSignHashFileTextArea).textProperty().get();
+                if (!StringUtils.isBlank(signature)) {
+                    byte[] signatureBytes = Base64.getDecoder().decode(signature);
+                    if (fileSignatureChecker.checkSignature(plainFile, signatureBytes)) {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Text Signature OK", ButtonType.OK);
+                        alert.showAndWait();
+                    } else {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Text Signature INVALID", ButtonType.OK);
+                        alert.showAndWait();
+                    }
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.WARNING, "Text Signature empty", ButtonType.OK);
+                    alert.showAndWait();
+                }
+            } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR, KEY_NOT_SUPPORTED, ButtonType.OK);
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            LOGGER.error("Signature check error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
     }
 
     public void sha256File() {
-        JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("SHA-256 will overwrite Sign/Hash file. Continue?");
-        if (result == JavaFxUtils.YesNo.NO) { return; }
+        try {
+            String plainFileName = checkNotNull(rsaSignPlainFileTextField).textProperty().get();
+            if (StringUtils.isBlank(plainFileName)) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Plain file not selected", ButtonType.OK);
+                alert.showAndWait();
+                return;
+            }
+            File plainFile = new File(plainFileName);
+            if (!plainFile.exists()) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Plain file doesn't exist", ButtonType.OK);
+                alert.showAndWait();
+                return;
+            }
+
+            String sha256FileName = checkNotNull(rsaSignHashFileTextField).textProperty().get();
+            File sha256File = null;
+            if (!StringUtils.isBlank(sha256FileName)) {
+                sha256File = new File(sha256FileName);
+            }
+
+            if (sha256File != null) {
+                JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("SHA-256 will overwrite Sign/Hash file. Continue?");
+                if (result == JavaFxUtils.YesNo.NO) { return; }
+            }
+
+            byte[] hash = PkiUtil.getSha256(plainFile);
+            if (sha256File != null) {
+                Files.write(sha256File.toPath(), hash);
+            }
+            String hexHash = PkiUtil.toHex(hash);
+            checkNotNull(rsaSignHashFileTextArea).textProperty().set(hexHash);
+        } catch (Exception e) {
+            LOGGER.error("File signage error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
     }
 
     public void openSignPlainFile() {
@@ -1073,17 +1205,23 @@ public class MainForm {
     public void openSignHashFile() {
         try {
             FileChooser fileChooser = new FileChooser();
-            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Detached Signature (*.bin, *.sig)", "*.bin", "*.sig"));
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Detached Signature (*.sig, *.bin)", "*.sig", "*.bin"));
             fileChooser.setTitle("Save signature to file");
 
             File signatureFile = fileChooser.showSaveDialog(mainStage);
             if (signatureFile == null) { return; }
 
             if (!signatureFile.getName().endsWith(".bin") && !signatureFile.getName().endsWith(".sig")) {
-                signatureFile = new File(signatureFile.getPath()  + ".bin");
+                signatureFile = new File(signatureFile.getPath()  + ".sig");
             }
 
             checkNotNull(rsaSignHashFileTextField).textProperty().set(signatureFile.getPath());
+
+            if (signatureFile.exists()) {
+                byte[] signature = Files.readAllBytes(signatureFile.toPath());
+                String signature64 = Base64.getEncoder().encodeToString(signature);
+                checkNotNull(rsaSignHashFileTextArea).textProperty().set(signature64);
+            }
         } catch (Exception e) {
             LOGGER.error("Signature file open error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
