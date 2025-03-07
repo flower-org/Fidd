@@ -1,0 +1,7 @@
+```
+Mar 7, 2025
+0.0.1
+Cryptor-0.0.1-amd64-all.jar
+28817373
+SHA2-256= 450d0156e850e0b6320d9d17ea777655c86b0ecaae7ba7f65ded733a053429cf
+```
