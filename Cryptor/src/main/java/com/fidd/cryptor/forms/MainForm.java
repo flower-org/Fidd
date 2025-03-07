@@ -56,6 +56,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
 import java.util.List;
 
+import static com.fidd.cryptor.transform.RsaTransformerProvider.MAX_RSA_2048_PLAINTEXT_SIZE;
+import static com.fidd.cryptor.transform.RsaTransformerProvider.MAX_RSA_2048_CIPHERTEXT_SIZE;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.fidd.cryptor.transform.RsaTransformerProvider.Mode;
 
@@ -917,6 +919,13 @@ public class MainForm {
                     alert.showAndWait();
                     return;
                 }
+                if (isRsaPureFileCrypt() && plainFile.length() > MAX_RSA_2048_PLAINTEXT_SIZE) {
+                    if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog(
+                            "Pure RSA-2048 plaintext size can't exceed " + MAX_RSA_2048_PLAINTEXT_SIZE +
+                                    "b; got " + plainFile.length() + "b. Proceed anyway?")) {
+                        return;
+                    }
+                }
 
                 String cipherFileStr = checkNotNull(rsaCryptCipherFileTextField).textProperty().get();
                 if (StringUtils.isBlank(cipherFileStr)) {
@@ -940,6 +949,10 @@ public class MainForm {
         }
     }
 
+    protected boolean isRsaPureFileCrypt() {
+        return !checkNotNull(rsaFileUseRsaAesHybridCheckBox).selectedProperty().get();
+    }
+
     public void decryptFile() {
         JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Decrypt will overwrite Plain file. Continue?");
         if (result == JavaFxUtils.YesNo.NO) { return; }
@@ -958,6 +971,13 @@ public class MainForm {
                     Alert alert = new Alert(Alert.AlertType.INFORMATION, "Cipher file doesn't exist", ButtonType.OK);
                     alert.showAndWait();
                     return;
+                }
+                if (isRsaPureFileCrypt() && cipherFile.length() > MAX_RSA_2048_CIPHERTEXT_SIZE) {
+                    if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog(
+                            "Pure RSA-2048 ciphertext size can't exceed " + MAX_RSA_2048_CIPHERTEXT_SIZE +
+                                    "b; got " + cipherFile.length() + "b. Proceed anyway?")) {
+                        return;
+                    }
                 }
 
                 String plainFileStr = checkNotNull(rsaCryptPlainFileTextField).textProperty().get();
