@@ -5,6 +5,6 @@ import javafx.scene.layout.AnchorPane;
 
 public interface TabKeyProvider extends KeyProvider {
     String tabName();
-    // Do we need this?
     AnchorPane tabContent();
+    void initPreferences();
 }

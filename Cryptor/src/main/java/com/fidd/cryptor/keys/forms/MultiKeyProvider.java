@@ -6,6 +6,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.AnchorPane;
+import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +25,10 @@ public class MultiKeyProvider extends AnchorPane implements TabKeyProvider {
 
     protected final String tabName;
     protected final Map<Tab, TabKeyProvider> providerMap;
+    protected final Collection<TabKeyProvider> childKeyProviders;
+    protected final Stage mainStage;
 
-    public MultiKeyProvider(String tabName, Collection<TabKeyProvider> childKeyProviders) {
+    public MultiKeyProvider(Stage mainStage, String tabName, Collection<TabKeyProvider> childKeyProviders) {
         providerMap = new HashMap<>();
 
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("MultiKeyProvider.fxml"));
@@ -38,31 +41,31 @@ public class MultiKeyProvider extends AnchorPane implements TabKeyProvider {
             throw new RuntimeException(exception);
         }
 
+        this.mainStage = mainStage;
         this.tabName = tabName;
+        this.childKeyProviders = childKeyProviders;
 
         childKeyProviders.forEach(prov -> providerMap.put(addTab(prov), prov));
+        checkNotNull(childProvidersTabPane).getSelectionModel().select(0);
     }
 
     public Tab addTab(TabKeyProvider tabKeyProvider) {
         String tabName = tabKeyProvider.tabName();
         AnchorPane tabContent = tabKeyProvider.tabContent();
 
-        //TODO: is this required?
-        //tabContent.setStage(checkNotNull(mainStage));
-
         final Tab tab = new Tab(tabName, tabContent);
-        //tab.setClosable(true);
-
         checkNotNull(childProvidersTabPane).getTabs().add(tab);
-//        childProvidersTabPane.getSelectionModel().select(tab);
         return tab;
     }
 
-    @Override
-    @Nullable public KeyContext geKeyContext() {
+    protected TabKeyProvider getSelectedProvider() {
         Tab selectedTab = checkNotNull(childProvidersTabPane).getSelectionModel().getSelectedItem();
-        TabKeyProvider provider = checkNotNull(providerMap.get(selectedTab));
-        return provider.geKeyContext();
+        return checkNotNull(providerMap.get(selectedTab));
+    }
+
+    @Override
+    public KeyContext geKeyContext() {
+        return getSelectedProvider().geKeyContext();
     }
 
     @Override
@@ -73,5 +76,10 @@ public class MultiKeyProvider extends AnchorPane implements TabKeyProvider {
     @Override
     public AnchorPane tabContent() {
         return this;
+    }
+
+    @Override
+    public void initPreferences() {
+        childKeyProviders.forEach(TabKeyProvider::initPreferences);
     }
 }

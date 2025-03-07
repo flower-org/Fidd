@@ -41,6 +41,36 @@ public class CertificateChooserUserPreferencesManager {
         updateUserPreference(userPreferences, AES_IV, aesIv);
     }
 
+    public static void updateUserPreferences(String rawCertificate, String rawPrivateKey) {
+        Preferences userPreferences = Preferences.userRoot();
+
+        updateUserPreference(userPreferences, RAW_CERTIFICATE, rawCertificate);
+        updateUserPreference(userPreferences, RAW_PRIVATE_KEY, rawPrivateKey);
+    }
+
+    public static void updatePkcs11UserPreferences(String pkcs11LibraryPath, String pkcs11CertificateAlias,
+                                             String pkcs11PrivateKeyAlias) {
+        Preferences userPreferences = Preferences.userRoot();
+
+        updateUserPreference(userPreferences, PKCS11_LIBRARY_PATH, pkcs11LibraryPath);
+        updateUserPreference(userPreferences, PKCS11_CERTIFICATE_ALIAS, pkcs11CertificateAlias);
+        updateUserPreference(userPreferences, PKCS11_PRIVATE_KEY_ALIAS, pkcs11PrivateKeyAlias);
+    }
+
+    public static void updateFileUserPreferences(String fileCertificate, String filePrivateKey) {
+        Preferences userPreferences = Preferences.userRoot();
+
+        updateUserPreference(userPreferences, FILE_CERTIFICATE, fileCertificate);
+        updateUserPreference(userPreferences, FILE_PRIVATE_KEY, filePrivateKey);
+    }
+
+    public static void updateAesUserPreferences(String aesKey, String aesIv, String aesIvCheckbox) {
+        Preferences userPreferences = Preferences.userRoot();
+
+        updateUserPreference(userPreferences, AES_KEY, aesKey);
+        updateUserPreference(userPreferences, AES_IV_CHECKBOX, aesIvCheckbox);
+        updateUserPreference(userPreferences, AES_IV, aesIv);
+    }
     public static void updateUserPreference(Preferences userPreferences, String key, String newValue) {
         String oldValue = userPreferences.get(key, "");
         if (!newValue.equals(oldValue)) {

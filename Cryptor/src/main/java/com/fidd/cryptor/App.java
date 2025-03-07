@@ -26,8 +26,7 @@ public class App extends Application {
             Parent rootNode = fxmlLoader.load();
 
             MainForm mainForm = fxmlLoader.getController();
-            mainForm.setMainStage(mainStage);
-            mainForm.init();
+            mainForm.init(mainStage);
 
             Scene mainScene = new Scene(rootNode, 1024, 768);
 
