@@ -14,8 +14,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-import static com.fidd.cryptor.utils.PkiUtil.AES;
-import static com.fidd.cryptor.utils.PkiUtil.AES_CBC;
+import static com.flower.crypt.PkiUtil.AES;
+import static com.flower.crypt.PkiUtil.AES_CBC;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class TestIV {

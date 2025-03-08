@@ -1,4 +1,4 @@
-package com.fidd.cryptor.utils;
+package com.flower.crypt;
 
 import com.google.common.io.Resources;
 import org.bouncycastle.asn1.x500.X500Name;

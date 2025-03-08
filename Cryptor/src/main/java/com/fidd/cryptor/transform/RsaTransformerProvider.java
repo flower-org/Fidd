@@ -1,7 +1,7 @@
 package com.fidd.cryptor.transform;
 
 import com.fidd.cryptor.utils.Cryptor;
-import com.fidd.cryptor.utils.PkiUtil;
+import com.flower.crypt.PkiUtil;
 
 import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
@@ -24,8 +24,8 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.cert.X509Certificate;
 
-import static com.fidd.cryptor.utils.PkiUtil.AES;
-import static com.fidd.cryptor.utils.PkiUtil.AES_CBC;
+import static com.flower.crypt.PkiUtil.AES;
+import static com.flower.crypt.PkiUtil.AES_CBC;
 
 public class RsaTransformerProvider implements TransformerProvider {
     private static final String ALGORITHM = AES;

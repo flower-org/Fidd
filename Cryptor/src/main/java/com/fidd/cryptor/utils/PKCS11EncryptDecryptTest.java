@@ -6,7 +6,7 @@ import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 
-import static com.fidd.cryptor.utils.PkiUtil.*;
+import static com.flower.crypt.PkiUtil.*;
 
 public class PKCS11EncryptDecryptTest {
     public static void main(String[] args) throws NoSuchAlgorithmException {

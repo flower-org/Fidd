@@ -3,7 +3,7 @@ package com.flower.crypt.keys.forms;
 import com.flower.crypt.keys.KeyContext;
 import javafx.beans.value.ObservableValue;
 import com.flower.crypt.keys.RsaKeyContext;
-import com.fidd.cryptor.utils.PkiUtil;
+import com.flower.crypt.PkiUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;

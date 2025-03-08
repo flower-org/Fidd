@@ -6,7 +6,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 import com.flower.crypt.keys.RsaKeyContext;
-import com.fidd.cryptor.utils.PkiUtil;
+import com.flower.crypt.PkiUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;

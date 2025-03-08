@@ -13,7 +13,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
 
-import static com.fidd.cryptor.utils.PkiUtil.*;
+import static com.flower.crypt.PkiUtil.*;
 
 public class Cryptor {
     private static final int AES_KEY_SIZE_BITS = 256;
