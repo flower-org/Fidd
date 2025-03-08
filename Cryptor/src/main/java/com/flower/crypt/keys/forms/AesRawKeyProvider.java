@@ -17,8 +17,8 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.prefs.Preferences;
 
-import static com.fidd.cryptor.utils.UserPreferencesManager.getUserPreference;
-import static com.fidd.cryptor.utils.UserPreferencesManager.updateUserPreference;
+import static com.flower.crypt.keys.UserPreferencesManager.getUserPreference;
+import static com.flower.crypt.keys.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class AesRawKeyProvider extends AnchorPane implements TabKeyProvider {

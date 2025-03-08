@@ -27,8 +27,8 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.prefs.Preferences;
 
-import static com.fidd.cryptor.utils.UserPreferencesManager.getUserPreference;
-import static com.fidd.cryptor.utils.UserPreferencesManager.updateUserPreference;
+import static com.flower.crypt.keys.UserPreferencesManager.getUserPreference;
+import static com.flower.crypt.keys.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {

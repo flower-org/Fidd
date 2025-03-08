@@ -28,8 +28,8 @@ import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.util.prefs.Preferences;
 
-import static com.fidd.cryptor.utils.UserPreferencesManager.getUserPreference;
-import static com.fidd.cryptor.utils.UserPreferencesManager.updateUserPreference;
+import static com.flower.crypt.keys.UserPreferencesManager.getUserPreference;
+import static com.flower.crypt.keys.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RsaFileKeyProvider extends AnchorPane implements TabKeyProvider {
