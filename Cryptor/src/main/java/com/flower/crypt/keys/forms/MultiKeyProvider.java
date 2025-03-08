@@ -1,6 +1,7 @@
 package com.flower.crypt.keys.forms;
 
 import com.flower.crypt.keys.KeyContext;
+import com.flower.crypt.keys.RsaKeyProvider;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Tab;
@@ -11,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -18,7 +20,7 @@ import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class MultiKeyProvider extends AnchorPane implements TabKeyProvider {
+public class MultiKeyProvider extends AnchorPane implements TabKeyProvider, RsaKeyProvider {
     final static Logger LOGGER = LoggerFactory.getLogger(MultiKeyProvider.class);
 
     @Nullable @FXML TabPane childProvidersTabPane;
@@ -82,4 +84,7 @@ public class MultiKeyProvider extends AnchorPane implements TabKeyProvider {
     public void initPreferences() {
         childKeyProviders.forEach(TabKeyProvider::initPreferences);
     }
+
+    @Override
+    public KeyManagerFactory getKeyManagerFactory() { return ((RsaKeyProvider)getSelectedProvider()).getKeyManagerFactory(); }
 }

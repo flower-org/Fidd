@@ -4,6 +4,7 @@ import com.flower.crypt.keys.KeyContext;
 import javafx.beans.value.ObservableValue;
 import com.flower.crypt.keys.RsaKeyContext;
 import com.flower.crypt.PkiUtil;
+import com.flower.crypt.keys.RsaKeyProvider;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;
@@ -18,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -26,13 +28,14 @@ import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Objects;
 import java.util.prefs.Preferences;
 
 import static com.flower.crypt.keys.UserPreferencesManager.getUserPreference;
 import static com.flower.crypt.keys.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class RsaFileKeyProvider extends AnchorPane implements TabKeyProvider {
+public class RsaFileKeyProvider extends AnchorPane implements TabKeyProvider, RsaKeyProvider {
     final static Logger LOGGER = LoggerFactory.getLogger(RsaFileKeyProvider.class);
 
     final static String FILE_CERTIFICATE = "flowerCertificateChooserFileCertificate";
@@ -45,6 +48,25 @@ public class RsaFileKeyProvider extends AnchorPane implements TabKeyProvider {
     @Nullable PrivateKey fileKey;
 
     protected final Stage mainStage;
+
+    //TODO: access intentionally not safe
+    @Nullable FileKeyContext currentContext = null;
+    static final class FileKeyContext {
+        final Certificate fileCertificate;
+        final PrivateKey fileKey;
+        final KeyManagerFactory keyManagerFactory;
+
+        FileKeyContext(Certificate fileCertificate, PrivateKey fileKey, KeyManagerFactory keyManagerFactory) {
+            this.fileCertificate = fileCertificate;
+            this.fileKey = fileKey;
+            this.keyManagerFactory = keyManagerFactory;
+        }
+
+        public boolean sameContext(Certificate fileCertificate, PrivateKey fileKey) {
+            return Objects.equals(fileCertificate, this.fileCertificate)
+                    && Objects.equals(fileKey, this.fileKey);
+        }
+    }
 
     public RsaFileKeyProvider(Stage mainStage) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("RsaFileKeyProvider.fxml"));
@@ -178,6 +200,27 @@ public class RsaFileKeyProvider extends AnchorPane implements TabKeyProvider {
     @Override
     public AnchorPane tabContent() {
         return this;
+    }
+
+    @Override
+    public KeyManagerFactory getKeyManagerFactory() {
+        try {
+            if (fileCertificate == null) {
+                throw new RuntimeException("Certificate not loaded");
+            }
+            if (fileKey == null) {
+                throw new RuntimeException("Key not loaded");
+            }
+            if (currentContext != null && currentContext.sameContext(fileCertificate, fileKey)) {
+                return currentContext.keyManagerFactory;
+            } else {
+                KeyManagerFactory keyManagerFactory = PkiUtil.getKeyManagerFromCertAndPrivateKey((X509Certificate)fileCertificate, fileKey);
+                currentContext = new FileKeyContext(fileCertificate, fileKey, keyManagerFactory);
+                return keyManagerFactory;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

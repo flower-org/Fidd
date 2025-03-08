@@ -4,6 +4,7 @@ import com.flower.crypt.keys.KeyContext;
 import javafx.beans.value.ObservableValue;
 import com.flower.crypt.keys.RsaKeyContext;
 import com.flower.crypt.PkiUtil;
+import com.flower.crypt.keys.RsaKeyProvider;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;
@@ -17,6 +18,7 @@ import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.net.ssl.KeyManagerFactory;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -24,19 +26,39 @@ import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.Objects;
 import java.util.prefs.Preferences;
 
 import static com.flower.crypt.keys.UserPreferencesManager.getUserPreference;
 import static com.flower.crypt.keys.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class RsaRawKeyProvider extends AnchorPane implements TabKeyProvider {
+public class RsaRawKeyProvider extends AnchorPane implements TabKeyProvider, RsaKeyProvider {
     final static Logger LOGGER = LoggerFactory.getLogger(RsaRawKeyProvider.class);
     final static String RAW_CERTIFICATE = "flowerCertificateChooserRawCertificate";
     final static String RAW_PRIVATE_KEY = "flowerCertificateChooserRawPrivateKey";
 
     @FXML @Nullable TextArea rawCertificateTextArea;
     @FXML @Nullable TextArea rawPrivateKeyTextArea;
+
+    //TODO: access intentionally not safe
+    @Nullable RawKeyContext currentContext = null;
+    static final class RawKeyContext {
+        final String certificateStr;
+        final String keyStr;
+        final KeyManagerFactory keyManagerFactory;
+
+        RawKeyContext(String certificateStr, String keyStr, KeyManagerFactory keyManagerFactory) {
+            this.certificateStr = certificateStr;
+            this.keyStr = keyStr;
+            this.keyManagerFactory = keyManagerFactory;
+        }
+
+        public boolean sameContext(String certificateStr, String keyStr) {
+            return Objects.equals(certificateStr, this.certificateStr)
+                    && Objects.equals(keyStr, this.keyStr);
+        }
+    }
 
     public RsaRawKeyProvider() {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("RsaRawKeyProvider.fxml"));
@@ -87,6 +109,26 @@ public class RsaRawKeyProvider extends AnchorPane implements TabKeyProvider {
     }
 
     @Override
+    public KeyManagerFactory getKeyManagerFactory() {
+        try {
+            String certificateStr = checkNotNull(rawCertificateTextArea).textProperty().get();
+            String keyStr = checkNotNull(rawPrivateKeyTextArea).textProperty().get();
+
+            if (currentContext != null && currentContext.sameContext(certificateStr, keyStr)) {
+                return currentContext.keyManagerFactory;
+            } else {
+                X509Certificate certificate = PkiUtil.getCertificateFromString(certificateStr);
+                PrivateKey key = PkiUtil.getPrivateKeyFromString(keyStr);
+                KeyManagerFactory keyManagerFactory = PkiUtil.getKeyManagerFromCertAndPrivateKey(certificate, key);
+                currentContext = new RawKeyContext(certificateStr, keyStr, keyManagerFactory);
+                return keyManagerFactory;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public KeyContext getKeyContext() {
         try {
             String certificateStr = checkNotNull(rawCertificateTextArea).textProperty().get();
@@ -110,6 +152,7 @@ public class RsaRawKeyProvider extends AnchorPane implements TabKeyProvider {
         checkNotNull(rawCertificateTextArea).textProperty().set(rawCertificate());
         checkNotNull(rawPrivateKeyTextArea).textProperty().set(rawPrivateKey());
     }
+
     public void setCertificateChooserPreferencesHandlers() {
         checkNotNull(rawCertificateTextArea).textProperty().addListener(this::certificateChooserTextChanged);;
         checkNotNull(rawPrivateKeyTextArea).textProperty().addListener(this::certificateChooserTextChanged);

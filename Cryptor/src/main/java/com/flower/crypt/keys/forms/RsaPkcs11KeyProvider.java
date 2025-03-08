@@ -6,6 +6,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 import com.flower.crypt.keys.RsaKeyContext;
+import com.flower.crypt.keys.RsaKeyProvider;
 import com.flower.crypt.PkiUtil;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -19,19 +20,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
 import java.io.IOException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.Objects;
 import java.util.prefs.Preferences;
 
 import static com.flower.crypt.keys.UserPreferencesManager.getUserPreference;
 import static com.flower.crypt.keys.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
+public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider, RsaKeyProvider {
     final static Logger LOGGER = LoggerFactory.getLogger(RsaPkcs11KeyProvider.class);
 
     final static String PKCS11_LIBRARY_PATH = "flowerCertificateChooserPkcs11LibraryPath";
@@ -45,6 +51,22 @@ public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
 
     @Nullable KeyStore pkcs11KeyStore;
     protected final Stage mainStage;
+
+    //TODO: access intentionally not safe
+    @Nullable Pkcs11KeyContext currentContext = null;
+    static final class Pkcs11KeyContext {
+        final KeyStore pkcs11KeyStore;
+        final KeyManagerFactory keyManagerFactory;
+
+        Pkcs11KeyContext(KeyStore pkcs11KeyStore, KeyManagerFactory keyManagerFactory) {
+            this.pkcs11KeyStore = pkcs11KeyStore;
+            this.keyManagerFactory = keyManagerFactory;
+        }
+
+        public boolean sameContext(KeyStore pkcs11KeyStore) {
+            return Objects.equals(pkcs11KeyStore, this.pkcs11KeyStore);
+        }
+    }
 
     public RsaPkcs11KeyProvider(Stage mainStage) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("RsaPkcs11KeyProvider.fxml"));
@@ -62,12 +84,12 @@ public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
 
     public void testPkcs11Keys() {
         try {
-            String certAlias = checkNotNull(certificatesComboBox).getValue();
-            String keyAlias = checkNotNull(privateKeysComboBox).getValue();
-
             if (pkcs11KeyStore == null) {
                 throw new RuntimeException("PKCS#11 store not loaded");
             }
+            String certAlias = checkNotNull(certificatesComboBox).getValue();
+            String keyAlias = checkNotNull(privateKeysComboBox).getValue();
+
             Certificate certificate = PkiUtil.getCertificateFromKeyStore(checkNotNull(pkcs11KeyStore), certAlias);
             PrivateKey key = (PrivateKey)PkiUtil.getKeyFromKeyStore(pkcs11KeyStore, keyAlias);
 
@@ -90,13 +112,33 @@ public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
     }
 
     @Override
-    public KeyContext getKeyContext() {
-        String certAlias = checkNotNull(certificatesComboBox).getValue();
-        String keyAlias = checkNotNull(privateKeysComboBox).getValue();
-
+    public KeyManagerFactory getKeyManagerFactory() {
         if (pkcs11KeyStore == null) {
             throw new RuntimeException("PKCS#11 store not loaded");
         }
+
+        if (currentContext != null && currentContext.sameContext(pkcs11KeyStore)) {
+            return currentContext.keyManagerFactory;
+        } else {
+            try {
+                KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                keyManagerFactory.init(pkcs11KeyStore, null);
+                currentContext = new Pkcs11KeyContext(pkcs11KeyStore, keyManagerFactory);
+                return keyManagerFactory;
+            } catch (NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @Override
+    public KeyContext getKeyContext() {
+        if (pkcs11KeyStore == null) {
+            throw new RuntimeException("PKCS#11 store not loaded");
+        }
+        String certAlias = checkNotNull(certificatesComboBox).getValue();
+        String keyAlias = checkNotNull(privateKeysComboBox).getValue();
+
         Certificate certificate = PkiUtil.getCertificateFromKeyStore(checkNotNull(pkcs11KeyStore), certAlias);
         PrivateKey key = (PrivateKey)PkiUtil.getKeyFromKeyStore(pkcs11KeyStore, keyAlias);
         return RsaKeyContext.of(certificate.getPublicKey(), key, (X509Certificate)certificate);
