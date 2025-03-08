@@ -16,15 +16,18 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
-public class AesTransformerProvider implements TransformerProvider {
-    private static final String ALGORITHM = "AES";
-    private static final String TRANSFORMATION = "AES/CBC/PKCS5Padding";
-    private final SecretKeySpec secretKey;
-    private final IvParameterSpec iv;
+import static com.fidd.cryptor.utils.PkiUtil.AES;
+import static com.fidd.cryptor.utils.PkiUtil.AES_CBC;
 
-    public AesTransformerProvider(byte[] key, byte[] iv) {
+public class AesTransformerProvider implements TransformerProvider {
+    private static final String ALGORITHM = AES;
+    private static final String TRANSFORMATION = AES_CBC;
+    private final SecretKeySpec secretKey;
+    @Nullable private final IvParameterSpec iv;
+
+    public AesTransformerProvider(byte[] key, @Nullable byte[] iv) {
         this.secretKey = new SecretKeySpec(key, ALGORITHM);
-        this.iv = new IvParameterSpec(iv);
+        this.iv = iv == null ? null : new IvParameterSpec(iv);
     }
 
     @Nullable
@@ -33,7 +36,11 @@ public class AesTransformerProvider implements TransformerProvider {
         return data -> {
             try {
                 Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-                cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
+                if (iv == null) {
+                    cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+                } else {
+                    cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
+                }
                 return cipher.doFinal(data);
             } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
                      InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException e) {
@@ -48,7 +55,11 @@ public class AesTransformerProvider implements TransformerProvider {
         return encryptedData -> {
             try {
                 Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-                cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
+                if (iv == null) {
+                    cipher.init(Cipher.DECRYPT_MODE, secretKey);
+                } else {
+                    cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
+                }
                 return cipher.doFinal(encryptedData);
             } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
                      InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException e) {

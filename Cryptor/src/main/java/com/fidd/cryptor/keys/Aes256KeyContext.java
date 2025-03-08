@@ -1,10 +1,12 @@
 package com.fidd.cryptor.keys;
 
+import javax.annotation.Nullable;
+
 public interface Aes256KeyContext extends KeyContext {
     byte[] aes256Key();
-    byte[] aes256Iv();
+    @Nullable byte[] aes256Iv();
 
-    static Aes256KeyContext of(byte[] aes256Key, byte[] aes256Iv) {
+    static Aes256KeyContext of(byte[] aes256Key, @Nullable byte[] aes256Iv) {
         return new Aes256KeyContext() {
             @Override
             public byte[] aes256Key() {
@@ -12,7 +14,7 @@ public interface Aes256KeyContext extends KeyContext {
             }
 
             @Override
-            public byte[] aes256Iv() {
+            @Nullable public byte[] aes256Iv() {
                 return aes256Iv;
             }
         };

@@ -1,3 +1,15 @@
-Decompose MainForm in Cryptor into individual components.
-
-Review RSATransformer, AESTransformer - reduce code duplication, extract and move common logic to PkiUtil.
+- Cryptor: Decompose MainForm into individual components.
+  - +Key chooser decomposed
+  - For now, I intend to keep the lower half in a single lump though, it doesn't really seem reusable to me.
+- Cryptor: Review RSATransformer, AESTransformer - reduce code duplication, extract and move common logic to PkiUtil.
+  - +Somewhat refactored
+  - Review further to see if anything reusable can go to PkiUtil
+- Cryptor: Add support for more ciphers
+  - e.g
+    - asymmetric: ECDSA, Ed25519 (EdDSA) 
+    - symmetric: Blowfish, Twofish, ChaCha20, Magma/GOST (ГОСТ 28147-89, RFC 5830/8891), Kuznyechik (ГОСТ Р 34.12-2015, RFC 7801)
+  - low prio, needs a good reason - for now RSA / AES-256 cover all bases for me
+- Fidd: AES / RSA-AES Decryptor Input Stream
+  - Provides great value for reusability, and is a cornerstone component of Fidd infra
+  - Some POC, like an HTTP file/media server for encrypted files
+  - Not a dependency of Cryptor

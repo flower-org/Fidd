@@ -24,9 +24,12 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.cert.X509Certificate;
 
+import static com.fidd.cryptor.utils.PkiUtil.AES;
+import static com.fidd.cryptor.utils.PkiUtil.AES_CBC;
+
 public class RsaTransformerProvider implements TransformerProvider {
-    private static final String ALGORITHM = "AES";
-    private static final String TRANSFORMATION = "AES/CBC/PKCS5Padding";
+    private static final String ALGORITHM = AES;
+    private static final String TRANSFORMATION = AES_CBC;
     public static final int MAX_RSA_2048_PLAINTEXT_SIZE = 245;
     public static final int MAX_RSA_2048_CIPHERTEXT_SIZE = 256;
 

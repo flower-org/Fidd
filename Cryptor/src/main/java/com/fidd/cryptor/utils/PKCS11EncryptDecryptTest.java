@@ -6,8 +6,7 @@ import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 
-import static com.fidd.cryptor.utils.PkiUtil.loadPKCS11KeyStore;
-import static com.fidd.cryptor.utils.PkiUtil.loadPKCS11Provider;
+import static com.fidd.cryptor.utils.PkiUtil.*;
 
 public class PKCS11EncryptDecryptTest {
     public static void main(String[] args) throws NoSuchAlgorithmException {
@@ -17,7 +16,7 @@ public class PKCS11EncryptDecryptTest {
         Provider pkcs11Provider = loadPKCS11Provider(libraryPath);
         KeyStore pkcs11Store = loadPKCS11KeyStore(pkcs11Provider, pin);
 
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA", pkcs11Provider);
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(RSA, pkcs11Provider);
         keyPairGen.initialize(2048);
 
         KeyPair keyPair = keyPairGen.generateKeyPair();

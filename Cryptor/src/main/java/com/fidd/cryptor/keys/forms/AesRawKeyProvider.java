@@ -53,12 +53,10 @@ public class AesRawKeyProvider extends AnchorPane implements TabKeyProvider {
         String aes256Base64Key = checkNotNull(aes256KeyTextField).textProperty().get();
         byte[] aes256Key = Base64.getDecoder().decode(aes256Base64Key);
 
-        byte[] aes256Iv;
+        byte[] aes256Iv = null;
         if (checkNotNull(aes256IvCheckBox).selectedProperty().get()) {
             String aes256Base64Iv = checkNotNull(aes256IvTextField).textProperty().get();
             aes256Iv = Base64.getDecoder().decode(aes256Base64Iv);
-        } else {
-            aes256Iv = new byte[16];
         }
         return Aes256KeyContext.of(aes256Key, aes256Iv);
     }

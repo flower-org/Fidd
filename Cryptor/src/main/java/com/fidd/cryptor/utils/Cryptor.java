@@ -13,6 +13,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
 
+import static com.fidd.cryptor.utils.PkiUtil.*;
+
 public class Cryptor {
     private static final int AES_KEY_SIZE_BITS = 256;
     private static final int AES_KEY_SIZE_BYTES = AES_KEY_SIZE_BITS / 8;
@@ -24,7 +26,7 @@ public class Cryptor {
     }
 
     public static byte[] encryptRSAPublic(byte[] data, PublicKey publicKey) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA");
+        Cipher cipher = Cipher.getInstance(RSA);
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
         return cipher.doFinal(data);
     }
@@ -34,19 +36,19 @@ public class Cryptor {
     }
 
     public static byte[] decryptRSAPublic(byte[] encryptedData, PublicKey publicKey) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        Cipher cipher = Cipher.getInstance(RSA);
         cipher.init(Cipher.DECRYPT_MODE, publicKey);
         return cipher.doFinal(encryptedData);
     }
 
     public static byte[] encryptRSAPrivate(byte[] data, PrivateKey privateKey) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA");
+        Cipher cipher = Cipher.getInstance(RSA);
         cipher.init(Cipher.ENCRYPT_MODE, privateKey);
         return cipher.doFinal(data);
     }
 
     public static byte[] decryptRSAPrivate(byte[] encryptedData, PrivateKey privateKey) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        Cipher cipher = Cipher.getInstance(RSA);
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         return cipher.doFinal(encryptedData);
     }
@@ -55,7 +57,7 @@ public class Cryptor {
         assert(iv.length == IV_LENGTH_BYTES);
         assert(key.length == AES_KEY_SIZE_BYTES);
 
-        SecretKeySpec secretKeySpec = new SecretKeySpec(key, "AES");
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key, AES);
         return encryptAES(data, secretKeySpec, iv);
     }
 
@@ -63,14 +65,14 @@ public class Cryptor {
         assert(iv.length == IV_LENGTH_BYTES);
         assert(key.length == AES_KEY_SIZE_BYTES);
 
-        SecretKeySpec secretKeySpec = new SecretKeySpec(key, "AES");
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key, AES);
         return decryptAES(encryptedData, secretKeySpec, iv);
     }
 
     public static byte[] encryptAES(byte[] data, SecretKey key, byte[] iv) throws Exception {
         assert(iv.length == IV_LENGTH_BYTES);
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        Cipher cipher = Cipher.getInstance(AES_CBC);
         IvParameterSpec ivParams = new IvParameterSpec(iv);
         cipher.init(Cipher.ENCRYPT_MODE, key, ivParams);
 
@@ -80,7 +82,7 @@ public class Cryptor {
     public static byte[] decryptAES(byte[] encryptedData, SecretKey key, byte[] iv) throws Exception {
         assert(iv.length == IV_LENGTH_BYTES);
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        Cipher cipher = Cipher.getInstance(AES_CBC);
         IvParameterSpec ivParams = new IvParameterSpec(iv);
         cipher.init(Cipher.DECRYPT_MODE, key, ivParams);
 
@@ -102,13 +104,13 @@ public class Cryptor {
     }
 
     public static SecretKey generateAESKey() throws Exception {
-        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+        KeyGenerator keyGenerator = KeyGenerator.getInstance(AES);
         keyGenerator.init(AES_KEY_SIZE_BITS);
         return keyGenerator.generateKey();
     }
 
     public static KeyPair generateRSAKeyPair() throws NoSuchAlgorithmException {
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA");
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(RSA);
         keyPairGen.initialize(RSA_KEY_SIZE_BITS);
         return keyPairGen.generateKeyPair();
     }

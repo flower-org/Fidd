@@ -15,6 +15,7 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 
+import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -82,7 +83,9 @@ import java.util.List;
 public class PkiUtil {
     private static final int FILE_ENCRYPT_CHUNK_SIZE = 4096;
     private static final int FILE_SIGNATURE_CHUNK_SIZE = 4096;
-    private static final String AES_TRANSFORMATION = "AES/CBC/PKCS5Padding";
+    public static final String AES = "AES";
+    public static final String AES_CBC = "AES/CBC/PKCS5Padding";
+    public static final String RSA = "RSA";
 
     public static TrustManagerFactory getSystemTrustManager() {
         try {
@@ -134,7 +137,7 @@ public class PkiUtil {
     }
 
     public static PrivateKey getPrivateKeyFromStream(InputStream keyStream) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        KeyFactory keyFactory = KeyFactory.getInstance(RSA);
         PemReader pemReader = new PemReader(new InputStreamReader(keyStream));
         PemObject pemObject = pemReader.readPemObject();
         byte[] content = pemObject.getContent();
@@ -426,7 +429,7 @@ public class PkiUtil {
     }
 
     public static KeyPair generateRsa2048KeyPair() throws NoSuchAlgorithmException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA);
         keyPairGenerator.initialize(2048);
         return keyPairGenerator.generateKeyPair();
     }
@@ -484,28 +487,28 @@ public class PkiUtil {
 
     public static byte[] encrypt(byte[] data, PublicKey publicKey)
             throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
-        Cipher cipher = Cipher.getInstance("RSA");
+        Cipher cipher = Cipher.getInstance(RSA);
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
         return cipher.doFinal(data);
     }
 
     public static byte[] decrypt(byte[] encryptedData, PrivateKey privateKey)
             throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
-        Cipher cipher = Cipher.getInstance("RSA");
+        Cipher cipher = Cipher.getInstance(RSA);
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         return cipher.doFinal(encryptedData);
     }
 
     public static byte[] encrypt(byte[] data, PrivateKey privateKey)
             throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
-        Cipher cipher = Cipher.getInstance("RSA");
+        Cipher cipher = Cipher.getInstance(RSA);
         cipher.init(Cipher.ENCRYPT_MODE, privateKey);
         return cipher.doFinal(data);
     }
 
     public static byte[] decrypt(byte[] encryptedData, PublicKey publicKey)
             throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
-        Cipher cipher = Cipher.getInstance("RSA");
+        Cipher cipher = Cipher.getInstance(RSA);
         cipher.init(Cipher.DECRYPT_MODE, publicKey);
         return cipher.doFinal(encryptedData);
     }
@@ -617,7 +620,7 @@ public class PkiUtil {
 
             BigInteger serialNumber = new BigInteger(64, new SecureRandom());
 
-            PublicKey subjectPublicKey = KeyFactory.getInstance("RSA")
+            PublicKey subjectPublicKey = KeyFactory.getInstance(RSA)
                     .generatePublic(new X509EncodedKeySpec(csr.getSubjectPublicKeyInfo().getEncoded()));
 
             X509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(
@@ -651,11 +654,15 @@ public class PkiUtil {
         return (PKCS10CertificationRequest)pemParser.readObject();
     }
 
-    public static void encryptFile(SecretKeySpec secretKey, IvParameterSpec iv, FileInputStream fis,
+    public static void encryptFile(SecretKeySpec secretKey, @Nullable IvParameterSpec iv, FileInputStream fis,
                                    FileOutputStream fos, int length) throws NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidAlgorithmParameterException, InvalidKeyException, IOException, IllegalBlockSizeException, BadPaddingException {
-        Cipher cipher = Cipher.getInstance(AES_TRANSFORMATION);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
+        Cipher cipher = Cipher.getInstance(AES_CBC);
+        if (iv == null) {
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+        } else {
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
+        }
 
         byte[] inputBytes = new byte[FILE_ENCRYPT_CHUNK_SIZE];
         int bytesRead;
@@ -681,11 +688,15 @@ public class PkiUtil {
         }
     }
 
-    public static void decryptFile(SecretKeySpec secretKey, IvParameterSpec iv, FileInputStream fis,
+    public static void decryptFile(SecretKeySpec secretKey, @Nullable IvParameterSpec iv, FileInputStream fis,
                                    FileOutputStream fos, int length) throws NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidAlgorithmParameterException, InvalidKeyException, IOException, IllegalBlockSizeException, BadPaddingException {
-        Cipher cipher = Cipher.getInstance(AES_TRANSFORMATION);
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
+        Cipher cipher = Cipher.getInstance(AES_CBC);
+        if (iv == null) {
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+        } else {
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
+        }
 
         byte[] inputBytes = new byte[FILE_ENCRYPT_CHUNK_SIZE]; // Buffer size of 4KB
         int bytesRead;
