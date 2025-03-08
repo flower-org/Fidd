@@ -181,7 +181,7 @@ public class RsaFileKeyProvider extends AnchorPane implements TabKeyProvider {
     }
 
     @Override
-    public KeyContext geKeyContext() {
+    public KeyContext getKeyContext() {
         try {
             if (fileCertificate == null) {
                 throw new RuntimeException("Certificate not loaded");

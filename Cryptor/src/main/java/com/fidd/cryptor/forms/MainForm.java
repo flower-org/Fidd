@@ -206,7 +206,7 @@ public class MainForm {
     public void quit() { checkNotNull(mainStage).close(); }
 
     protected TransformerProvider getCurrentTransformerProvider() {
-        KeyContext keyContext = checkNotNull(keyProvider).geKeyContext();
+        KeyContext keyContext = checkNotNull(keyProvider).getKeyContext();
         return getCurrentTransformerProvider(keyContext);
     }
 

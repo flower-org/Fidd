@@ -64,8 +64,8 @@ public class MultiKeyProvider extends AnchorPane implements TabKeyProvider {
     }
 
     @Override
-    public KeyContext geKeyContext() {
-        return getSelectedProvider().geKeyContext();
+    public KeyContext getKeyContext() {
+        return getSelectedProvider().getKeyContext();
     }
 
     @Override

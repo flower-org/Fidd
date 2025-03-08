@@ -87,7 +87,7 @@ public class RsaRawKeyProvider extends AnchorPane implements TabKeyProvider {
     }
 
     @Override
-    public KeyContext geKeyContext() {
+    public KeyContext getKeyContext() {
         try {
             String certificateStr = checkNotNull(rawCertificateTextArea).textProperty().get();
             String keyStr = checkNotNull(rawPrivateKeyTextArea).textProperty().get();

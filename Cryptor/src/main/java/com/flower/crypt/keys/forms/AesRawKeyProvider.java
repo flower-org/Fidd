@@ -55,7 +55,7 @@ public class AesRawKeyProvider extends AnchorPane implements TabKeyProvider {
     }
 
     @Override
-    public KeyContext geKeyContext() {
+    public KeyContext getKeyContext() {
         String aes256Base64Key = checkNotNull(aes256KeyTextField).textProperty().get();
         byte[] aes256Key = Base64.getDecoder().decode(aes256Base64Key);
 

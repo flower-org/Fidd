@@ -90,7 +90,7 @@ public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
     }
 
     @Override
-    public KeyContext geKeyContext() {
+    public KeyContext getKeyContext() {
         String certAlias = checkNotNull(certificatesComboBox).getValue();
         String keyAlias = checkNotNull(privateKeysComboBox).getValue();
 
