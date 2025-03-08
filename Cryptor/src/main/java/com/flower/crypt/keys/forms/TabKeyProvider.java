@@ -1,6 +1,6 @@
-package com.fidd.cryptor.keys.forms;
+package com.flower.crypt.keys.forms;
 
-import com.fidd.cryptor.keys.KeyProvider;
+import com.flower.crypt.keys.KeyProvider;
 import javafx.scene.layout.AnchorPane;
 
 public interface TabKeyProvider extends KeyProvider {

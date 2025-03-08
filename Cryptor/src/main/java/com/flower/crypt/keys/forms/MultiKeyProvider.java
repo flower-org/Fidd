@@ -1,6 +1,6 @@
-package com.fidd.cryptor.keys.forms;
+package com.flower.crypt.keys.forms;
 
-import com.fidd.cryptor.keys.KeyContext;
+import com.flower.crypt.keys.KeyContext;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Tab;

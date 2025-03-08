@@ -23,8 +23,8 @@ public class TestIV {
     private static final int IV_LENGTH_BYTES = 16;
 
     @Test
-    public void testThatAesWithoutIvIsNotAesWithZeroIv() throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException,
-            InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    public void testThatAesWithoutIvIsNotAesWithZeroIv() throws NoSuchPaddingException, NoSuchAlgorithmException,
+            InvalidAlgorithmParameterException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         byte[] key = Cryptor.generateAESKeyRaw();
         byte[] ivB = new byte[IV_LENGTH_BYTES];
         byte[] data = Cryptor.generateAESKeyRaw();
