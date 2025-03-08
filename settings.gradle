@@ -1,2 +1,4 @@
 rootProject.name = 'Fidd'
+include 'CryptCore'
 include 'Cryptor'
+include 'JavaFxUtils'

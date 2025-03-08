@@ -1,6 +1,6 @@
 package com.fidd.cryptor.transform;
 
-import com.fidd.cryptor.utils.Cryptor;
+import com.flower.crypt.Cryptor;
 import com.flower.crypt.PkiUtil;
 
 import javax.annotation.Nullable;

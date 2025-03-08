@@ -1,6 +1,6 @@
 package com.fidd.cryptor;
 
-import com.fidd.cryptor.utils.Cryptor;
+import com.flower.crypt.Cryptor;
 import org.junit.jupiter.api.Test;
 
 import javax.crypto.BadPaddingException;

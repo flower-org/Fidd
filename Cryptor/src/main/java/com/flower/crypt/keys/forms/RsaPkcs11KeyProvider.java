@@ -1,7 +1,7 @@
 package com.flower.crypt.keys.forms;
 
 import com.flower.crypt.keys.KeyContext;
-import com.fidd.cryptor.utils.ModalWindow;
+import com.flower.fxutils.ModalWindow;
 import javafx.beans.value.ObservableValue;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
