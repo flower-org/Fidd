@@ -2,6 +2,7 @@
   - +Key chooser decomposed
   - For now, I intend to keep the lower half in a single lump though, it doesn't really seem reusable to me.
 - Cryptor: Unit test coverage
+- Cryptor: Add a nice README.md with screenshots
 - Cryptor: Decompose common deps into reusable GitHub repos
 - Cryptor: Review RSATransformer, AESTransformer - reduce code duplication, extract and move common logic to PkiUtil.
   - +Somewhat refactored
