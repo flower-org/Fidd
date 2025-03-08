@@ -113,7 +113,7 @@ public class MainForm {
     }
 
     public void showAboutDialog() {
-        Alert alert = new Alert(Alert.AlertType.NONE, "Cryptor v 0.0.2", ButtonType.OK);
+        Alert alert = new Alert(Alert.AlertType.NONE, "Cryptor v 0.0.3", ButtonType.OK);
         alert.showAndWait();
     }
 
