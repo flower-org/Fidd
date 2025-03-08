@@ -134,7 +134,7 @@ public class MainForm {
     }
 
     private static TabKeyProvider buildMainKeyProvider(Stage mainStage) {
-        RsaPkcs11KeyProvider rsaPkcs11KeyProvider = new RsaPkcs11KeyProvider();
+        RsaPkcs11KeyProvider rsaPkcs11KeyProvider = new RsaPkcs11KeyProvider(mainStage);
         RsaFileKeyProvider rsaFileKeyProvider = new RsaFileKeyProvider(mainStage);
         RsaRawKeyProvider rsaRawKeyProvider = new RsaRawKeyProvider();
         MultiKeyProvider rsaTabPane = new MultiKeyProvider(mainStage, "RSA-2048",

@@ -1,7 +1,9 @@
 package com.fidd.cryptor.keys.forms;
 
 import com.fidd.cryptor.keys.KeyContext;
+import com.fidd.cryptor.utils.ModalWindow;
 import javafx.beans.value.ObservableValue;
+import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 import com.fidd.cryptor.keys.RsaKeyContext;
 import com.fidd.cryptor.utils.PkiUtil;
@@ -42,8 +44,9 @@ public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
     @FXML @Nullable ComboBox<String> privateKeysComboBox;
 
     @Nullable KeyStore pkcs11KeyStore;
+    protected final Stage mainStage;
 
-    public RsaPkcs11KeyProvider() {
+    public RsaPkcs11KeyProvider(Stage mainStage) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("RsaPkcs11KeyProvider.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
@@ -53,6 +56,8 @@ public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
         } catch (IOException exception) {
             throw new RuntimeException(exception);
         }
+
+        this.mainStage = mainStage;
     }
 
     public void testPkcs11Keys() {
@@ -86,8 +91,8 @@ public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
 
     @Override
     public KeyContext geKeyContext() {
-        String certAlias = checkNotNull(certificatesComboBox).getSelectionModel().getSelectedItem();
-        String keyAlias = checkNotNull(privateKeysComboBox).getSelectionModel().getSelectedItem();
+        String certAlias = checkNotNull(certificatesComboBox).getValue();
+        String keyAlias = checkNotNull(privateKeysComboBox).getValue();
 
         if (pkcs11KeyStore == null) {
             throw new RuntimeException("PKCS#11 store not loaded");
@@ -185,4 +190,50 @@ public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
     public static String pkcs11LibraryPath() { return getUserPreference(PKCS11_LIBRARY_PATH); }
     public static String pkcs11CertificateAlias() { return getUserPreference(PKCS11_CERTIFICATE_ALIAS); }
     public static String pkcs11PrivateKeyAlias() { return getUserPreference(PKCS11_PRIVATE_KEY_ALIAS); }
+
+    /** Show Text dialog */
+    protected void showTextDialog(String title, String text) {
+        try {
+            ShowTextDialog dialog = new ShowTextDialog(text);
+            Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainStage),
+                    stage -> { dialog.setStage(stage); return dialog; },
+                    title);
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error showing text dialog: " + e, ButtonType.OK);
+            LOGGER.error("Error showing text dialog: ", e);
+            alert.showAndWait();
+        }
+    }
+
+    public void showCertificate() {
+        try {
+            if (pkcs11KeyStore == null) {
+                throw new RuntimeException("PKCS#11 store not loaded");
+            }
+            String certAlias = checkNotNull(certificatesComboBox).getValue();
+            Certificate certificate = PkiUtil.getCertificateFromKeyStore(checkNotNull(pkcs11KeyStore), certAlias);
+            String certificateStr = PkiUtil.getCertificateAsPem(certificate);
+            showTextDialog("Certificate: " + certAlias, certificateStr);
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error showing certificate: " + e, ButtonType.OK);
+            LOGGER.error("Error showing certificate: ", e);
+            alert.showAndWait();
+        }
+    }
+
+    public void showKey() {
+        try {
+            if (pkcs11KeyStore == null) {
+                throw new RuntimeException("PKCS#11 store not loaded");
+            }
+            String keyAlias = checkNotNull(privateKeysComboBox).getValue();
+            PrivateKey key = (PrivateKey)PkiUtil.getKeyFromKeyStore(pkcs11KeyStore, keyAlias);
+            String keyStr = PkiUtil.getKeyAsPem(key);
+            showTextDialog("Key: " + keyAlias, keyStr);
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error showing key: " + e, ButtonType.OK);
+            LOGGER.error("Error showing key: ", e);
+            alert.showAndWait();
+        }
+    }
 }
