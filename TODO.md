@@ -1,6 +1,8 @@
 - Cryptor: Decompose MainForm into individual components.
   - +Key chooser decomposed
   - For now, I intend to keep the lower half in a single lump though, it doesn't really seem reusable to me.
+- Cryptor: Unit test coverage
+- Cryptor: Decompose common deps into reusable GitHub repos
 - Cryptor: Review RSATransformer, AESTransformer - reduce code duplication, extract and move common logic to PkiUtil.
   - +Somewhat refactored
   - Review further to see if anything reusable can go to PkiUtil
