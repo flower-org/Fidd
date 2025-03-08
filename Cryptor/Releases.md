@@ -1,4 +1,11 @@
 ```
+Mar 8, 2025
+Cryptor-0.0.3-amd64-all.jar
+34103258
+SHA2-256= cc255a6ea4de3499741faeb0b4b21cc6d0618ac9e4ce47573d930ed461426ec6
+```
+
+```
 Mar 7, 2025
 0.0.2
 Cryptor-0.0.2-amd64-all.jar
