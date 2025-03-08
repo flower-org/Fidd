@@ -2,7 +2,6 @@ package com.fidd.cryptor.keys.forms;
 
 import com.fidd.cryptor.keys.Aes256KeyContext;
 import com.fidd.cryptor.keys.KeyContext;
-import com.fidd.cryptor.utils.CertificateChooserUserPreferencesManager;
 import javafx.beans.value.ObservableValue;
 import org.apache.commons.lang3.StringUtils;
 import javafx.fxml.FXML;
@@ -16,11 +15,18 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.prefs.Preferences;
 
+import static com.fidd.cryptor.utils.UserPreferencesManager.getUserPreference;
+import static com.fidd.cryptor.utils.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class AesRawKeyProvider extends AnchorPane implements TabKeyProvider {
     final static Logger LOGGER = LoggerFactory.getLogger(AesRawKeyProvider.class);
+
+    final static String AES_KEY = "flowerCertificateChooserAesKey";
+    final static String AES_IV_CHECKBOX = "flowerCertificateChooserAesIvCheckbox";
+    final static String AES_IV = "flowerCertificateChooserAesIv";
 
     @FXML @Nullable TextField aes256KeyTextField;
     @FXML @Nullable CheckBox aes256IvCheckBox;
@@ -68,11 +74,11 @@ public class AesRawKeyProvider extends AnchorPane implements TabKeyProvider {
     }
 
     public void loadCertificateChooserPreferences() {
-        checkNotNull(aes256KeyTextField).textProperty().set(CertificateChooserUserPreferencesManager.aesKey());
-        String ivCheckboxStr = CertificateChooserUserPreferencesManager.aesIvCheckbox();
+        checkNotNull(aes256KeyTextField).textProperty().set(aesKey());
+        String ivCheckboxStr = aesIvCheckbox();
         boolean ivCheckbox = StringUtils.isBlank(ivCheckboxStr) ? false : Boolean.parseBoolean(ivCheckboxStr);
         checkNotNull(aes256IvCheckBox).selectedProperty().set(ivCheckbox);
-        checkNotNull(aes256IvTextField).textProperty().set(CertificateChooserUserPreferencesManager.aesIv());
+        checkNotNull(aes256IvTextField).textProperty().set(aesIv());
     }
 
     public void setCertificateChooserPreferencesHandlers() {
@@ -94,7 +100,18 @@ public class AesRawKeyProvider extends AnchorPane implements TabKeyProvider {
         String aesIvCheckbox = checkNotNull(aes256IvTextField).textProperty().get();
         boolean aesIv = checkNotNull(aes256IvCheckBox).selectedProperty().get();
 
-        CertificateChooserUserPreferencesManager.updateAesUserPreferences(
-                    aesKey, aesIvCheckbox, Boolean.toString(aesIv));
+        updateAesUserPreferences(aesKey, aesIvCheckbox, Boolean.toString(aesIv));
     }
+
+    public static void updateAesUserPreferences(String aesKey, String aesIv, String aesIvCheckbox) {
+        Preferences userPreferences = Preferences.userRoot();
+
+        updateUserPreference(userPreferences, AES_KEY, aesKey);
+        updateUserPreference(userPreferences, AES_IV_CHECKBOX, aesIvCheckbox);
+        updateUserPreference(userPreferences, AES_IV, aesIv);
+    }
+
+    public static String aesKey() { return getUserPreference(AES_KEY); }
+    public static String aesIvCheckbox() { return getUserPreference(AES_IV_CHECKBOX); }
+    public static String aesIv() { return getUserPreference(AES_IV); }
 }

@@ -1,7 +1,6 @@
 package com.fidd.cryptor.keys.forms;
 
 import com.fidd.cryptor.keys.KeyContext;
-import com.fidd.cryptor.utils.CertificateChooserUserPreferencesManager;
 import javafx.beans.value.ObservableValue;
 import com.fidd.cryptor.keys.RsaKeyContext;
 import com.fidd.cryptor.utils.PkiUtil;
@@ -25,11 +24,16 @@ import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.prefs.Preferences;
 
+import static com.fidd.cryptor.utils.UserPreferencesManager.getUserPreference;
+import static com.fidd.cryptor.utils.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RsaRawKeyProvider extends AnchorPane implements TabKeyProvider {
     final static Logger LOGGER = LoggerFactory.getLogger(RsaRawKeyProvider.class);
+    final static String RAW_CERTIFICATE = "flowerCertificateChooserRawCertificate";
+    final static String RAW_PRIVATE_KEY = "flowerCertificateChooserRawPrivateKey";
 
     @FXML @Nullable TextArea rawCertificateTextArea;
     @FXML @Nullable TextArea rawPrivateKeyTextArea;
@@ -103,8 +107,8 @@ public class RsaRawKeyProvider extends AnchorPane implements TabKeyProvider {
     }
 
     public void loadCertificateChooserPreferences() {
-        checkNotNull(rawCertificateTextArea).textProperty().set(CertificateChooserUserPreferencesManager.rawCertificate());
-        checkNotNull(rawPrivateKeyTextArea).textProperty().set(CertificateChooserUserPreferencesManager.rawPrivateKey());
+        checkNotNull(rawCertificateTextArea).textProperty().set(rawCertificate());
+        checkNotNull(rawPrivateKeyTextArea).textProperty().set(rawPrivateKey());
     }
     public void setCertificateChooserPreferencesHandlers() {
         checkNotNull(rawCertificateTextArea).textProperty().addListener(this::certificateChooserTextChanged);;
@@ -119,6 +123,16 @@ public class RsaRawKeyProvider extends AnchorPane implements TabKeyProvider {
         String rawCertificate = checkNotNull(rawCertificateTextArea).textProperty().get();
         String rawPrivateKey = checkNotNull(rawPrivateKeyTextArea).textProperty().get();
 
-        CertificateChooserUserPreferencesManager.updateUserPreferences(rawCertificate, rawPrivateKey);
+        updateUserPreferences(rawCertificate, rawPrivateKey);
     }
+
+    public static void updateUserPreferences(String rawCertificate, String rawPrivateKey) {
+        Preferences userPreferences = Preferences.userRoot();
+
+        updateUserPreference(userPreferences, RAW_CERTIFICATE, rawCertificate);
+        updateUserPreference(userPreferences, RAW_PRIVATE_KEY, rawPrivateKey);
+    }
+
+    public static String rawCertificate() { return getUserPreference(RAW_CERTIFICATE); }
+    public static String rawPrivateKey() { return getUserPreference(RAW_PRIVATE_KEY); }
 }

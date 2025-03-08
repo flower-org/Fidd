@@ -1,7 +1,6 @@
 package com.fidd.cryptor.keys.forms;
 
 import com.fidd.cryptor.keys.KeyContext;
-import com.fidd.cryptor.utils.CertificateChooserUserPreferencesManager;
 import javafx.beans.value.ObservableValue;
 import org.apache.commons.lang3.StringUtils;
 import com.fidd.cryptor.keys.RsaKeyContext;
@@ -24,11 +23,18 @@ import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.prefs.Preferences;
 
+import static com.fidd.cryptor.utils.UserPreferencesManager.getUserPreference;
+import static com.fidd.cryptor.utils.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
     final static Logger LOGGER = LoggerFactory.getLogger(RsaPkcs11KeyProvider.class);
+
+    final static String PKCS11_LIBRARY_PATH = "flowerCertificateChooserPkcs11LibraryPath";
+    final static String PKCS11_CERTIFICATE_ALIAS = "flowerCertificateChooserPkcs11CertificateAlias";
+    final static String PKCS11_PRIVATE_KEY_ALIAS = "flowerCertificateChooserPkcs11PrivateKeyAlias";
 
     @FXML @Nullable TextField pkcs11LibTextField;
     @FXML @Nullable PasswordField pkcs11TokenPinTextField;
@@ -144,9 +150,9 @@ public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
     }
 
     public void loadCertificateChooserPreferences() {
-        checkNotNull(pkcs11LibTextField).textProperty().set(CertificateChooserUserPreferencesManager.pkcs11LibraryPath());
-        checkNotNull(certificatesComboBox).getSelectionModel().select(CertificateChooserUserPreferencesManager.pkcs11CertificateAlias());
-        checkNotNull(privateKeysComboBox).getSelectionModel().select(CertificateChooserUserPreferencesManager.pkcs11PrivateKeyAlias());
+        checkNotNull(pkcs11LibTextField).textProperty().set(pkcs11LibraryPath());
+        checkNotNull(certificatesComboBox).getSelectionModel().select(pkcs11CertificateAlias());
+        checkNotNull(privateKeysComboBox).getSelectionModel().select(pkcs11PrivateKeyAlias());
     }
     public void setCertificateChooserPreferencesHandlers() {
         checkNotNull(pkcs11LibTextField).textProperty().addListener(this::certificateChooserTextChanged);
@@ -163,7 +169,20 @@ public class RsaPkcs11KeyProvider extends AnchorPane implements TabKeyProvider {
         String pkcs11CertificateAlias = checkNotNull(certificatesComboBox).valueProperty().get();
         String pkcs11PrivateKeyAlias = checkNotNull(privateKeysComboBox).valueProperty().get();
 
-        CertificateChooserUserPreferencesManager.updatePkcs11UserPreferences(pkcs11LibraryPath, pkcs11CertificateAlias,
+        updatePkcs11UserPreferences(pkcs11LibraryPath, pkcs11CertificateAlias,
                 pkcs11PrivateKeyAlias);
     }
+
+    public static void updatePkcs11UserPreferences(String pkcs11LibraryPath, String pkcs11CertificateAlias,
+                                                   String pkcs11PrivateKeyAlias) {
+        Preferences userPreferences = Preferences.userRoot();
+
+        updateUserPreference(userPreferences, PKCS11_LIBRARY_PATH, pkcs11LibraryPath);
+        updateUserPreference(userPreferences, PKCS11_CERTIFICATE_ALIAS, pkcs11CertificateAlias);
+        updateUserPreference(userPreferences, PKCS11_PRIVATE_KEY_ALIAS, pkcs11PrivateKeyAlias);
+    }
+
+    public static String pkcs11LibraryPath() { return getUserPreference(PKCS11_LIBRARY_PATH); }
+    public static String pkcs11CertificateAlias() { return getUserPreference(PKCS11_CERTIFICATE_ALIAS); }
+    public static String pkcs11PrivateKeyAlias() { return getUserPreference(PKCS11_PRIVATE_KEY_ALIAS); }
 }

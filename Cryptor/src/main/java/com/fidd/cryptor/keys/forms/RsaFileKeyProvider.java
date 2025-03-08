@@ -1,7 +1,6 @@
 package com.fidd.cryptor.keys.forms;
 
 import com.fidd.cryptor.keys.KeyContext;
-import com.fidd.cryptor.utils.CertificateChooserUserPreferencesManager;
 import javafx.beans.value.ObservableValue;
 import com.fidd.cryptor.keys.RsaKeyContext;
 import com.fidd.cryptor.utils.PkiUtil;
@@ -27,11 +26,17 @@ import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
+import java.util.prefs.Preferences;
 
+import static com.fidd.cryptor.utils.UserPreferencesManager.getUserPreference;
+import static com.fidd.cryptor.utils.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RsaFileKeyProvider extends AnchorPane implements TabKeyProvider {
     final static Logger LOGGER = LoggerFactory.getLogger(RsaFileKeyProvider.class);
+
+    final static String FILE_CERTIFICATE = "flowerCertificateChooserFileCertificate";
+    final static String FILE_PRIVATE_KEY = "flowerCertificateChooserFilePrivateKey";
 
     @FXML @Nullable TextField fileCertificateTextField;
     @FXML @Nullable TextField filePrivateKeyTextField;
@@ -197,8 +202,8 @@ public class RsaFileKeyProvider extends AnchorPane implements TabKeyProvider {
     }
 
     public void loadCertificateChooserPreferences() {
-        checkNotNull(fileCertificateTextField).textProperty().set(CertificateChooserUserPreferencesManager.fileCertificate());
-        checkNotNull(filePrivateKeyTextField).textProperty().set(CertificateChooserUserPreferencesManager.filePrivateKey());
+        checkNotNull(fileCertificateTextField).textProperty().set(fileCertificate());
+        checkNotNull(filePrivateKeyTextField).textProperty().set(filePrivateKey());
     }
     public void setCertificateChooserPreferencesHandlers() {
         checkNotNull(fileCertificateTextField).textProperty().addListener(this::certificateChooserTextChanged);
@@ -212,6 +217,16 @@ public class RsaFileKeyProvider extends AnchorPane implements TabKeyProvider {
     public void updateCertificateChooserPreferences() {
         String fileCertificate = checkNotNull(fileCertificateTextField).textProperty().get();
         String filePrivateKey = checkNotNull(filePrivateKeyTextField).textProperty().get();
-        CertificateChooserUserPreferencesManager.updateFileUserPreferences(fileCertificate, filePrivateKey);
+        updateFileUserPreferences(fileCertificate, filePrivateKey);
     }
+
+    public static void updateFileUserPreferences(String fileCertificate, String filePrivateKey) {
+        Preferences userPreferences = Preferences.userRoot();
+
+        updateUserPreference(userPreferences, FILE_CERTIFICATE, fileCertificate);
+        updateUserPreference(userPreferences, FILE_PRIVATE_KEY, filePrivateKey);
+    }
+
+    public static String fileCertificate() { return getUserPreference(FILE_CERTIFICATE); }
+    public static String filePrivateKey() { return getUserPreference(FILE_PRIVATE_KEY); }
 }
