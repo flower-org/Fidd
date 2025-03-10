@@ -22,6 +22,8 @@ import static com.flower.crypt.PkiUtil.AES_CBC;
 public class AesTransformerProvider implements TransformerProvider {
     private static final String ALGORITHM = AES;
     private static final String TRANSFORMATION = AES_CBC;
+    private static final IvParameterSpec DEFAULT_IV = new IvParameterSpec(new byte[16]);
+
     private final SecretKeySpec secretKey;
     @Nullable private final IvParameterSpec iv;
 
@@ -36,11 +38,7 @@ public class AesTransformerProvider implements TransformerProvider {
         return data -> {
             try {
                 Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-                if (iv == null) {
-                    cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-                } else {
-                    cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
-                }
+                cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv == null ? DEFAULT_IV : iv);
                 return cipher.doFinal(data);
             } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
                      InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException e) {
@@ -55,11 +53,7 @@ public class AesTransformerProvider implements TransformerProvider {
         return encryptedData -> {
             try {
                 Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-                if (iv == null) {
-                    cipher.init(Cipher.DECRYPT_MODE, secretKey);
-                } else {
-                    cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
-                }
+                cipher.init(Cipher.DECRYPT_MODE, secretKey, iv == null ? DEFAULT_IV : iv);
                 return cipher.doFinal(encryptedData);
             } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
                      InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException e) {

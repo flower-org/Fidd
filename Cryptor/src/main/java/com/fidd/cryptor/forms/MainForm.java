@@ -1,5 +1,6 @@
 package com.fidd.cryptor.forms;
 
+import com.flower.crypt.HexTool;
 import com.flower.crypt.keys.Aes256KeyContext;
 import com.flower.crypt.keys.KeyContext;
 import com.flower.crypt.keys.RsaKeyContext;
@@ -421,8 +422,8 @@ public class MainForm {
     public void generateAes256Key() {
         try {
             byte[] key = Cryptor.generateAESKeyRaw();
-            String base64EncodedKey = Base64.getEncoder().encodeToString(key);
-            checkNotNull(generatedAes256KeyTextField).textProperty().set(base64EncodedKey);
+            String hexEncodedKey = HexTool.bytesToHex(key);
+            checkNotNull(generatedAes256KeyTextField).textProperty().set(hexEncodedKey);
         } catch (Exception e) {
             LOGGER.error("AES-256 key generation error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
@@ -433,8 +434,8 @@ public class MainForm {
     public void generateAes256Iv() {
         try {
             byte[] iv = Cryptor.generateAESIV();
-            String base64EncodedIv = Base64.getEncoder().encodeToString(iv);
-            checkNotNull(generatedAes256IvTextField).textProperty().set(base64EncodedIv);
+            String hexEncodedIv = HexTool.bytesToHex(iv);
+            checkNotNull(generatedAes256IvTextField).textProperty().set(hexEncodedIv);
         } catch (Exception e) {
             LOGGER.error("AES-256 IV generation error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
@@ -854,7 +855,7 @@ public class MainForm {
             if (sha256File != null) {
                 Files.write(sha256File.toPath(), hash);
             }
-            String hexHash = PkiUtil.toHex(hash);
+            String hexHash = HexTool.bytesToHex(hash);
             checkNotNull(rsaSignHashFileTextArea).textProperty().set(hexHash);
         } catch (Exception e) {
             LOGGER.error("File signage error", e);
