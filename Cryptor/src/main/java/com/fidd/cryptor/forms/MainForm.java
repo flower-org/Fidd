@@ -711,6 +711,11 @@ public class MainForm {
 
             File cipherFile = fileChooser.showSaveDialog(mainStage);
             if (cipherFile == null) { return; }
+            if (!cipherFile.exists() || cipherFile.getPath().equals(checkNotNull(rsaCryptPlainFileTextField).textProperty().get())) {
+                if (!cipherFile.getName().endsWith(".crp")) {
+                    cipherFile = new File(cipherFile.getPath()  + ".crp");
+                }
+            }
 
             checkNotNull(rsaCryptCipherFileTextField).textProperty().set(cipherFile.getPath());
         } catch (Exception e) {
