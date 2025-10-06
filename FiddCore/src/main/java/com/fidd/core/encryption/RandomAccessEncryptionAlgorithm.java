@@ -1,11 +1,9 @@
 package com.fidd.core.encryption;
 
-import com.fidd.core.NamedEntry;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public interface RandomAccessEncryptionAlgorithm extends NamedEntry {
+public interface RandomAccessEncryptionAlgorithm {
     byte[] randomAccessDecrypt(byte[] keyData, byte[] ciphertext, long offset, int length);
     void randomAccessDecrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext);
 

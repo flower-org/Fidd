@@ -14,7 +14,7 @@ class MapRepository<T extends NamedEntry> implements Repository<T> {
     MapRepository(List<T> entries) {
         HashMap<String, T> registry = new HashMap<>();
         for (T entry : entries) {
-            registry.put(entry.getName(), entry);
+            registry.put(entry.name(), entry);
         }
         this.registry = Map.copyOf(registry);
     }

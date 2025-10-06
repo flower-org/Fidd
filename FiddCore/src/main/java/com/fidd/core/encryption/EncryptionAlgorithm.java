@@ -1,9 +1,11 @@
 package com.fidd.core.encryption;
 
+import com.fidd.core.NamedEntry;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public interface EncryptionAlgorithm {
+public interface EncryptionAlgorithm extends NamedEntry {
     byte[] generateNewKeyData();
 
     byte[] encrypt(byte[] keyData, byte[] plaintext);
