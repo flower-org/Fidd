@@ -18,4 +18,7 @@ public interface LogicalFileMetadata {
 
     @Nullable Long createdAt();
     @Nullable Long updatedAt();
+
+    @Nullable String authorsFileSignatureFormat();
+    @Nullable byte[] authorsFileSignature();
 }

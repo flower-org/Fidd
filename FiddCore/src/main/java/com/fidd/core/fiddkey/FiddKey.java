@@ -16,12 +16,12 @@ public interface FiddKey {
         @Nullable byte[] crc();
     }
 
-    interface LogicalFile extends Section {
-        @Nullable String filePath();
-        String fileName();
+    interface LogicalFileSection extends Section {
+        String filePath();
     }
 
-    String fiddKeyFileFormatVersion();
+    // TODO: Can't read this from the file itself
+    // String fiddKeyFileFormatVersion();
     Section fiddFileMetadata();
-    List<LogicalFile> logicalFiles();
+    List<LogicalFileSection> logicalFiles();
 }

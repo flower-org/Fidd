@@ -3,7 +3,8 @@ package com.fidd.core.fiddfile;
 import javax.annotation.Nullable;
 
 public interface FiddFileMetadata {
-    String fiddFileMetadataFormatVersion();
+    // TODO: Can't read this from the file itself
+    // String fiddFileMetadataFormatVersion();
     String logicalFileMetadataFormatVersion();
 
     Long messageNumber();
