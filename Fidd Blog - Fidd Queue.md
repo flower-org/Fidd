@@ -51,9 +51,12 @@ interface FiddQueue {
 
 struct FiddQueueInfo {
     PublicKey publisher();
+    String publisherSignatureFormat();
 
-    @Nullable String name();
-    @Nullable String description();
+    String fiddKeyFormat();
+
+    @Nullable String queueName();
+    @Nullable String queueDescription();
 }
 ```
 
@@ -76,38 +79,38 @@ FiddQueue\
     0-QueueInfo\
         keys\
             subscriberId1.fidd.key
-            subscriberId1.fidd.key.sign
+            subscriberId1.fidd.key.publ.sign
             subscriberId2.fidd.key
-            subscriberId2.fidd.key.sign
+            subscriberId2.fidd.key.publ.sign
             subscriberId3.fidd.key
-            subscriberId3.fidd.key.sign
+            subscriberId3.fidd.key.publ.sign
             ...
         0-QueueInfo.fidd
-        0-QueueInfo.fidd.sign
+        0-QueueInfo.fidd.publ.sign
 
     1\
         keys\
             subscriberId1.fidd.key
-            subscriberId1.fidd.key.sign
+            subscriberId1.fidd.key.publ.sign
             subscriberId2.fidd.key
-            subscriberId2.fidd.key.sign
+            subscriberId2.fidd.key.publ.sign
             subscriberId3.fidd.key
-            subscriberId3.fidd.key.sign
+            subscriberId3.fidd.key.publ.sign
             ...
         1.fidd
-        1.fidd.sign
+        1.fidd.publ.sign
 
     2\
         keys\
             subscriberId1.fidd.key
-            subscriberId1.fidd.key.sign
+            subscriberId1.fidd.key.publ.sign
             subscriberId2.fidd.key
-            subscriberId2.fidd.key.sign
+            subscriberId2.fidd.key.publ.sign
             subscriberId3.fidd.key
-            subscriberId3.fidd.key.sign
+            subscriberId3.fidd.key.publ.sign
             ...
         2.fidd
-        2.fidd.sign
+        2.fidd.publ.sign
 
     3\
         ...
@@ -139,7 +142,7 @@ etc.
     - Найти подпапку с номером *num*, вернуть fidd-файл.
 
 - `BLOB getMessagePublisherSignature(MessageNumber num);`
-    - Найти подпапку с номером *num*, вернуть fidd.sign-файл.
+    - Найти подпапку с номером *num*, вернуть fidd.publ.sign-файл.
 
 - `List<FiddKeyId> getAllFiddKeyIds(MessageNumber num)`
     - Найти подпапку с номером *num*, вернуть список fidd.key-файлов из ее подпапки *num/keys*.
@@ -151,7 +154,7 @@ etc.
     - Вернуть соответствующий fidd.key-файл из подпапки *num/keys*.
 
 - `BLOB getFiddKeyPublisherSignature(MessageNumber num, FiddKeyId keyId);`
-    - Вернуть соответствующий fidd.key.sign-файл из подпапки *num/keys*.
+    - Вернуть соответствующий fidd.key.publ.sign-файл из подпапки *num/keys*.
 
 - `BLOB getMessageChunk(MessageNumber num, long offset, long length);`
     - То же, что `getFiddKey`, но возвращаем не весь файл, а его часть, начиная с указанного оффсета и указанной длины.

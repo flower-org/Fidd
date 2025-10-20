@@ -16,6 +16,8 @@ public interface LogicalFileMetadata {
     /** e.g. "zip" */
     @Nullable String encodingType();
 
+    // We can't replace this with just 1 timestamp, because squash OVERRIDE
+    // needs to show both the creation time and last update time.
     @Nullable Long createdAt();
     @Nullable Long updatedAt();
 

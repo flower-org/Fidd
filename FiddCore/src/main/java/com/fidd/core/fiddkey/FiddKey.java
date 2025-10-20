@@ -20,8 +20,10 @@ public interface FiddKey {
         String filePath();
     }
 
-    // TODO: Can't read this from the file itself
-    // String fiddKeyFileFormatVersion();
     Section fiddFileMetadata();
     List<LogicalFileSection> logicalFiles();
+
+    // Author's signature of the whole Fidd File (package integrity)
+    @Nullable String authorsFiddFileSignatureFormat();
+    @Nullable byte[] authorsFiddFileSignature();
 }
