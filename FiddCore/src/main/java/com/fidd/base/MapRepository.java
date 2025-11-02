@@ -8,15 +8,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class MapRepository<T extends NamedEntry> implements Repository<T> {
+public class MapRepository<T extends NamedEntry> implements Repository<T> {
     private final Map<String, T> registry;
+    @Nullable String defaultKey;
 
-    MapRepository(List<T> entries) {
+    public MapRepository(@Nullable String defaultKey, List<T> entries) {
+        this.defaultKey = defaultKey;
         HashMap<String, T> registry = new HashMap<>();
         for (T entry : entries) {
             registry.put(entry.name(), entry);
         }
         this.registry = Map.copyOf(registry);
+    }
+
+    @Override
+    public @Nullable String defaultKey() {
+        return defaultKey;
     }
 
     @Override

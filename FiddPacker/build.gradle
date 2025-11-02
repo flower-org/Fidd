@@ -48,6 +48,7 @@ javafx {
 }
 
 dependencies {
+    implementation project(':FiddCore')
     implementation project(':CryptCore')
     implementation project(':JavaFxUtils')
     implementation project(':KeyManagerFx')

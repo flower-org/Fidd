@@ -109,8 +109,8 @@
                                           <Label text="Fidd File Metadata:" GridPane.rowIndex="1" />
                                           <Label text="Logical File Metadata:" GridPane.rowIndex="2" />
                                           <ComboBox fx:id="fiddKeyComboBox" prefWidth="250.0" GridPane.columnIndex="1" />
-                                          <ComboBox fx:id="fillFileMetadataComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                          <ComboBox fx:id="logicalFileMetadaaComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                          <ComboBox fx:id="fiddFileMetadataComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                          <ComboBox fx:id="logicalFileMetadataComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                        </children>
                                     </GridPane>
                                     <GridPane GridPane.rowIndex="5">
@@ -130,7 +130,7 @@
                                           <Label text="Signature Format:" GridPane.rowIndex="2" />
                                           <CheckBox fx:id="addAuthorSignaturesCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" />
                                           <ComboBox fx:id="publicKeyFormatComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                          <ComboBox fx:id="signatureFormatCheckBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                          <ComboBox fx:id="signatureFormatComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                        </children>
                                     </GridPane>
                                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="5">

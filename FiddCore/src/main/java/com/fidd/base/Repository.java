@@ -18,4 +18,6 @@ public interface Repository<T> {
      * Lists all registered names.
      */
     Collection<String> listEntryNames();
+
+    @Nullable String defaultKey();
 }
