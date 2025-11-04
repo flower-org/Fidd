@@ -1,16 +1,8 @@
 package com.fidd.packer.forms;
 
 import com.fidd.base.BaseRepositories;
-import com.fidd.base.MapRepository;
+import com.fidd.base.DefaultBaseRepositories;
 import com.fidd.base.Repository;
-import com.fidd.core.NamedEntry;
-import com.fidd.core.encryption.EncryptionAlgorithm;
-import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
-import com.fidd.core.fiddkey.FiddKeySerializer;
-import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
-import com.fidd.core.pki.PublicKeySerializer;
-import com.fidd.core.pki.SignatureSerializer;
-import com.fidd.core.random.RandomGeneratorNamedEntry;
 import com.flower.crypt.Cryptor;
 import com.flower.crypt.HexTool;
 import com.flower.crypt.PkiUtil;
@@ -93,47 +85,7 @@ public class MainForm {
         //This form is created automatically.
         //No need to load fxml explicitly
 
-        // TODO: dummy implementation
-        baseRepositories = new BaseRepositories() {
-            <T extends NamedEntry> Repository<T> createEmpty() {
-                return new MapRepository<T>(null, List.of());
-            }
-
-            @Override
-            public Repository<EncryptionAlgorithm> encryptionAlgorithmRepo() {
-                return createEmpty();
-            }
-
-            @Override
-            public Repository<FiddKeySerializer> fiddKeyFormatRepo() {
-                return createEmpty();
-            }
-
-            @Override
-            public Repository<FiddFileMetadataSerializer> fiddFileMetadataFormatRepo() {
-                return createEmpty();
-            }
-
-            @Override
-            public Repository<LogicalFileMetadataSerializer> logicalFileMetadataFormatRepo() {
-                return createEmpty();
-            }
-
-            @Override
-            public Repository<PublicKeySerializer> publicKeyFormatRepo() {
-                return createEmpty();
-            }
-
-            @Override
-            public Repository<SignatureSerializer> signatureFormatRepo() {
-                return createEmpty();
-            }
-
-            @Override
-            public Repository<RandomGeneratorNamedEntry> randomGeneratorsRepo() {
-                return createEmpty();
-            }
-        };
+        baseRepositories = new DefaultBaseRepositories();
     }
 
     public void showAboutDialog() {
@@ -172,7 +124,7 @@ public class MainForm {
             Boolean addAuthorSignaturesChecked = null;
             try {
                 addAuthorSignaturesChecked = Boolean.parseBoolean(addAuthorSignaturesCheckedStr);
-            } catch (Exception e) {}
+            } catch (Exception ignored) {}
 
             if (addAuthorSignaturesChecked != null) {
                 checkNotNull(addAuthorSignaturesCheckBox).selectedProperty().set(addAuthorSignaturesChecked);
@@ -286,7 +238,7 @@ public class MainForm {
     }
 
     public void openOriginalFolder() {
-        File initialDirectory = null;
+        File initialDirectory;
         initialDirectory = new File(checkNotNull(originalFolderTextField).textProperty().get());
         File directory = chooseDirectory(initialDirectory);
         if (directory != null) {
@@ -295,7 +247,7 @@ public class MainForm {
     }
 
     public void openPackedContentFolder() {
-        File initialDirectory = null;
+        File initialDirectory;
         initialDirectory = new File(checkNotNull(packedContentFolderTextField).textProperty().get());
         File directory = chooseDirectory(initialDirectory);
         if (directory != null) {
