@@ -5,6 +5,7 @@ import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKeySerializer;
+import com.fidd.core.fiddkey.yaml.YamlFiddKeySerializer;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
 import com.fidd.core.pki.SignatureSerializer;
@@ -19,13 +20,14 @@ public class DefaultBaseRepositories implements BaseRepositories {
 
     @Override
     public Repository<EncryptionAlgorithm> encryptionAlgorithmRepo() {
-        Aes256CbcEncryptionAlgorithm encryptionAlgorithm = new Aes256CbcEncryptionAlgorithm();
-        return new MapRepository<>(encryptionAlgorithm.name(), List.of(encryptionAlgorithm));
+        Aes256CbcEncryptionAlgorithm aes256Cbc = new Aes256CbcEncryptionAlgorithm();
+        return new MapRepository<>(aes256Cbc.name(), List.of(aes256Cbc));
     }
 
     @Override
     public Repository<FiddKeySerializer> fiddKeyFormatRepo() {
-        return createEmpty();
+        YamlFiddKeySerializer yamlFiddKeySerializer = new YamlFiddKeySerializer();
+        return new MapRepository<>(yamlFiddKeySerializer.name(), List.of(yamlFiddKeySerializer));
     }
 
     @Override
