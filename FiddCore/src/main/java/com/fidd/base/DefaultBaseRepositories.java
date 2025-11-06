@@ -11,7 +11,9 @@ import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.logicalfile.yaml.YamlLogicalFileMetadataSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
 import com.fidd.core.pki.SignatureSerializer;
-import com.fidd.core.random.RandomGeneratorNamedEntry;
+import com.fidd.core.random.RandomGeneratorType;
+import com.fidd.core.random.plain.PlainRandomGeneratorType;
+import com.fidd.core.random.secure.SecureRandomGeneratorType;
 
 import java.util.List;
 
@@ -55,7 +57,9 @@ public class DefaultBaseRepositories implements BaseRepositories {
     }
 
     @Override
-    public Repository<RandomGeneratorNamedEntry> randomGeneratorsRepo() {
-        return createEmpty();
+    public Repository<RandomGeneratorType> randomGeneratorsRepo() {
+        PlainRandomGeneratorType plainRandomGeneratorType = new PlainRandomGeneratorType();
+        SecureRandomGeneratorType secureRandomGeneratorType = new SecureRandomGeneratorType();
+        return new MapRepository<>(secureRandomGeneratorType.name(), List.of(secureRandomGeneratorType, plainRandomGeneratorType));
     }
 }
