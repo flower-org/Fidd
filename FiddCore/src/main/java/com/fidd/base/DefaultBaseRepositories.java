@@ -4,9 +4,11 @@ import com.fidd.core.NamedEntry;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
+import com.fidd.core.fiddfile.yaml.YamlFiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKeySerializer;
 import com.fidd.core.fiddkey.yaml.YamlFiddKeySerializer;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
+import com.fidd.core.logicalfile.yaml.YamlLogicalFileMetadataSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
 import com.fidd.core.pki.SignatureSerializer;
 import com.fidd.core.random.RandomGeneratorNamedEntry;
@@ -32,12 +34,14 @@ public class DefaultBaseRepositories implements BaseRepositories {
 
     @Override
     public Repository<FiddFileMetadataSerializer> fiddFileMetadataFormatRepo() {
-        return createEmpty();
+        YamlFiddFileMetadataSerializer yamlFiddFileMetadataSerializer = new YamlFiddFileMetadataSerializer();
+        return new MapRepository<>(yamlFiddFileMetadataSerializer.name(), List.of(yamlFiddFileMetadataSerializer));
     }
 
     @Override
     public Repository<LogicalFileMetadataSerializer> logicalFileMetadataFormatRepo() {
-        return createEmpty();
+        YamlLogicalFileMetadataSerializer yamlLogicalFileMetadataSerializer = new YamlLogicalFileMetadataSerializer();
+        return new MapRepository<>(yamlLogicalFileMetadataSerializer.name(), List.of(yamlLogicalFileMetadataSerializer));
     }
 
     @Override
