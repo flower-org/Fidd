@@ -5,7 +5,7 @@ import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKeySerializer;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
-import com.fidd.core.pki.SignatureSerializer;
+import com.fidd.core.pki.SignerChecker;
 import com.fidd.core.random.RandomGeneratorType;
 
 public interface BaseRepositories {
@@ -15,7 +15,7 @@ public interface BaseRepositories {
     Repository<LogicalFileMetadataSerializer> logicalFileMetadataFormatRepo();
 
     Repository<PublicKeySerializer> publicKeyFormatRepo();
-    Repository<SignatureSerializer> signatureFormatRepo();
+    Repository<SignerChecker> signatureFormatRepo();
 
     Repository<RandomGeneratorType> randomGeneratorsRepo();
 }

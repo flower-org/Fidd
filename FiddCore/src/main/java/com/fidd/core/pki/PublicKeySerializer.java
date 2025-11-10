@@ -2,7 +2,9 @@ package com.fidd.core.pki;
 
 import com.fidd.core.NamedEntry;
 
+import java.security.cert.X509Certificate;
+
 public interface PublicKeySerializer extends NamedEntry {
-    byte[] serialize(PublicKey publicKey);
-    PublicKey deserialize(byte[] publicKeyBytes);
+    byte[] serialize(X509Certificate publicKey);
+    X509Certificate deserialize(byte[] publicKeyBytes);
 }

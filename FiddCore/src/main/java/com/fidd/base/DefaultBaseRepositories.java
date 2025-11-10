@@ -10,7 +10,9 @@ import com.fidd.core.fiddkey.yaml.YamlFiddKeySerializer;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.logicalfile.yaml.YamlLogicalFileMetadataSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
-import com.fidd.core.pki.SignatureSerializer;
+import com.fidd.core.pki.SignerChecker;
+import com.fidd.core.pki.sha256WithRsa.SHA256WithRSASignerChecker;
+import com.fidd.core.pki.x509.X509PublicKeySerializer;
 import com.fidd.core.random.RandomGeneratorType;
 import com.fidd.core.random.plain.PlainRandomGeneratorType;
 import com.fidd.core.random.secure.SecureRandomGeneratorType;
@@ -48,12 +50,14 @@ public class DefaultBaseRepositories implements BaseRepositories {
 
     @Override
     public Repository<PublicKeySerializer> publicKeyFormatRepo() {
-        return createEmpty();
+        X509PublicKeySerializer x509 = new X509PublicKeySerializer();
+        return new MapRepository<>(x509.name(), List.of(x509));
     }
 
     @Override
-    public Repository<SignatureSerializer> signatureFormatRepo() {
-        return createEmpty();
+    public Repository<SignerChecker> signatureFormatRepo() {
+        SHA256WithRSASignerChecker signerChecker = new SHA256WithRSASignerChecker();
+        return new MapRepository<>(signerChecker.name(), List.of(signerChecker));
     }
 
     @Override

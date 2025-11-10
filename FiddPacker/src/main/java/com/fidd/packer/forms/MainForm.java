@@ -6,6 +6,8 @@ import com.fidd.base.Repository;
 import com.flower.crypt.Cryptor;
 import com.flower.crypt.HexTool;
 import com.flower.crypt.PkiUtil;
+import com.flower.crypt.keys.KeyContext;
+import com.flower.crypt.keys.RsaKeyContext;
 import com.flower.crypt.keys.forms.MultiKeyProvider;
 import com.flower.crypt.keys.forms.RsaFileKeyProvider;
 import com.flower.crypt.keys.forms.RsaPkcs11KeyProvider;
@@ -86,6 +88,18 @@ public class MainForm {
         //No need to load fxml explicitly
 
         baseRepositories = new DefaultBaseRepositories();
+    }
+
+    protected X509Certificate getCurrentCertificate() {
+        KeyContext keyContext = checkNotNull(keyProvider).getKeyContext();
+
+        if (keyContext instanceof RsaKeyContext) {
+            X509Certificate certificate = ((RsaKeyContext) keyContext).certificate();
+            //PrivateKey key = ((RsaKeyContext) keyContext).privateKey();
+            return certificate;
+        } else {
+            throw new RuntimeException("Unsupported Key Context: " + keyContext.getClass().toString());
+        }
     }
 
     public void showAboutDialog() {
