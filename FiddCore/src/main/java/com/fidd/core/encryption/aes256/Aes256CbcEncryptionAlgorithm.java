@@ -23,10 +23,6 @@ public class Aes256CbcEncryptionAlgorithm implements EncryptionAlgorithm {
         byte[] aesKey = Cryptor.generateAESKeyRaw();
         byte[] aesIv = Cryptor.generateAESIV();
 
-        // Generate random key and IV
-        new SecureRandom().nextBytes(aesKey);
-        new SecureRandom().nextBytes(aesIv);
-
         Aes256KeyAndIv original = new Aes256KeyAndIv(aesKey, aesIv);
 
         return Aes256KeyAndIv.serialize(original);
