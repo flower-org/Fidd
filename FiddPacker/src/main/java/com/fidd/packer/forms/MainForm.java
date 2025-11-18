@@ -3,6 +3,7 @@ package com.fidd.packer.forms;
 import com.fidd.base.BaseRepositories;
 import com.fidd.base.DefaultBaseRepositories;
 import com.fidd.base.Repository;
+import com.fidd.packer.pack.PackManager;
 import com.flower.crypt.Cryptor;
 import com.flower.crypt.HexTool;
 import com.flower.crypt.PkiUtil;
@@ -236,7 +237,18 @@ public class MainForm {
 
     public void quit() { checkNotNull(mainStage).close(); }
 
-    public void packFolder() {}
+    public void packFolder() {
+        try {
+            File directory = new File(checkNotNull(originalFolderTextField).textProperty().get());
+            File outputDirectory = new File(checkNotNull(packedContentFolderTextField).textProperty().get());
+            File outputFile = new File(outputDirectory, "message.fidd");
+            PackManager.packDirectory(directory, outputFile);
+        } catch (Exception e) {
+            LOGGER.error("Packing error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
 
     public void unpackFolder() {}
 
