@@ -26,14 +26,14 @@ public class DefaultBaseRepositories implements BaseRepositories {
         return new MapRepository<>(null, List.of());
     }
 
-    static Repository<EncryptionAlgorithm> ENCRYPTION_ALGORITHM_REPO;
-    static Repository<FiddKeySerializer> FIDD_KEY_FORMAT_REPO;
-    static Repository<MetadataSectionSerializer> METADATA_SECTION_FORMAT_REPO;
-    static Repository<FiddFileMetadataSerializer> FIDD_FILE_METADATA_FORMAT_REPO;
-    static Repository<LogicalFileMetadataSerializer> LOGICAL_FILE_METADATA_FORMAT_REPO;
-    static Repository<PublicKeySerializer> PUBLIC_KEY_FORMAT_REPO;
-    static Repository<SignerChecker> SIGNATURE_FORMAT_REPO;
-    static Repository<RandomGeneratorType> RANDOM_GENERATORS_REPO;
+    static final Repository<EncryptionAlgorithm> ENCRYPTION_ALGORITHM_REPO;
+    static final Repository<FiddKeySerializer> FIDD_KEY_FORMAT_REPO;
+    static final Repository<MetadataSectionSerializer> METADATA_SECTION_FORMAT_REPO;
+    static final Repository<FiddFileMetadataSerializer> FIDD_FILE_METADATA_FORMAT_REPO;
+    static final Repository<LogicalFileMetadataSerializer> LOGICAL_FILE_METADATA_FORMAT_REPO;
+    static final Repository<PublicKeySerializer> PUBLIC_KEY_FORMAT_REPO;
+    static final Repository<SignerChecker> SIGNATURE_FORMAT_REPO;
+    static final Repository<RandomGeneratorType> RANDOM_GENERATORS_REPO;
 
     static {
         Aes256CbcEncryptionAlgorithm aes256Cbc = new Aes256CbcEncryptionAlgorithm();
