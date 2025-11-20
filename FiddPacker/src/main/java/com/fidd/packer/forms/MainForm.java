@@ -48,6 +48,7 @@ public class MainForm {
 
     final static String ENCRYPTION_ALGORITHM = "ENCRYPTION_ALGORITHM";
     final static String FIDD_KEY = "FIDD_KEY";
+    final static String METADATA_SECTION = "METADATA_SECTION";
     final static String FIDD_FILE_METADATA = "FIDD_FILE_METADATA";
     final static String LOGICAL_FILE_METADATA = "LOGICAL_FILE_METADATA";
     final static String PUBLIC_KEY_FORMAT = "PUBLIC_KEY_FORMAT";
@@ -72,6 +73,7 @@ public class MainForm {
     @FXML @Nullable TextField packedContentFolderTextField;
 
     @FXML @Nullable ComboBox<String> fiddKeyComboBox;
+    @FXML @Nullable ComboBox<String> metadataSectionComboBox;
     @FXML @Nullable ComboBox<String> fiddFileMetadataComboBox;
     @FXML @Nullable ComboBox<String> logicalFileMetadataComboBox;
     @FXML @Nullable ComboBox<String> publicKeyFormatComboBox;
@@ -128,6 +130,7 @@ public class MainForm {
     public void loadFiddPackerChooserPreferences() {
         initRepositoryComboBox(baseRepositories.encryptionAlgorithmRepo(), checkNotNull(encryptionAlgorithmComboBox), getUserPreference(ENCRYPTION_ALGORITHM));
         initRepositoryComboBox(baseRepositories.fiddKeyFormatRepo(), checkNotNull(fiddKeyComboBox), getUserPreference(FIDD_KEY));
+        initRepositoryComboBox(baseRepositories.metadataSectionFormatRepo(), checkNotNull(metadataSectionComboBox), getUserPreference(METADATA_SECTION));
         initRepositoryComboBox(baseRepositories.fiddFileMetadataFormatRepo(), checkNotNull(fiddFileMetadataComboBox), getUserPreference(FIDD_FILE_METADATA));
         initRepositoryComboBox(baseRepositories.logicalFileMetadataFormatRepo(), checkNotNull(logicalFileMetadataComboBox), getUserPreference(LOGICAL_FILE_METADATA));
         initRepositoryComboBox(baseRepositories.publicKeyFormatRepo(), checkNotNull(publicKeyFormatComboBox), getUserPreference(PUBLIC_KEY_FORMAT));
