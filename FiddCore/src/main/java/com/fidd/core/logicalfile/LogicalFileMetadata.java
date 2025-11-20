@@ -17,6 +17,7 @@ public interface LogicalFileMetadata {
     }
 
     FiddUpdateType updateType();
+    String filePath();
 
     /** e.g. "text/css" */
     @Nullable String mimeType();

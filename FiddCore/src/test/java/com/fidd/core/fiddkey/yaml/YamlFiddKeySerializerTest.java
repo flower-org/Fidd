@@ -2,7 +2,6 @@ package com.fidd.core.fiddkey.yaml;
 
 import com.fidd.core.fiddkey.FiddKey;
 import com.fidd.core.fiddkey.ImmutableFiddKey;
-import com.fidd.core.fiddkey.ImmutableLogicalFileSection;
 import com.fidd.core.fiddkey.ImmutableSection;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
@@ -27,25 +26,30 @@ public class YamlFiddKeySerializerTest {
                 .crc(new byte[] { 6,7,8,9,10 })
                 .build();
 
-        List<FiddKey.LogicalFileSection> logicalFiles = List.of(ImmutableLogicalFileSection.builder()
+        List<FiddKey.Section> logicalFilesMetadata = List.of(ImmutableSection.builder()
                 .sectionOffset(100)
                 .sectionLength(1000)
                 .encryptionAlgorithm("AES-256")
                 .encryptionKeyData(new byte[] { 1,2,3,4,5 })
                 .crcAlgorithm("Adler32")
                 .crc(new byte[] { 6,7,8,9,10 })
-                .filePath("/dev/null")
                 .build()
         );
 
-        String authorsFiddFileSignatureFormat = "FMT";
-        byte[] authorsFiddFileSignature = new byte[] { 11,12,13,14,15 };
+        List<FiddKey.Section> logicalFiles = List.of(ImmutableSection.builder()
+                .sectionOffset(100)
+                .sectionLength(1000)
+                .encryptionAlgorithm("AES-256")
+                .encryptionKeyData(new byte[] { 1,2,3,4,5 })
+                .crcAlgorithm("Adler32")
+                .crc(new byte[] { 6,7,8,9,10 })
+                .build()
+        );
 
         FiddKey fiddKey = ImmutableFiddKey.builder()
                 .fiddFileMetadata(fiddFileMetadata)
+                .logicalFilesMetadata(logicalFilesMetadata)
                 .logicalFiles(logicalFiles)
-                .authorsFiddFileSignatureFormat(authorsFiddFileSignatureFormat)
-                .authorsFiddFileSignature(authorsFiddFileSignature)
                 .build();
 
         YamlFiddKeySerializer serializer = new YamlFiddKeySerializer();
