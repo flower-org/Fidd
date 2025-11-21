@@ -10,6 +10,7 @@ import com.fidd.core.fiddkey.yaml.YamlFiddKeySerializer;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.logicalfile.yaml.YamlLogicalFileMetadataSerializer;
 import com.fidd.core.metadata.MetadataSectionSerializer;
+import com.fidd.core.metadata.blobs.BlobsMetadataSectionSerializer;
 import com.fidd.core.metadata.yaml.YamlMetadataSectionSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
 import com.fidd.core.pki.SignerChecker;
@@ -42,8 +43,9 @@ public class DefaultBaseRepositories implements BaseRepositories {
         YamlFiddKeySerializer yamlFiddKeySerializer = new YamlFiddKeySerializer();
         FIDD_KEY_FORMAT_REPO = new MapRepository<>(yamlFiddKeySerializer.name(), List.of(yamlFiddKeySerializer));
 
+        BlobsMetadataSectionSerializer blobsMetadataSectionSerializer = new BlobsMetadataSectionSerializer();
         YamlMetadataSectionSerializer yamlMetadataSectionSerializer = new YamlMetadataSectionSerializer();
-        METADATA_SECTION_FORMAT_REPO = new MapRepository<>(yamlMetadataSectionSerializer.name(), List.of(yamlMetadataSectionSerializer));
+        METADATA_SECTION_FORMAT_REPO = new MapRepository<>(blobsMetadataSectionSerializer.name(), List.of(blobsMetadataSectionSerializer, yamlMetadataSectionSerializer));
 
         YamlFiddFileMetadataSerializer yamlFiddFileMetadataSerializer = new YamlFiddFileMetadataSerializer();
         FIDD_FILE_METADATA_FORMAT_REPO = new MapRepository<>(yamlFiddFileMetadataSerializer.name(), List.of(yamlFiddFileMetadataSerializer));
