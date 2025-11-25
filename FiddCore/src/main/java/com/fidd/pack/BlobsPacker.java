@@ -13,12 +13,20 @@ public class BlobsPacker {
     }
 
     public static byte[] packBlobs(List<byte[]> blobs) {
+        return packBlobsPartial(blobs, new int[] {});
+    }
+
+    public static byte[] packBlobsPartial(List<byte[]> blobs, int[] additionalBlobLengths) {
         // Calculate total size
         int blobCount = blobs.size();
         long totalSize = 4L + 8L * blobCount; // uint32 count + (uint64 size for each BLOB)
+        totalSize += 8L * additionalBlobLengths.length;
 
         for (byte[] blob : blobs) {
             totalSize += blob.length; // Add size of each BLOB
+        }
+        for (int blobLength : additionalBlobLengths) {
+            totalSize += blobLength; // Add size of each BLOB
         }
 
         // Create a ByteBuffer with the calculated total size, set to big-endian
@@ -35,6 +43,10 @@ public class BlobsPacker {
         // Write BLOB data
         for (byte[] blob : blobs) {
             buffer.put(blob);
+        }
+
+        for (int blobLength : additionalBlobLengths) {
+            totalSize += blobLength; // Add size of each BLOB
         }
 
         // Return byte array
