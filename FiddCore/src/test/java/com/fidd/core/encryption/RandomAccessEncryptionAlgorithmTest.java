@@ -1,6 +1,6 @@
-package com.fidd.core.encryption.xor;
+package com.fidd.core.encryption;
 
-import com.fidd.core.encryption.RandomAccessEncryptionAlgorithm;
+import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
 import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -9,41 +9,12 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class XorEncryptionAlgorithmTest {
+public class RandomAccessEncryptionAlgorithmTest {
     private final RandomAccessEncryptionAlgorithm algo = new XorEncryptionAlgorithm();
 
     @Test
     void testName() {
         assertEquals("XOR", algo.name(), "Algorithm name should be XOR");
-    }
-
-    @Test
-    void testEncryptDecryptSymmetry() {
-        byte[] key = algo.generateNewKeyData();
-        byte[] plaintext = "Hello, World!".getBytes();
-
-        byte[] ciphertext = algo.encrypt(key, plaintext);
-        byte[] decrypted = algo.decrypt(key, ciphertext);
-
-        assertArrayEquals(plaintext, decrypted, "Decrypted text should match original plaintext");
-    }
-
-    @Test
-    void testStreamEncryptDecrypt() {
-        byte[] key = algo.generateNewKeyData();
-        byte[] plaintext = "Stream test data".getBytes();
-
-        ByteArrayInputStream in = new ByteArrayInputStream(plaintext);
-        ByteArrayOutputStream encryptedOut = new ByteArrayOutputStream();
-        algo.encrypt(key, in, encryptedOut);
-
-        byte[] ciphertext = encryptedOut.toByteArray();
-
-        ByteArrayInputStream cipherIn = new ByteArrayInputStream(ciphertext);
-        ByteArrayOutputStream decryptedOut = new ByteArrayOutputStream();
-        algo.decrypt(key, cipherIn, decryptedOut);
-
-        assertArrayEquals(plaintext, decryptedOut.toByteArray(), "Stream decryption should restore original data");
     }
 
     @Test

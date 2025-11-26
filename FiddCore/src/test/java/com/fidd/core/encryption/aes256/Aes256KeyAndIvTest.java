@@ -1,9 +1,14 @@
 package com.fidd.core.encryption.aes256;
 
+import com.fidd.core.encryption.EncryptionAlgorithm;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.security.SecureRandom;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class Aes256KeyAndIvTest {
 
@@ -55,5 +60,17 @@ public class Aes256KeyAndIvTest {
                 () -> Aes256KeyAndIv.deserialize(invalidData));
 
         assertEquals("Invalid serialized data length", exception.getMessage());
+    }
+
+    @Test
+    void testGenerateNewKeyData() {
+        EncryptionAlgorithm encryptionAlgorithm = new Aes256CbcEncryptionAlgorithm();
+        byte[] keyData = encryptionAlgorithm.generateNewKeyData();
+        assertNotNull(keyData);
+        // Check if keyData can deserialize correctly
+        Aes256KeyAndIv serializedKeyAndIv = Aes256KeyAndIv.deserialize(keyData);
+        assertNotNull(serializedKeyAndIv);
+        assertEquals(32, serializedKeyAndIv.aes256Key().length); // length of AES-256 key
+        assertEquals(16, serializedKeyAndIv.aes256Iv().length); // length of IV
     }
 }
