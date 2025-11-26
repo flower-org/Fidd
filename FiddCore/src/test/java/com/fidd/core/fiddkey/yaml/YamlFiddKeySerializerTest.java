@@ -26,16 +26,6 @@ public class YamlFiddKeySerializerTest {
                 .crc(new byte[] { 6,7,8,9,10 })
                 .build();
 
-        List<FiddKey.Section> logicalFilesMetadata = List.of(ImmutableSection.builder()
-                .sectionOffset(100)
-                .sectionLength(1000)
-                .encryptionAlgorithm("AES-256")
-                .encryptionKeyData(new byte[] { 1,2,3,4,5 })
-                .crcAlgorithm("Adler32")
-                .crc(new byte[] { 6,7,8,9,10 })
-                .build()
-        );
-
         List<FiddKey.Section> logicalFiles = List.of(ImmutableSection.builder()
                 .sectionOffset(100)
                 .sectionLength(1000)
@@ -48,7 +38,6 @@ public class YamlFiddKeySerializerTest {
 
         FiddKey fiddKey = ImmutableFiddKey.builder()
                 .fiddFileMetadata(fiddFileMetadata)
-                .logicalFilesMetadata(logicalFilesMetadata)
                 .logicalFiles(logicalFiles)
                 .build();
 

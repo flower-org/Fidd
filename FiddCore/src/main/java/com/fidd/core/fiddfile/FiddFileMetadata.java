@@ -13,12 +13,12 @@ public interface FiddFileMetadata {
     String logicalFileMetadataFormatVersion();
 
     Long messageNumber();
+    @Nullable Long previousMessageNumber();
     String postId();
     Integer versionNumber();
 
     boolean isNewOrSquash();
     boolean isDelete();
-    @Nullable Long previousMessageNumber();
 
     @Nullable String authorsPublicKeyFormat();
     @Nullable byte[] authorsPublicKey();

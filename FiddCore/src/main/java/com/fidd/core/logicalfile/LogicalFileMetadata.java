@@ -19,9 +19,9 @@ public interface LogicalFileMetadata {
     FiddUpdateType updateType();
     String filePath();
 
-    /** e.g. "text/css" */
+    /** e.g. "text/markdown", "image/png", "audio/ogg" */
     @Nullable String mimeType();
-    /** e.g. "zip" */
+    /** e.g. "zip", "base64" */
     @Nullable String encodingType();
 
     // We can't replace this with just 1 timestamp, because squash OVERRIDE
@@ -29,6 +29,7 @@ public interface LogicalFileMetadata {
     @Nullable Long createdAt();
     @Nullable Long updatedAt();
 
+    @Nullable String authorsLogicalFileMetadataSignatureFormat();
     @Nullable String authorsFileSignatureFormat();
     @Nullable byte[] authorsFileSignature();
 }

@@ -22,6 +22,7 @@ public class YamlLogicalFileMetadataSerializerTest {
                 .filePath("/what/not_sure.zip")
                 .createdAt(1234L)
                 .updatedAt(2345L)
+                .authorsLogicalFileMetadataSignatureFormat("FFMT")
                 .authorsFileSignatureFormat("FMT")
                 .authorsFileSignature(new byte[] {2,3,4,5,6,7})
                 .build();

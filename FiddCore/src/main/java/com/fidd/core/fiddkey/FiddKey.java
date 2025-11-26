@@ -27,6 +27,5 @@ public interface FiddKey {
     }
 
     Section fiddFileMetadata();
-    List<Section> logicalFilesMetadata();
     List<Section> logicalFiles();
 }

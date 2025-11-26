@@ -3,6 +3,7 @@ package com.fidd.base;
 import com.fidd.core.NamedEntry;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
+import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddfile.yaml.YamlFiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKeySerializer;
@@ -38,7 +39,8 @@ public class DefaultBaseRepositories implements BaseRepositories {
 
     static {
         Aes256CbcEncryptionAlgorithm aes256Cbc = new Aes256CbcEncryptionAlgorithm();
-        ENCRYPTION_ALGORITHM_REPO = new MapRepository<>(aes256Cbc.name(), List.of(aes256Cbc));
+        XorEncryptionAlgorithm xor = new XorEncryptionAlgorithm();
+        ENCRYPTION_ALGORITHM_REPO = new MapRepository<>(aes256Cbc.name(), List.of(aes256Cbc, xor));
 
         YamlFiddKeySerializer yamlFiddKeySerializer = new YamlFiddKeySerializer();
         FIDD_KEY_FORMAT_REPO = new MapRepository<>(yamlFiddKeySerializer.name(), List.of(yamlFiddKeySerializer));
