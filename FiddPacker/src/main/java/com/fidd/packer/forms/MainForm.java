@@ -284,33 +284,21 @@ public class MainForm {
         }
     }
 
-    public void generateAes256Key() {
-        try {
-            byte[] key = Cryptor.generateAESKeyRaw();
-            String hexEncodedKey = HexTool.bytesToHex(key);
-            checkNotNull(generatedAes256KeyTextField).textProperty().set(hexEncodedKey);
-        } catch (Exception e) {
-            LOGGER.error("AES-256 key generation error", e);
-            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
-            alert.showAndWait();
-        }
+    public void generateSelfSignedCertificateRsa2048() {
+        generateSelfSignedCertificateRsa(2048);
     }
 
-    public void generateAes256Iv() {
-        try {
-            byte[] iv = Cryptor.generateAESIV();
-            String hexEncodedIv = HexTool.bytesToHex(iv);
-            checkNotNull(generatedAes256IvTextField).textProperty().set(hexEncodedIv);
-        } catch (Exception e) {
-            LOGGER.error("AES-256 IV generation error", e);
-            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
-            alert.showAndWait();
-        }
+    public void generateSelfSignedCertificateRsa4096() {
+        generateSelfSignedCertificateRsa(4096);
     }
 
-    public void generateSelfSignedCertificate() {
+    public void generateSelfSignedCertificateRsa8192() {
+        generateSelfSignedCertificateRsa(8192);
+    }
+
+    public void generateSelfSignedCertificateRsa(int keysize) {
         try {
-            KeyPair keyPair = PkiUtil.generateRsa2048KeyPair();
+            KeyPair keyPair = PkiUtil.generateRsaKeyPair(keysize);
             X500Principal subject = new X500Principal("CN=Self-Generated Certificate");
             X509Certificate certificate = PkiUtil.generateSelfSignedCertificate(keyPair, subject);
 
