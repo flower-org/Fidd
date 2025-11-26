@@ -47,10 +47,13 @@
                                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                                      </rowConstraints>
                                        <columnConstraints>
-                                          <ColumnConstraints />
+                                          <ColumnConstraints halignment="RIGHT" hgrow="ALWAYS" />
                                        </columnConstraints>
                                        <children>
-                                                         <Button mnemonicParsing="false" onAction="#packFolder" text="-&gt; Pack folder  -&gt;" />
+                                                         <Button mnemonicParsing="false" onAction="#packFolder" style="-fx-font-size: 15;" text="-&gt; Pack folder  -&gt;" GridPane.halignment="RIGHT">
+                                             <GridPane.margin>
+                                                <Insets right="10.0" />
+                                             </GridPane.margin></Button>
                                        </children>
                                                  </GridPane>
                                                  <GridPane GridPane.columnIndex="1">
@@ -59,10 +62,10 @@
                                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                                                      </columnConstraints>
                                        <rowConstraints>
-                                          <RowConstraints />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" />
                                        </rowConstraints>
                                        <children>
-                                                         <Button mnemonicParsing="false" onAction="#unpackFolder" text="&lt;- Unpack folder &lt;-" />
+                                                         <Button mnemonicParsing="false" onAction="#unpackFolder" style="-fx-font-size: 15;" text="&lt;- Unpack folder &lt;-" />
                                        </children>
                                                  </GridPane>
                                     <GridPane GridPane.rowIndex="1">
@@ -197,7 +200,7 @@
                                        </rowConstraints>
                                        <children>
                                           <Label text="Post Id:" />
-                                          <TextField GridPane.columnIndex="1">
+                                          <TextField fx:id="postIdTextField" GridPane.columnIndex="1">
                                              <GridPane.margin>
                                                 <Insets right="10.0" />
                                              </GridPane.margin>
@@ -217,21 +220,23 @@
                                        </rowConstraints>
                                        <children>
                                           <Label text="Message Number:" />
-                                          <TextField GridPane.columnIndex="1" />
+                                          <TextField fx:id="messageNumberTextField" GridPane.columnIndex="1" />
                                        </children>
                                     </GridPane>
                                     <Label style="-fx-font-weight: bold;" text="Fidd File Metadata:" GridPane.rowIndex="6" />
                                     <GridPane GridPane.rowIndex="4">
                                       <columnConstraints>
                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="120.0" minWidth="120.0" prefWidth="120.0" />
-                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="175.0" minWidth="175.0" prefWidth="175.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="125.0" minWidth="125.0" prefWidth="125.0" />
                                       </columnConstraints>
                                       <rowConstraints>
                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                       </rowConstraints>
                                        <children>
                                           <Label style="-fx-font-weight: bold;" text="Signatures and CRC:" />
-                                          <Button mnemonicParsing="false" onAction="#checkUncheckAllSignaturesAndCrc" text="Check/Uncheck All" GridPane.columnIndex="1" />
+                                          <Button mnemonicParsing="false" onAction="#checkUncheckAllSignatures" text="Check/Uncheck All Signatures" GridPane.columnIndex="1" />
+                                          <Button mnemonicParsing="false" onAction="#checkUncheckAllSignaturesAndCrc" text="Check/Uncheck All" GridPane.columnIndex="2" />
                                        </children>
                                     </GridPane>
                                              </children>

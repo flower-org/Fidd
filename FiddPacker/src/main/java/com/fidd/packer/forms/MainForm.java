@@ -3,7 +3,16 @@ package com.fidd.packer.forms;
 import com.fidd.base.BaseRepositories;
 import com.fidd.base.DefaultBaseRepositories;
 import com.fidd.base.Repository;
-import com.fidd.packer.pack.PackManager;
+import com.fidd.core.crc.CrcCalculator;
+import com.fidd.core.encryption.EncryptionAlgorithm;
+import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
+import com.fidd.core.fiddkey.FiddKeySerializer;
+import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
+import com.fidd.core.metadata.MetadataSectionSerializer;
+import com.fidd.core.pki.PublicKeySerializer;
+import com.fidd.core.pki.SignerChecker;
+import com.fidd.core.random.RandomGeneratorType;
+import com.fidd.packer.pack.FiddPackManager;
 import com.flower.crypt.PkiUtil;
 import com.flower.crypt.keys.KeyContext;
 import com.flower.crypt.keys.RsaKeyContext;
@@ -12,6 +21,7 @@ import com.flower.crypt.keys.forms.RsaFileKeyProvider;
 import com.flower.crypt.keys.forms.RsaPkcs11KeyProvider;
 import com.flower.crypt.keys.forms.RsaRawKeyProvider;
 import com.flower.crypt.keys.forms.TabKeyProvider;
+import com.flower.fxutils.JavaFxUtils;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -74,6 +84,9 @@ public class MainForm {
     @FXML @Nullable TextField originalFolderTextField;
     @FXML @Nullable TextField packedContentFolderTextField;
 
+    @FXML @Nullable TextField messageNumberTextField;
+    @FXML @Nullable TextField postIdTextField;
+
     @FXML @Nullable ComboBox<String> fiddKeyComboBox;
     @FXML @Nullable ComboBox<String> metadataSectionComboBox;
     @FXML @Nullable ComboBox<String> fiddFileMetadataComboBox;
@@ -102,15 +115,16 @@ public class MainForm {
         baseRepositories = new DefaultBaseRepositories();
     }
 
-    protected X509Certificate getCurrentCertificate() {
-        KeyContext keyContext = checkNotNull(keyProvider).getKeyContext();
+    protected @Nullable X509Certificate getCurrentCertificate() {
+        if (keyProvider == null) { return null; }
+        KeyContext keyContext = keyProvider.getKeyContext();
 
         if (keyContext instanceof RsaKeyContext) {
             X509Certificate certificate = ((RsaKeyContext) keyContext).certificate();
             //PrivateKey key = ((RsaKeyContext) keyContext).privateKey();
             return certificate;
         } else {
-            throw new RuntimeException("Unsupported Key Context: " + keyContext.getClass().toString());
+            throw new RuntimeException("Unsupported Key Context: " + keyContext.getClass());
         }
     }
 
@@ -134,6 +148,22 @@ public class MainForm {
 
         loadFiddPackerChooserPreferences();
         setFiddPackerPreferencesHandlers();
+    }
+
+    public void checkUncheckAllSignatures() {
+        boolean toggle = false;
+
+        if (!checkNotNull(signFiddFileAndFiddKeyCheckBox).selectedProperty().get() ||
+                !checkNotNull(signLogicalFilesCheckBox).selectedProperty().get() ||
+                !checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().get() ||
+                !checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().get()) {
+            toggle = true;
+        }
+
+        checkNotNull(signFiddFileAndFiddKeyCheckBox).selectedProperty().set(toggle);
+        checkNotNull(signLogicalFilesCheckBox).selectedProperty().set(toggle);
+        checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().set(toggle);
+        checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().set(toggle);
     }
 
     public void checkUncheckAllSignaturesAndCrc() {
@@ -221,7 +251,6 @@ public class MainForm {
         updateFiddPackerPreferences();
     }
 
-    // TODO: add all new checkboxes etc to preferences
     public void updateFiddPackerPreferences() {
         String encryptionAlgorithm = checkNotNull(encryptionAlgorithmComboBox).valueProperty().get();
         String fiddKey = checkNotNull(fiddKeyComboBox).valueProperty().get();
@@ -248,7 +277,6 @@ public class MainForm {
                 minGapSize, maxGapSize);
     }
 
-    // TODO: add all new checkboxes etc to preferences
     public static void updateFiddPackerPreferences(String encryptionAlgorithm, String fiddKey, String fiddFileMetadata,
                                                 String logicalFileMetadata, String publicKeyFormat, String signatureFormat,
                                                 String randomGenerator, String metadataSection, String crcCalculator,
@@ -304,12 +332,110 @@ public class MainForm {
 
     public void quit() { checkNotNull(mainStage).close(); }
 
+    static <J> J getComboBoxSelectionFromRepo(Repository<J> repo, @Nullable ComboBox<String> comboBox) {
+        return repo.get(checkNotNull(comboBox).valueProperty().get());
+    }
+
     public void packFolder() {
         try {
-            File directory = new File(checkNotNull(originalFolderTextField).textProperty().get());
-            File outputDirectory = new File(checkNotNull(packedContentFolderTextField).textProperty().get());
-            File outputFile = new File(outputDirectory, "message.fidd");
-            PackManager.packDirectory(directory, outputFile);
+            File originalDirectory = new File(checkNotNull(originalFolderTextField).textProperty().get());
+            if (!originalDirectory.exists()) {
+                JavaFxUtils.showMessage("Original Folder doesn't exist");
+                return;
+            }
+            File packedContentDirectory = new File(checkNotNull(packedContentFolderTextField).textProperty().get());
+            if (!packedContentDirectory.exists()) {
+                JavaFxUtils.showMessage("Packed Content Folder doesn't exist");
+                return;
+            }
+
+            FiddKeySerializer fiddKeySerializer = getComboBoxSelectionFromRepo(baseRepositories.fiddKeyFormatRepo(), fiddKeyComboBox);
+            MetadataSectionSerializer metadataSectionSerializer = getComboBoxSelectionFromRepo(baseRepositories.metadataSectionFormatRepo(), metadataSectionComboBox);
+            FiddFileMetadataSerializer fiddFileMetadataSerializer = getComboBoxSelectionFromRepo(baseRepositories.fiddFileMetadataFormatRepo(), fiddFileMetadataComboBox);
+            LogicalFileMetadataSerializer logicalFileMetadataSerializer = getComboBoxSelectionFromRepo(baseRepositories.logicalFileMetadataFormatRepo(), logicalFileMetadataComboBox);
+            EncryptionAlgorithm encryptionAlgorithm = getComboBoxSelectionFromRepo(baseRepositories.encryptionAlgorithmRepo(), encryptionAlgorithmComboBox);
+            RandomGeneratorType randomGenerator = getComboBoxSelectionFromRepo(baseRepositories.randomGeneratorsRepo(), randomGeneratorComboBox);
+            long minGapSize;
+            String minGapSizeStr = checkNotNull(minGapSizeTextField).textProperty().get();
+            try { minGapSize = Long.parseLong(minGapSizeStr);
+            } catch (NumberFormatException e) {
+                JavaFxUtils.showMessage("Value Mismatch", "Cant parse Min Gap Size as an integer number: " + minGapSizeStr);
+                return;
+            }
+            long maxGapSize;
+            String maxGapSizeStr = checkNotNull(maxGapSizeTextField).textProperty().get();
+            try { maxGapSize = Long.parseLong(maxGapSizeStr);
+            } catch (NumberFormatException e) {
+                JavaFxUtils.showMessage("Value Mismatch", "Cant parse Max Gap Size as an integer number: " + maxGapSizeStr);
+                return;
+            }
+
+            boolean createFileAndKeySignatures = checkNotNull(signFiddFileAndFiddKeyCheckBox).selectedProperty().get();
+            boolean addFiddFileMetadataSignature = checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().get();
+            boolean addLogicalFileSignatures = checkNotNull(signLogicalFilesCheckBox).selectedProperty().get();
+            boolean addLogicalFileMetadataSignatures = checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().get();
+
+            PublicKeySerializer publicKeySerializer = getComboBoxSelectionFromRepo(baseRepositories.publicKeyFormatRepo(), publicKeyFormatComboBox);
+            SignerChecker signerChecker = getComboBoxSelectionFromRepo(baseRepositories.signatureFormatRepo(), signatureFormatComboBox);
+
+            boolean addCrcsToFiddKey = checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().get();
+            CrcCalculator crcCalculator = getComboBoxSelectionFromRepo(baseRepositories.crcCalculatorsRepo(), crcCalculatorComboBox);
+
+            long messageNumber;
+            String messageNumberStr = checkNotNull(messageNumberTextField).textProperty().get();
+            try { messageNumber = Long.parseLong(messageNumberStr);
+            } catch (NumberFormatException e) {
+                JavaFxUtils.showMessage("Value Mismatch", "Cant parse Message Number as an integer number: " + messageNumberStr);
+                return;
+            }
+            String postId = checkNotNull(postIdTextField).textProperty().get();
+            if (StringUtils.isBlank(postId)) {
+                JavaFxUtils.showMessage("Value Mismatch", "PostId can't be blank");
+                return;
+            }
+            X509Certificate currentCert = null;
+            if (createFileAndKeySignatures || addFiddFileMetadataSignature || addLogicalFileSignatures || addLogicalFileMetadataSignatures) {
+                try {
+                    currentCert = getCurrentCertificate();
+                    if (currentCert == null) {
+                        JavaFxUtils.showMessage("Certificate load error", "Certificate load error. If you do not plan to use a certificate, click \"Uncheck All Signatures\".");
+                        return;
+                    }
+                } catch (Exception e) {
+                    JavaFxUtils.showMessage("Certificate load error", "Certificate load error. If you do not plan to use a certificate, click \"Uncheck All Signatures\".\n" + e.getMessage());
+                    LOGGER.error("Certificate was not loaded", e);
+                    return;
+                }
+            }
+
+            // TODO: Progress Bar modal window
+
+            FiddPackManager.fiddPackNewPost(
+                    originalDirectory,
+                    packedContentDirectory,
+                    currentCert,
+                    messageNumber,
+                    postId,
+
+                    fiddKeySerializer,
+                    metadataSectionSerializer,
+                    fiddFileMetadataSerializer,
+                    logicalFileMetadataSerializer,
+                    encryptionAlgorithm,
+                    randomGenerator,
+                    minGapSize,
+                    maxGapSize,
+
+                    createFileAndKeySignatures,
+                    addFiddFileMetadataSignature,
+                    addLogicalFileSignatures,
+                    addLogicalFileMetadataSignatures,
+                    publicKeySerializer,
+                    signerChecker,
+
+                    addCrcsToFiddKey,
+                    crcCalculator
+            );
         } catch (Exception e) {
             LOGGER.error("Packing error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
@@ -349,14 +475,20 @@ public class MainForm {
     }
 
     public void generateSelfSignedCertificateRsa2048() {
+        // TODO: Progress Bar modal window
+
         generateSelfSignedCertificateRsa(2048);
     }
 
     public void generateSelfSignedCertificateRsa4096() {
+        // TODO: Progress Bar modal window
+
         generateSelfSignedCertificateRsa(4096);
     }
 
     public void generateSelfSignedCertificateRsa8192() {
+        // TODO: Progress Bar modal window
+
         generateSelfSignedCertificateRsa(8192);
     }
 
