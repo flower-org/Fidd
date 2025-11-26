@@ -4,8 +4,6 @@ import com.fidd.base.BaseRepositories;
 import com.fidd.base.DefaultBaseRepositories;
 import com.fidd.base.Repository;
 import com.fidd.packer.pack.PackManager;
-import com.flower.crypt.Cryptor;
-import com.flower.crypt.HexTool;
 import com.flower.crypt.PkiUtil;
 import com.flower.crypt.keys.KeyContext;
 import com.flower.crypt.keys.RsaKeyContext;
@@ -54,6 +52,7 @@ public class MainForm {
     final static String PUBLIC_KEY_FORMAT = "PUBLIC_KEY_FORMAT";
     final static String SIGNATURE_FORMAT = "SIGNATURE_FORMAT";
     final static String RANDOM_GENERATOR = "RANDOM_GENERATOR";
+    final static String CRC_CALCULATOR = "CRC_CALCULATOR";
     final static String ADD_AUTHOR_SIGNATURES = "ADD_AUTHOR_SIGNATURES";
     final static String MIN_GAP_SIZE_TEXT_FIELD = "MIN_GAP_SIZE_TEXT_FIELD";
     final static String MAX_GAP_SIZE_TEXT_FIELD = "MAX_GAP_SIZE_TEXT_FIELD";
@@ -64,8 +63,6 @@ public class MainForm {
 
     @Nullable TabKeyProvider keyProvider;
 
-    @FXML @Nullable TextField generatedAes256KeyTextField;
-    @FXML @Nullable TextField generatedAes256IvTextField;
     @FXML @Nullable TextArea generatedCertificateTextArea;
     @FXML @Nullable TextArea generatedPrivateKeyTextArea;
 
@@ -80,6 +77,7 @@ public class MainForm {
     @FXML @Nullable ComboBox<String> signatureFormatComboBox;
     @FXML @Nullable ComboBox<String> encryptionAlgorithmComboBox;
     @FXML @Nullable ComboBox<String> randomGeneratorComboBox;
+    @FXML @Nullable ComboBox<String> crcCalculatorComboBox;
     @FXML @Nullable CheckBox addAuthorSignaturesCheckBox;
     @FXML @Nullable TextField minGapSizeTextField;
     @FXML @Nullable TextField maxGapSizeTextField;
@@ -136,6 +134,7 @@ public class MainForm {
         initRepositoryComboBox(baseRepositories.publicKeyFormatRepo(), checkNotNull(publicKeyFormatComboBox), getUserPreference(PUBLIC_KEY_FORMAT));
         initRepositoryComboBox(baseRepositories.signatureFormatRepo(), checkNotNull(signatureFormatComboBox), getUserPreference(SIGNATURE_FORMAT));
         initRepositoryComboBox(baseRepositories.randomGeneratorsRepo(), checkNotNull(randomGeneratorComboBox), getUserPreference(RANDOM_GENERATOR));
+        initRepositoryComboBox(baseRepositories.crcCalculatorsRepo(), checkNotNull(crcCalculatorComboBox), getUserPreference(CRC_CALCULATOR));
 
         String addAuthorSignaturesCheckedStr = getUserPreference(ADD_AUTHOR_SIGNATURES);
         if (!StringUtils.isBlank(addAuthorSignaturesCheckedStr)) {
@@ -179,6 +178,7 @@ public class MainForm {
         updateFiddPackerPreferences();
     }
 
+    // TODO: add all new checkboxes etc to preferences
     public void updateFiddPackerPreferences() {
         String encryptionAlgorithm = checkNotNull(encryptionAlgorithmComboBox).valueProperty().get();
         String fiddKey = checkNotNull(fiddKeyComboBox).valueProperty().get();
@@ -187,18 +187,20 @@ public class MainForm {
         String publicKeyFormat = checkNotNull(publicKeyFormatComboBox).valueProperty().get();
         String signatureFormat = checkNotNull(signatureFormatComboBox).valueProperty().get();
         String randomGenerator = checkNotNull(randomGeneratorComboBox).valueProperty().get();
+        String crcCalculator = checkNotNull(crcCalculatorComboBox).valueProperty().get();
         boolean addAuthorSignatures = checkNotNull(addAuthorSignaturesCheckBox).selectedProperty().get();
         String minGapSize = checkNotNull(minGapSizeTextField).textProperty().get();
         String maxGapSize = checkNotNull(maxGapSizeTextField).textProperty().get();
 
         updateFiddPackerPreferences(encryptionAlgorithm, fiddKey, fiddFileMetadata, logicalFileMetadata, publicKeyFormat,
-                signatureFormat, randomGenerator, Boolean.toString(addAuthorSignatures), minGapSize, maxGapSize);
+                signatureFormat, randomGenerator, crcCalculator, Boolean.toString(addAuthorSignatures), minGapSize, maxGapSize);
 
     }
 
+    // TODO: add all new checkboxes etc to preferences
     public static void updateFiddPackerPreferences(String encryptionAlgorithm, String fiddKey, String fiddFileMetadata,
                                                 String logicalFileMetadata, String publicKeyFormat, String signatureFormat,
-                                                String randomGenerator, String addAuthorSignatures, String minGapSize,
+                                                String randomGenerator, String crcCalculator, String addAuthorSignatures, String minGapSize,
                                                 String maxGapSize) {
         Preferences userPreferences = Preferences.userRoot();
 
@@ -209,6 +211,7 @@ public class MainForm {
         updateUserPreference(userPreferences, PUBLIC_KEY_FORMAT, StringUtils.defaultIfBlank(publicKeyFormat, ""));
         updateUserPreference(userPreferences, SIGNATURE_FORMAT, StringUtils.defaultIfBlank(signatureFormat, ""));
         updateUserPreference(userPreferences, RANDOM_GENERATOR, StringUtils.defaultIfBlank(randomGenerator, ""));
+        updateUserPreference(userPreferences, CRC_CALCULATOR, StringUtils.defaultIfBlank(crcCalculator, ""));
         updateUserPreference(userPreferences, ADD_AUTHOR_SIGNATURES, StringUtils.defaultIfBlank(addAuthorSignatures, ""));
         updateUserPreference(userPreferences, MIN_GAP_SIZE_TEXT_FIELD, StringUtils.defaultIfBlank(minGapSize, ""));
         updateUserPreference(userPreferences, MAX_GAP_SIZE_TEXT_FIELD, StringUtils.defaultIfBlank(maxGapSize, ""));
