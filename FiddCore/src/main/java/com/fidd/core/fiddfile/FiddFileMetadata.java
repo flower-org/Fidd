@@ -13,6 +13,8 @@ public interface FiddFileMetadata {
     String logicalFileMetadataFormatVersion();
 
     Long messageNumber();
+    /** Post originally published as msg number */
+    Long originalMessageNumber(); //
     @Nullable Long previousMessageNumber();
     String postId();
     Integer versionNumber();
