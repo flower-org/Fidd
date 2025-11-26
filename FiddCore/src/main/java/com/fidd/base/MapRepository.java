@@ -9,11 +9,13 @@ import java.util.List;
 import java.util.Map;
 
 public class MapRepository<T extends NamedEntry> implements Repository<T> {
+    private final List<T> entriesInOriginalOrder;
     private final Map<String, T> registry;
     @Nullable String defaultKey;
 
     public MapRepository(@Nullable String defaultKey, List<T> entries) {
         this.defaultKey = defaultKey;
+        this.entriesInOriginalOrder = entries;
         HashMap<String, T> registry = new HashMap<>();
         for (T entry : entries) {
             registry.put(entry.name(), entry);
@@ -38,6 +40,6 @@ public class MapRepository<T extends NamedEntry> implements Repository<T> {
 
     @Override
     public Collection<String> listEntryNames() {
-        return registry.keySet();
+        return entriesInOriginalOrder.stream().map(NamedEntry::name).toList();
     }
 }

@@ -1,5 +1,6 @@
 package com.fidd.base;
 
+import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKeySerializer;
@@ -18,6 +19,7 @@ public interface BaseRepositories {
 
     Repository<PublicKeySerializer> publicKeyFormatRepo();
     Repository<SignerChecker> signatureFormatRepo();
+    Repository<CrcCalculator> crcCalculatorsRepo();
 
     Repository<RandomGeneratorType> randomGeneratorsRepo();
 }

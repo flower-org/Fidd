@@ -1,6 +1,9 @@
 package com.fidd.base;
 
 import com.fidd.core.NamedEntry;
+import com.fidd.core.crc.CrcCalculator;
+import com.fidd.core.crc.adler32.Adler32Calculator;
+import com.fidd.core.crc.crc32.Crc32Calculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
@@ -36,6 +39,7 @@ public class DefaultBaseRepositories implements BaseRepositories {
     static final Repository<PublicKeySerializer> PUBLIC_KEY_FORMAT_REPO;
     static final Repository<SignerChecker> SIGNATURE_FORMAT_REPO;
     static final Repository<RandomGeneratorType> RANDOM_GENERATORS_REPO;
+    static final Repository<CrcCalculator> CRC_CALCULATOR_REPO;
 
     static {
         Aes256CbcEncryptionAlgorithm aes256Cbc = new Aes256CbcEncryptionAlgorithm();
@@ -64,6 +68,10 @@ public class DefaultBaseRepositories implements BaseRepositories {
         PlainRandomGeneratorType plainRandomGeneratorType = new PlainRandomGeneratorType();
         SecureRandomGeneratorType secureRandomGeneratorType = new SecureRandomGeneratorType();
         RANDOM_GENERATORS_REPO = new MapRepository<>(secureRandomGeneratorType.name(), List.of(secureRandomGeneratorType, plainRandomGeneratorType));
+
+        Adler32Calculator adler32Calculator = new Adler32Calculator();
+        Crc32Calculator crc32Calculator = new Crc32Calculator();
+        CRC_CALCULATOR_REPO = new MapRepository<>(adler32Calculator.name(), List.of(adler32Calculator, crc32Calculator));
     }
 
     @Override
@@ -99,6 +107,11 @@ public class DefaultBaseRepositories implements BaseRepositories {
     @Override
     public Repository<SignerChecker> signatureFormatRepo() {
         return SIGNATURE_FORMAT_REPO;
+    }
+
+    @Override
+    public Repository<CrcCalculator> crcCalculatorsRepo() {
+        return CRC_CALCULATOR_REPO;
     }
 
     @Override
