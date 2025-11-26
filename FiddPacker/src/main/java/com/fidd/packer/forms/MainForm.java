@@ -46,14 +46,19 @@ public class MainForm {
 
     final static String ENCRYPTION_ALGORITHM = "ENCRYPTION_ALGORITHM";
     final static String FIDD_KEY = "FIDD_KEY";
-    final static String METADATA_SECTION = "METADATA_SECTION";
     final static String FIDD_FILE_METADATA = "FIDD_FILE_METADATA";
     final static String LOGICAL_FILE_METADATA = "LOGICAL_FILE_METADATA";
     final static String PUBLIC_KEY_FORMAT = "PUBLIC_KEY_FORMAT";
     final static String SIGNATURE_FORMAT = "SIGNATURE_FORMAT";
     final static String RANDOM_GENERATOR = "RANDOM_GENERATOR";
+    final static String METADATA_SECTION = "METADATA_SECTION";
     final static String CRC_CALCULATOR = "CRC_CALCULATOR";
-    final static String ADD_AUTHOR_SIGNATURES = "ADD_AUTHOR_SIGNATURES";
+    final static String SIGN_FIDD_FILE_AND_FIDD_KEY = "SIGN_FIDD_FILE_AND_FIDD_KEY";
+    final static String SIGN_LOGICAL_FILES = "SIGN_LOGICAL_FILES";
+    final static String SIGN_LOGICAL_FILE_METADATAS = "SIGN_LOGICAL_FILE_METADATAS";
+    final static String SIGN_FIDD_FILE_METADATA = "SIGN_FIDD_FILE_METADATA";
+    final static String ADD_CRCS_TO_FIDD_KEY = "ADD_CRCS_TO_FIDD_KEY";
+
     final static String MIN_GAP_SIZE_TEXT_FIELD = "MIN_GAP_SIZE_TEXT_FIELD";
     final static String MAX_GAP_SIZE_TEXT_FIELD = "MAX_GAP_SIZE_TEXT_FIELD";
 
@@ -78,7 +83,13 @@ public class MainForm {
     @FXML @Nullable ComboBox<String> encryptionAlgorithmComboBox;
     @FXML @Nullable ComboBox<String> randomGeneratorComboBox;
     @FXML @Nullable ComboBox<String> crcCalculatorComboBox;
-    @FXML @Nullable CheckBox addAuthorSignaturesCheckBox;
+
+    @FXML @Nullable CheckBox signFiddFileAndFiddKeyCheckBox;
+    @FXML @Nullable CheckBox signLogicalFilesCheckBox;
+    @FXML @Nullable CheckBox signLogicalFileMetadatasCheckBox;
+    @FXML @Nullable CheckBox signFiddFileMetadataCheckBox;
+    @FXML @Nullable CheckBox addCrcsToFiddKeyCheckBox;
+
     @FXML @Nullable TextField minGapSizeTextField;
     @FXML @Nullable TextField maxGapSizeTextField;
 
@@ -125,6 +136,35 @@ public class MainForm {
         setFiddPackerPreferencesHandlers();
     }
 
+    public void checkUncheckAllSignaturesAndCrc() {
+        boolean toggle = false;
+
+        if (!checkNotNull(signFiddFileAndFiddKeyCheckBox).selectedProperty().get() ||
+            !checkNotNull(signLogicalFilesCheckBox).selectedProperty().get() ||
+            !checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().get() ||
+            !checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().get() ||
+            !checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().get()) {
+            toggle = true;
+        }
+
+        checkNotNull(signFiddFileAndFiddKeyCheckBox).selectedProperty().set(toggle);
+        checkNotNull(signLogicalFilesCheckBox).selectedProperty().set(toggle);
+        checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().set(toggle);
+        checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().set(toggle);
+        checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().set(toggle);
+    }
+
+    static void initCheckBox(CheckBox checkBox, @Nullable String checkedStr) {
+        if (!StringUtils.isBlank(checkedStr)) {
+            Boolean checked = null;
+            try {
+                checked = Boolean.parseBoolean(checkedStr);
+            } catch (Exception ignored) {}
+
+            if (checked != null) { checkNotNull(checkBox).selectedProperty().set(checked); }
+        }
+    }
+
     public void loadFiddPackerChooserPreferences() {
         initRepositoryComboBox(baseRepositories.encryptionAlgorithmRepo(), checkNotNull(encryptionAlgorithmComboBox), getUserPreference(ENCRYPTION_ALGORITHM));
         initRepositoryComboBox(baseRepositories.fiddKeyFormatRepo(), checkNotNull(fiddKeyComboBox), getUserPreference(FIDD_KEY));
@@ -134,19 +174,14 @@ public class MainForm {
         initRepositoryComboBox(baseRepositories.publicKeyFormatRepo(), checkNotNull(publicKeyFormatComboBox), getUserPreference(PUBLIC_KEY_FORMAT));
         initRepositoryComboBox(baseRepositories.signatureFormatRepo(), checkNotNull(signatureFormatComboBox), getUserPreference(SIGNATURE_FORMAT));
         initRepositoryComboBox(baseRepositories.randomGeneratorsRepo(), checkNotNull(randomGeneratorComboBox), getUserPreference(RANDOM_GENERATOR));
+        initRepositoryComboBox(baseRepositories.metadataSectionFormatRepo(), checkNotNull(metadataSectionComboBox), getUserPreference(METADATA_SECTION));
         initRepositoryComboBox(baseRepositories.crcCalculatorsRepo(), checkNotNull(crcCalculatorComboBox), getUserPreference(CRC_CALCULATOR));
 
-        String addAuthorSignaturesCheckedStr = getUserPreference(ADD_AUTHOR_SIGNATURES);
-        if (!StringUtils.isBlank(addAuthorSignaturesCheckedStr)) {
-            Boolean addAuthorSignaturesChecked = null;
-            try {
-                addAuthorSignaturesChecked = Boolean.parseBoolean(addAuthorSignaturesCheckedStr);
-            } catch (Exception ignored) {}
-
-            if (addAuthorSignaturesChecked != null) {
-                checkNotNull(addAuthorSignaturesCheckBox).selectedProperty().set(addAuthorSignaturesChecked);
-            }
-        }
+        initCheckBox(checkNotNull(signFiddFileAndFiddKeyCheckBox), getUserPreference(SIGN_FIDD_FILE_AND_FIDD_KEY));
+        initCheckBox(checkNotNull(signLogicalFilesCheckBox), getUserPreference(SIGN_LOGICAL_FILES));
+        initCheckBox(checkNotNull(signLogicalFileMetadatasCheckBox), getUserPreference(SIGN_LOGICAL_FILE_METADATAS));
+        initCheckBox(checkNotNull(signFiddFileMetadataCheckBox), getUserPreference(SIGN_FIDD_FILE_METADATA));
+        initCheckBox(checkNotNull(addCrcsToFiddKeyCheckBox), getUserPreference(ADD_CRCS_TO_FIDD_KEY));
 
         String minGapSizeStr = getUserPreference(MIN_GAP_SIZE_TEXT_FIELD);
         if (StringUtils.isBlank(minGapSizeStr)) { minGapSizeStr = "0"; }
@@ -165,7 +200,15 @@ public class MainForm {
         checkNotNull(publicKeyFormatComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
         checkNotNull(signatureFormatComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
         checkNotNull(randomGeneratorComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
-        checkNotNull(addAuthorSignaturesCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(metadataSectionComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
+        checkNotNull(crcCalculatorComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
+
+        checkNotNull(signFiddFileAndFiddKeyCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(signLogicalFilesCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+
         checkNotNull(minGapSizeTextField).textProperty().addListener(this::fiddPackerTextChanged);
         checkNotNull(maxGapSizeTextField).textProperty().addListener(this::fiddPackerTextChanged);
     }
@@ -188,19 +231,31 @@ public class MainForm {
         String signatureFormat = checkNotNull(signatureFormatComboBox).valueProperty().get();
         String randomGenerator = checkNotNull(randomGeneratorComboBox).valueProperty().get();
         String crcCalculator = checkNotNull(crcCalculatorComboBox).valueProperty().get();
-        boolean addAuthorSignatures = checkNotNull(addAuthorSignaturesCheckBox).selectedProperty().get();
+        String metadataSection = checkNotNull(metadataSectionComboBox).valueProperty().get();
+        boolean signFiddFileAndFiddKey = checkNotNull(signFiddFileAndFiddKeyCheckBox).selectedProperty().get();
+        boolean signLogicalFiles = checkNotNull(signLogicalFilesCheckBox).selectedProperty().get();
+        boolean signLogicalFileMetadatas = checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().get();
+        boolean signFiddFileMetadata = checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().get();
+        boolean addCrcsToFiddKey = checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().get();
+
         String minGapSize = checkNotNull(minGapSizeTextField).textProperty().get();
         String maxGapSize = checkNotNull(maxGapSizeTextField).textProperty().get();
 
         updateFiddPackerPreferences(encryptionAlgorithm, fiddKey, fiddFileMetadata, logicalFileMetadata, publicKeyFormat,
-                signatureFormat, randomGenerator, crcCalculator, Boolean.toString(addAuthorSignatures), minGapSize, maxGapSize);
-
+                signatureFormat, randomGenerator, metadataSection, crcCalculator, Boolean.toString(signFiddFileAndFiddKey),
+                Boolean.toString(signLogicalFiles), Boolean.toString(signLogicalFileMetadatas),
+                Boolean.toString(signFiddFileMetadata), Boolean.toString(addCrcsToFiddKey),
+                minGapSize, maxGapSize);
     }
 
     // TODO: add all new checkboxes etc to preferences
     public static void updateFiddPackerPreferences(String encryptionAlgorithm, String fiddKey, String fiddFileMetadata,
                                                 String logicalFileMetadata, String publicKeyFormat, String signatureFormat,
-                                                String randomGenerator, String crcCalculator, String addAuthorSignatures, String minGapSize,
+                                                String randomGenerator, String metadataSection, String crcCalculator,
+                                                String signFiddFileAndFiddKey,
+                                                String signLogicalFiles, String signLogicalFileMetadatas,
+                                                String signFiddFileMetadata, String addCrcsToFiddKey,
+                                                String minGapSize,
                                                 String maxGapSize) {
         Preferences userPreferences = Preferences.userRoot();
 
@@ -211,8 +266,14 @@ public class MainForm {
         updateUserPreference(userPreferences, PUBLIC_KEY_FORMAT, StringUtils.defaultIfBlank(publicKeyFormat, ""));
         updateUserPreference(userPreferences, SIGNATURE_FORMAT, StringUtils.defaultIfBlank(signatureFormat, ""));
         updateUserPreference(userPreferences, RANDOM_GENERATOR, StringUtils.defaultIfBlank(randomGenerator, ""));
+        updateUserPreference(userPreferences, METADATA_SECTION, StringUtils.defaultIfBlank(metadataSection, ""));
         updateUserPreference(userPreferences, CRC_CALCULATOR, StringUtils.defaultIfBlank(crcCalculator, ""));
-        updateUserPreference(userPreferences, ADD_AUTHOR_SIGNATURES, StringUtils.defaultIfBlank(addAuthorSignatures, ""));
+        updateUserPreference(userPreferences, SIGN_FIDD_FILE_AND_FIDD_KEY, StringUtils.defaultIfBlank(signFiddFileAndFiddKey, ""));
+        updateUserPreference(userPreferences, SIGN_LOGICAL_FILES, StringUtils.defaultIfBlank(signLogicalFiles, ""));
+        updateUserPreference(userPreferences, SIGN_LOGICAL_FILE_METADATAS, StringUtils.defaultIfBlank(signLogicalFileMetadatas, ""));
+        updateUserPreference(userPreferences, SIGN_FIDD_FILE_METADATA, StringUtils.defaultIfBlank(signFiddFileMetadata, ""));
+        updateUserPreference(userPreferences, ADD_CRCS_TO_FIDD_KEY, StringUtils.defaultIfBlank(addCrcsToFiddKey, ""));
+
         updateUserPreference(userPreferences, MIN_GAP_SIZE_TEXT_FIELD, StringUtils.defaultIfBlank(minGapSize, ""));
         updateUserPreference(userPreferences, MAX_GAP_SIZE_TEXT_FIELD, StringUtils.defaultIfBlank(maxGapSize, ""));
     }

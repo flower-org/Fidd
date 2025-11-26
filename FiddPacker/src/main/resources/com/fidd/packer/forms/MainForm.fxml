@@ -119,7 +119,7 @@
                                     </GridPane>
                                     <GridPane GridPane.rowIndex="5">
                                       <columnConstraints>
-                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="200.0" minWidth="200.0" prefWidth="200.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="150.0" minWidth="150.0" prefWidth="150.0" />
                                         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                                       </columnConstraints>
                                       <rowConstraints>
@@ -129,14 +129,14 @@
                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                       </rowConstraints>
                                        <children>
-                                          <Label text="Add Author Signatures:" />
-                                          <CheckBox fx:id="addAuthorSignaturesCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" />
-                                          <CheckBox mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                          <CheckBox mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                          <CheckBox mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                          <Label text="Add LogicalFile Signatures:" GridPane.rowIndex="2" />
-                                          <Label text="Add LogicalFileMetadata Signatures:" GridPane.rowIndex="3" />
-                                          <Label text="Add FiddFileMetadata Signature:" GridPane.rowIndex="1" />
+                                          <Label text="Sign FiddFile and FiddKey:" />
+                                          <CheckBox fx:id="signFiddFileAndFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" />
+                                          <CheckBox fx:id="signLogicalFileMetadatasCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                          <CheckBox fx:id="signLogicalFilesCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                          <CheckBox fx:id="signFiddFileMetadataCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                          <Label text="Sign LogicalFiles:" GridPane.rowIndex="2" />
+                                          <Label text="Sign LogicalFileMetadatas:" GridPane.rowIndex="3" />
+                                          <Label text="Sign FiddFileMetadata:" GridPane.rowIndex="1" />
                                        </children>
                                     </GridPane>
                                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="5">
@@ -158,7 +158,7 @@
                                           <Label text="Add CRCs to Fidd Key:" GridPane.rowIndex="2" />
                                           <Label text="CRC Algo:" GridPane.rowIndex="3" />
                                           <ComboBox fx:id="crcCalculatorComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                          <CheckBox mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                          <CheckBox fx:id="addCrcsToFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                        </children>
                                     </GridPane>
                                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="3">
@@ -231,7 +231,7 @@
                                       </rowConstraints>
                                        <children>
                                           <Label style="-fx-font-weight: bold;" text="Signatures and CRC:" />
-                                          <Button mnemonicParsing="false" text="Check/Uncheck All" GridPane.columnIndex="1" />
+                                          <Button mnemonicParsing="false" onAction="#checkUncheckAllSignaturesAndCrc" text="Check/Uncheck All" GridPane.columnIndex="1" />
                                        </children>
                                     </GridPane>
                                              </children>
