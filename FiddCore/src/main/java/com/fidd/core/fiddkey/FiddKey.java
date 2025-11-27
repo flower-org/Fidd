@@ -26,17 +26,6 @@ public interface FiddKey {
         @Nullable byte[] crc();
     }
 
-    @Value.Immutable
-    @JsonSerialize(as = ImmutableLogicalFileSection.class)
-    @JsonDeserialize(as = ImmutableLogicalFileSection.class)
-    interface LogicalFileSection extends Section {
-        String filePath();
-    }
-
     Section fiddFileMetadata();
-    List<LogicalFileSection> logicalFiles();
-
-    // Author's signature of the whole Fidd File (package integrity)
-    @Nullable String authorsFiddFileSignatureFormat();
-    @Nullable byte[] authorsFiddFileSignature();
+    List<Section> logicalFiles();
 }

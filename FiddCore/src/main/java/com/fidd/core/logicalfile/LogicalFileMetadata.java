@@ -17,11 +17,7 @@ public interface LogicalFileMetadata {
     }
 
     FiddUpdateType updateType();
-
-    /** e.g. "text/css" */
-    @Nullable String mimeType();
-    /** e.g. "zip" */
-    @Nullable String encodingType();
+    String filePath();
 
     // We can't replace this with just 1 timestamp, because squash OVERRIDE
     // needs to show both the creation time and last update time.

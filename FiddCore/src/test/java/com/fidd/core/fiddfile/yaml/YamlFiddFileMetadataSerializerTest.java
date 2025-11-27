@@ -18,6 +18,7 @@ public class YamlFiddFileMetadataSerializerTest {
         FiddFileMetadata fiddFileMetadata = ImmutableFiddFileMetadata.builder()
                 .logicalFileMetadataFormatVersion("FMT")
                 .messageNumber(123L)
+                .originalMessageNumber(123L)
                 .postId("Post123")
                 .versionNumber(2)
                 .isNewOrSquash(true)
@@ -25,7 +26,6 @@ public class YamlFiddFileMetadataSerializerTest {
                 .previousMessageNumber(122L)
                 .authorsPublicKeyFormat("FMT2")
                 .authorsPublicKey(new byte[] {1,2,3,4,5})
-                .authorsFiddFileMetadataSignatureFormat("FMT3")
                 .build();
 
         YamlFiddFileMetadataSerializer serializer = new YamlFiddFileMetadataSerializer();

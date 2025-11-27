@@ -15,9 +15,9 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<SplitPane dividerPositions="0.0" orientation="VERTICAL" prefHeight="690.0" prefWidth="895.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.fidd.packer.forms.MainForm">
+<SplitPane dividerPositions="0.0" orientation="VERTICAL" prefHeight="737.0" prefWidth="895.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.fidd.packer.forms.MainForm">
         <items>
-        <AnchorPane fx:id="topPane" minHeight="250.0" prefHeight="250.0" prefWidth="200.0" />
+        <AnchorPane fx:id="topPane" minHeight="250.0" prefHeight="250.0" prefWidth="893.0" />
         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
              <children>
                  <TabPane fx:id="functionTabPane" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
@@ -38,6 +38,8 @@
                                     <RowConstraints maxHeight="100.0" minHeight="100.0" prefHeight="100.0" vgrow="SOMETIMES" />
                                     <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                     <RowConstraints maxHeight="100.0" minHeight="100.0" prefHeight="100.0" vgrow="SOMETIMES" />
+                                    <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                    <RowConstraints maxHeight="100.0" minHeight="100.0" prefHeight="100.0" vgrow="SOMETIMES" />
                                              </rowConstraints>
                                              <children>
                                                  <GridPane prefHeight="30.0" prefWidth="346.0">
@@ -45,10 +47,13 @@
                                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                                      </rowConstraints>
                                        <columnConstraints>
-                                          <ColumnConstraints />
+                                          <ColumnConstraints halignment="RIGHT" hgrow="ALWAYS" />
                                        </columnConstraints>
                                        <children>
-                                                         <Button mnemonicParsing="false" onAction="#packFolder" text="-&gt; Pack folder  -&gt;" />
+                                                         <Button mnemonicParsing="false" onAction="#packFolder" style="-fx-font-size: 15;" text="-&gt; Pack folder  -&gt;" GridPane.halignment="RIGHT">
+                                             <GridPane.margin>
+                                                <Insets right="10.0" />
+                                             </GridPane.margin></Button>
                                        </children>
                                                  </GridPane>
                                                  <GridPane GridPane.columnIndex="1">
@@ -57,10 +62,10 @@
                                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                                                      </columnConstraints>
                                        <rowConstraints>
-                                          <RowConstraints />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" />
                                        </rowConstraints>
                                        <children>
-                                                         <Button mnemonicParsing="false" onAction="#unpackFolder" text="&lt;- Unpack folder &lt;-" />
+                                                         <Button mnemonicParsing="false" onAction="#unpackFolder" style="-fx-font-size: 15;" text="&lt;- Unpack folder &lt;-" />
                                        </children>
                                                  </GridPane>
                                     <GridPane GridPane.rowIndex="1">
@@ -106,16 +111,18 @@
                                       </rowConstraints>
                                        <children>
                                           <Label text="Fidd Key:" />
-                                          <Label text="Fidd File Metadata:" GridPane.rowIndex="1" />
-                                          <Label text="Logical File Metadata:" GridPane.rowIndex="2" />
+                                          <Label text="Fidd File Metadata:" GridPane.rowIndex="2" />
+                                          <Label text="Logical File Metadata:" GridPane.rowIndex="3" />
                                           <ComboBox fx:id="fiddKeyComboBox" prefWidth="250.0" GridPane.columnIndex="1" />
-                                          <ComboBox fx:id="fiddFileMetadataComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                          <ComboBox fx:id="logicalFileMetadataComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                          <ComboBox fx:id="fiddFileMetadataComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                          <ComboBox fx:id="logicalFileMetadataComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                          <ComboBox fx:id="metadataSectionComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                          <Label text="Metadata Section:" GridPane.rowIndex="1" />
                                        </children>
                                     </GridPane>
                                     <GridPane GridPane.rowIndex="5">
                                       <columnConstraints>
-                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="130.0" minWidth="130.0" prefWidth="130.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="150.0" minWidth="150.0" prefWidth="150.0" />
                                         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                                       </columnConstraints>
                                       <rowConstraints>
@@ -125,12 +132,14 @@
                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                       </rowConstraints>
                                        <children>
-                                          <Label text="Add Author Signatures:" />
-                                          <Label text="Public Key Format:" GridPane.rowIndex="1" />
-                                          <Label text="Signature Format:" GridPane.rowIndex="2" />
-                                          <CheckBox fx:id="addAuthorSignaturesCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" />
-                                          <ComboBox fx:id="publicKeyFormatComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                          <ComboBox fx:id="signatureFormatComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                          <Label text="Sign FiddFile and FiddKey:" />
+                                          <CheckBox fx:id="signFiddFileAndFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" />
+                                          <CheckBox fx:id="signLogicalFileMetadatasCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                          <CheckBox fx:id="signLogicalFilesCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                          <CheckBox fx:id="signFiddFileMetadataCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                          <Label text="Sign LogicalFiles:" GridPane.rowIndex="2" />
+                                          <Label text="Sign LogicalFileMetadatas:" GridPane.rowIndex="3" />
+                                          <Label text="Sign FiddFileMetadata:" GridPane.rowIndex="1" />
                                        </children>
                                     </GridPane>
                                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="5">
@@ -144,6 +153,16 @@
                                           <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                       </rowConstraints>
+                                       <children>
+                                          <ComboBox fx:id="signatureFormatComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                          <ComboBox fx:id="publicKeyFormatComboBox" prefWidth="250.0" GridPane.columnIndex="1" />
+                                          <Label text="Signature Format:" GridPane.rowIndex="1" />
+                                          <Label text="Public Key Format:" />
+                                          <Label text="Add CRCs to Fidd Key:" GridPane.rowIndex="2" />
+                                          <Label text="CRC Algo:" GridPane.rowIndex="3" />
+                                          <ComboBox fx:id="crcCalculatorComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                          <CheckBox fx:id="addCrcsToFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                       </children>
                                     </GridPane>
                                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="3">
                                       <columnConstraints>
@@ -167,8 +186,59 @@
                                           <TextField fx:id="maxGapSizeTextField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                                        </children>
                                     </GridPane>
-                                    <Label text="Author info:" GridPane.rowIndex="4" />
-                                    <Label text="Fidd format versions:" GridPane.rowIndex="2" />
+                                    <Label style="-fx-font-weight: bold;" text="Fidd Pack Settings:" GridPane.rowIndex="2" />
+                                    <GridPane GridPane.rowIndex="7">
+                                       <columnConstraints>
+                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="130.0" minWidth="130.0" prefWidth="130.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                       </columnConstraints>
+                                       <rowConstraints>
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                       </rowConstraints>
+                                       <children>
+                                          <Label text="Post Id:" />
+                                          <TextField fx:id="postIdTextField" GridPane.columnIndex="1">
+                                             <GridPane.margin>
+                                                <Insets right="10.0" />
+                                             </GridPane.margin>
+                                          </TextField>
+                                       </children>
+                                    </GridPane>
+                                    <GridPane GridPane.columnIndex="1" GridPane.rowIndex="7">
+                                       <columnConstraints>
+                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="130.0" minWidth="130.0" prefWidth="130.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                       </columnConstraints>
+                                       <rowConstraints>
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                       </rowConstraints>
+                                       <children>
+                                          <Label text="Message Number:" />
+                                          <TextField fx:id="messageNumberTextField" GridPane.columnIndex="1" />
+                                       </children>
+                                    </GridPane>
+                                    <Label style="-fx-font-weight: bold;" text="Fidd File Metadata:" GridPane.rowIndex="6" />
+                                    <GridPane GridPane.rowIndex="4">
+                                      <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="120.0" minWidth="120.0" prefWidth="120.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="175.0" minWidth="175.0" prefWidth="175.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="125.0" minWidth="125.0" prefWidth="125.0" />
+                                      </columnConstraints>
+                                      <rowConstraints>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                      </rowConstraints>
+                                       <children>
+                                          <Label style="-fx-font-weight: bold;" text="Signatures and CRC:" />
+                                          <Button mnemonicParsing="false" onAction="#checkUncheckAllSignatures" text="Check/Uncheck All Signatures" GridPane.columnIndex="1" />
+                                          <Button mnemonicParsing="false" onAction="#checkUncheckAllSignaturesAndCrc" text="Check/Uncheck All" GridPane.columnIndex="2" />
+                                       </children>
+                                    </GridPane>
                                              </children>
                                          </GridPane>
                                      </children>
@@ -177,7 +247,7 @@
                                      </padding></AnchorPane>
                              </content>
                          </Tab>
-                         <Tab fx:id="generatorTab" text="Key Generator">
+                         <Tab fx:id="generatorTab" text="Cert Generator">
                              <content>
                                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                      <children>
@@ -187,25 +257,10 @@
                                              </columnConstraints>
                                              <rowConstraints>
                                                  <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                 <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                 <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                              </rowConstraints>
                                              <children>
-                                                 <GridPane prefHeight="30.0" prefWidth="514.0">
-                                                     <columnConstraints>
-                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="175.0" minWidth="175.0" prefWidth="175.0" />
-                                                         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                                     </columnConstraints>
-                                                     <rowConstraints>
-                                                         <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                     </rowConstraints>
-                                                     <children>
-                                                         <TextField fx:id="generatedAes256KeyTextField" GridPane.columnIndex="1" />
-                                                         <Button mnemonicParsing="false" onAction="#generateAes256Key" text="AES-256 Key (hex)" />
-                                                     </children>
-                                                 </GridPane>
-                                                 <GridPane GridPane.rowIndex="3">
+                                                 <GridPane GridPane.rowIndex="1">
                                                      <columnConstraints>
                                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -221,20 +276,22 @@
                                                          <Label text="Private Key" GridPane.columnIndex="1" />
                                                      </children>
                                                  </GridPane>
-                                                 <Button mnemonicParsing="false" onAction="#generateSelfSignedCertificate" text="Self-Signed Certificate" GridPane.rowIndex="2" />
-                                                 <GridPane prefHeight="30.0" prefWidth="514.0" GridPane.rowIndex="1">
-                                                     <columnConstraints>
-                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="175.0" minWidth="175.0" prefWidth="175.0" />
-                                                         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                                     </columnConstraints>
-                                                     <rowConstraints>
-                                                         <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                                     </rowConstraints>
-                                                     <children>
-                                                         <TextField fx:id="generatedAes256IvTextField" GridPane.columnIndex="1" />
-                                                         <Button mnemonicParsing="false" onAction="#generateAes256Iv" text="AES-256 IV (hex)" />
-                                                     </children>
-                                                 </GridPane>
+                                                 <Button mnemonicParsing="false" onAction="#generateSelfSignedCertificateRsa2048" text="Generate Self-Signed Certificate (RSA-2048)" />
+                                    <GridPane>
+                                      <columnConstraints>
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="255.0" minWidth="255.0" prefWidth="255.0" />
+                                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="255.0" minWidth="255.0" prefWidth="255.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="255.0" minWidth="255.0" prefWidth="255.0" />
+                                      </columnConstraints>
+                                      <rowConstraints>
+                                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                      </rowConstraints>
+                                       <children>
+                                          <Button mnemonicParsing="false" onAction="#generateSelfSignedCertificateRsa4096" text="Generate Self-Signed Certificate (RSA-4096)" GridPane.columnIndex="1" />
+                                          <Button mnemonicParsing="false" onAction="#generateSelfSignedCertificateRsa8192" text="Generate Self-Signed Certificate (RSA-8192)" GridPane.columnIndex="2" />
+                                       </children>
+                                    </GridPane>
+                                    <Button mnemonicParsing="false" onAction="#generateSelfSignedCertificateRsa2048" text="Generate Self-Signed Certificate (RSA-2048)" />
                                              </children>
                                          </GridPane>
                                      </children>

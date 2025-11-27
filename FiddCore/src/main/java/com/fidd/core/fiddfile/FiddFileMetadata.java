@@ -13,16 +13,18 @@ public interface FiddFileMetadata {
     String logicalFileMetadataFormatVersion();
 
     Long messageNumber();
+    /** Post originally published as msg number */
+    Long originalMessageNumber(); //
+    @Nullable Long previousMessageNumber();
     String postId();
     Integer versionNumber();
 
     boolean isNewOrSquash();
     boolean isDelete();
-    @Nullable Long previousMessageNumber();
 
     @Nullable String authorsPublicKeyFormat();
     @Nullable byte[] authorsPublicKey();
 
-    // Format of FiddFileMetadata Signature section
-    @Nullable String authorsFiddFileMetadataSignatureFormat();
+    @Nullable String authorsFiddFileSignatureFormat();
+    @Nullable String authorsFiddKeyFileSignatureFormat();
 }
