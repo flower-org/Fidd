@@ -3,6 +3,8 @@ package com.fidd.core.pki.sha256WithRsa;
 import com.fidd.core.pki.SignerChecker;
 import com.flower.crypt.PkiUtil;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -24,6 +26,24 @@ public class SHA256WithRSASignerChecker implements SignerChecker {
         try {
             return PkiUtil.verifySignature(data, sign, publicKey);
         } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public byte[] signData(InputStream data, PrivateKey privateKey) {
+        try {
+            return PkiUtil.signData(data, privateKey);
+        } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean verifySignature(InputStream data, byte[] sign, PublicKey publicKey) {
+        try {
+            return PkiUtil.verifySignature(data, sign, publicKey);
+        } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException | IOException e) {
             throw new RuntimeException(e);
         }
     }

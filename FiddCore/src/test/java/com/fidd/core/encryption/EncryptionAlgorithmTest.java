@@ -2,9 +2,6 @@ package com.fidd.core.encryption;
 
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -12,6 +9,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,7 +32,7 @@ public class EncryptionAlgorithmTest {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(originalText.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        encryptionAlgorithm.encrypt(keyData, inputStream, outputStream);
+        encryptionAlgorithm.encrypt(keyData, List.of(inputStream), outputStream);
         byte[] ciphertext = outputStream.toByteArray();
 
         // Decrypt the ciphertext
@@ -48,6 +46,32 @@ public class EncryptionAlgorithmTest {
 
         // Assert that the decrypted text matches the original text
         assertEquals(originalText, decryptedText);
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("encryptionAlgorithms")
+    void testEncryptDecryptMultiStream(EncryptionAlgorithm encryptionAlgorithm) {
+        byte[] keyData = encryptionAlgorithm.generateNewKeyData();
+        // Encrypt the original text
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(originalText.getBytes(StandardCharsets.UTF_8));
+        ByteArrayInputStream inputStream2 = new ByteArrayInputStream(originalText.getBytes(StandardCharsets.UTF_8));
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        encryptionAlgorithm.encrypt(keyData, List.of(inputStream, inputStream2), outputStream);
+        byte[] ciphertext = outputStream.toByteArray();
+
+        // Decrypt the ciphertext
+        ByteArrayInputStream cipherInputStream = new ByteArrayInputStream(ciphertext);
+        ByteArrayOutputStream decryptedOutputStream = new ByteArrayOutputStream();
+
+        encryptionAlgorithm.decrypt(keyData, cipherInputStream, decryptedOutputStream);
+
+        // Convert to String
+        String decryptedText = decryptedOutputStream.toString(StandardCharsets.UTF_8);
+
+        // Assert that the decrypted text matches the original text
+        assertEquals(originalText+originalText, decryptedText);
     }
 
     @ParameterizedTest
@@ -72,7 +96,7 @@ public class EncryptionAlgorithmTest {
     void testEncryptWithInvalidKeyData(EncryptionAlgorithm encryptionAlgorithm) {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(originalText.getBytes(StandardCharsets.UTF_8));
         RuntimeException thrown = assertThrows(RuntimeException.class,
-                () -> encryptionAlgorithm.encrypt(new byte[0], inputStream, new ByteArrayOutputStream()));
+                () -> encryptionAlgorithm.encrypt(new byte[0], List.of(inputStream), new ByteArrayOutputStream()));
         assertNotNull(thrown);
     }
 
@@ -96,7 +120,7 @@ public class EncryptionAlgorithmTest {
 
         ByteArrayInputStream in = new ByteArrayInputStream(plaintext);
         ByteArrayOutputStream encryptedOut = new ByteArrayOutputStream();
-        encryptionAlgorithm.encrypt(key, in, encryptedOut);
+        encryptionAlgorithm.encrypt(key, List.of(in), encryptedOut);
 
         byte[] ciphertext = encryptedOut.toByteArray();
 

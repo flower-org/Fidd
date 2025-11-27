@@ -1,5 +1,7 @@
 package com.fidd.pack;
 
+import com.fidd.core.metadata.NotEnoughBytesException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -11,40 +13,40 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class BlobsPackerTest {
     @Test
-    public void testPackAndUnpackWithZeroBlobs() {
+    public void testPackAndUnpackWithZeroBlobs() throws NotEnoughBytesException {
         List<byte[]> blobs = new ArrayList<>();
         byte[] packedData = BlobsPacker.packBlobs(blobs);
-        List<byte[]> unpackedBlobs = BlobsPacker.unpackBlobs(packedData);
-        assertEquals(0, unpackedBlobs.size(), "Should unpack to zero BLOBs");
+        Pair<Long, List<byte[]>> unpackedBlobs = BlobsPacker.unpackBlobs(packedData);
+        assertEquals(0, unpackedBlobs.getRight().size(), "Should unpack to zero BLOBs");
     }
 
     @Test
-    public void testPackAndUnpackWithOneBlob() {
+    public void testPackAndUnpackWithOneBlob() throws NotEnoughBytesException {
         List<byte[]> blobs = List.of("Hello".getBytes());
         byte[] packedData = BlobsPacker.packBlobs(blobs);
-        List<byte[]> unpackedBlobs = BlobsPacker.unpackBlobs(packedData);
-        assertEquals(1, unpackedBlobs.size(), "Should unpack to one BLOB");
-        assertEquals("Hello", new String(unpackedBlobs.get(0)), "Unpacked BLOB should match the original");
+        Pair<Long, List<byte[]>> unpackedBlobs = BlobsPacker.unpackBlobs(packedData);
+        assertEquals(1, unpackedBlobs.getRight().size(), "Should unpack to one BLOB");
+        assertEquals("Hello", new String(unpackedBlobs.getRight().get(0)), "Unpacked BLOB should match the original");
     }
 
     @Test
-    public void testPackAndUnpackWithMultipleBlobs() {
+    public void testPackAndUnpackWithMultipleBlobs() throws NotEnoughBytesException {
         List<byte[]> blobs = List.of("Hello".getBytes(), "World".getBytes());
         byte[] packedData = BlobsPacker.packBlobs(blobs);
-        List<byte[]> unpackedBlobs = BlobsPacker.unpackBlobs(packedData);
-        assertEquals(2, unpackedBlobs.size(), "Should unpack to two BLOBs");
-        assertEquals("Hello", new String(unpackedBlobs.get(0)), "First unpacked BLOB should match 'Hello'");
-        assertEquals("World", new String(unpackedBlobs.get(1)), "Second unpacked BLOB should match 'World'");
+        Pair<Long, List<byte[]>> unpackedBlobs = BlobsPacker.unpackBlobs(packedData);
+        assertEquals(2, unpackedBlobs.getRight().size(), "Should unpack to two BLOBs");
+        assertEquals("Hello", new String(unpackedBlobs.getRight().get(0)), "First unpacked BLOB should match 'Hello'");
+        assertEquals("World", new String(unpackedBlobs.getRight().get(1)), "Second unpacked BLOB should match 'World'");
     }
 
     @Test
-    public void testPackAndUnpackWithLargeBlob() {
+    public void testPackAndUnpackWithLargeBlob() throws NotEnoughBytesException {
         byte[] largeBlob = new byte[1024]; // 1 KB
         List<byte[]> blobs = List.of(largeBlob);
         byte[] packedData = BlobsPacker.packBlobs(blobs);
-        List<byte[]> unpackedBlobs = BlobsPacker.unpackBlobs(packedData);
-        assertEquals(1, unpackedBlobs.size(), "Should unpack to one BLOB");
-        assertArrayEquals(largeBlob, unpackedBlobs.get(0), "Unpacked BLOB should match the original large BLOB");
+        Pair<Long, List<byte[]>> unpackedBlobs = BlobsPacker.unpackBlobs(packedData);
+        assertEquals(1, unpackedBlobs.getRight().size(), "Should unpack to one BLOB");
+        assertArrayEquals(largeBlob, unpackedBlobs.getRight().get(0), "Unpacked BLOB should match the original large BLOB");
     }
 
     @Test

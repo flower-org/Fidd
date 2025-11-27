@@ -3,7 +3,9 @@ package com.fidd.core.metadata.blobs;
 import com.fidd.core.metadata.ImmutableMetadataSection;
 import com.fidd.core.metadata.MetadataSection;
 import com.fidd.core.metadata.MetadataSectionSerializer;
+import com.fidd.core.metadata.NotEnoughBytesException;
 import com.fidd.pack.BlobsPacker;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -28,8 +30,11 @@ public class BlobsMetadataSectionSerializer implements MetadataSectionSerializer
     }
 
     @Override
-    public MetadataSection deserialize(byte[] metadataBytes) {
-        List<byte[]> parts = BlobsPacker.unpackBlobs(metadataBytes);
+    public MetadataSectionAndLength deserialize(byte[] metadataBytes) throws NotEnoughBytesException {
+        final Pair<Long, List<byte[]>> unpacked = BlobsPacker.unpackBlobs(metadataBytes);
+
+        final long lengthBytes = unpacked.getLeft();
+        final List<byte[]> parts = unpacked.getRight();
 
         byte[] signature = parts.get(0);
         byte[] metadata = parts.get(1);
@@ -47,7 +52,18 @@ public class BlobsMetadataSectionSerializer implements MetadataSectionSerializer
             builder.signature(signature);
         }
 
-        return builder.build();
+        MetadataSection metadataSection = builder.build();
+        return new MetadataSectionAndLength() {
+            @Override
+            public long lengthBytes() {
+                return lengthBytes;
+            }
+
+            @Override
+            public MetadataSection metadataSection() {
+                return metadataSection;
+            }
+        };
     }
 
     @Override

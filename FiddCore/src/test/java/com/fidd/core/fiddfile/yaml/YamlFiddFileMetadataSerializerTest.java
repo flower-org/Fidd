@@ -26,7 +26,6 @@ public class YamlFiddFileMetadataSerializerTest {
                 .previousMessageNumber(122L)
                 .authorsPublicKeyFormat("FMT2")
                 .authorsPublicKey(new byte[] {1,2,3,4,5})
-                .authorsFiddFileMetadataSignatureFormat("FMT3")
                 .build();
 
         YamlFiddFileMetadataSerializer serializer = new YamlFiddFileMetadataSerializer();

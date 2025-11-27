@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.List;
 
 public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     @Override
@@ -35,14 +36,18 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     }
 
     @Override
-    public void encrypt(byte[] keyData, InputStream plaintext, OutputStream ciphertext) {
-        processStream(keyData, 0, -1, plaintext, ciphertext);
+    public long encrypt(byte[] keyData, List<InputStream> plaintexts, OutputStream ciphertext) {
+        long bytesWritten = 0;
+        for (InputStream plaintext : plaintexts) {
+            bytesWritten += processStream(keyData, (int)(bytesWritten % keyData.length), -1, plaintext, ciphertext);
+        }
+        return bytesWritten;
     }
 
     @Override
-    public void decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext) {
+    public long decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext) {
         // Same operation
-        processStream(keyData, 0, -1, ciphertext, plaintext);
+        return processStream(keyData, 0, -1, ciphertext, plaintext);
     }
 
     @Override
@@ -67,7 +72,7 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
         return result;
     }
 
-    private void processStream(byte[] keyData, int keyOffset, int length, InputStream in, OutputStream out) {
+    private long processStream(byte[] keyData, int keyOffset, int length, InputStream in, OutputStream out) {
         try {
             int b;
             int i = 0;
@@ -78,6 +83,8 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
                     break;
                 }
             }
+
+            return i;
         } catch (IOException e) {
             throw new RuntimeException("Stream processing failed", e);
         }

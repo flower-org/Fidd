@@ -3,6 +3,7 @@ package com.fidd.core.metadata.yaml;
 import com.fidd.core.metadata.ImmutableMetadataSection;
 import com.fidd.core.metadata.MetadataSection;
 import com.fidd.core.metadata.MetadataSectionSerializer;
+import com.fidd.core.metadata.NotEnoughBytesException;
 import com.fidd.core.metadata.blobs.BlobsMetadataSectionSerializer;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,14 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class MetadataSectionSerializerTest {
     static Stream<Arguments> serializers() {
         return Stream.of(
-                Arguments.of(new YamlMetadataSectionSerializer()),
                 Arguments.of(new BlobsMetadataSectionSerializer())
         );
     }
 
     @ParameterizedTest
     @MethodSource("serializers")
-    public void testSerializeAndDeserialize(MetadataSectionSerializer serializer) {
+    public void testSerializeAndDeserialize(MetadataSectionSerializer serializer) throws NotEnoughBytesException {
         MetadataSection metadataSection = ImmutableMetadataSection.builder()
                 .metadataFormat("MDF")
                 .metadata(new byte[] { 1, 2, 3, 4 })
@@ -42,10 +42,10 @@ public class MetadataSectionSerializerTest {
         assertNotNull(resultBytes);
         assertFalse(StringUtils.isBlank(yamlString));
 
-        MetadataSection resultMetadataSection = serializer.deserialize(resultBytes);
+        MetadataSectionSerializer.MetadataSectionAndLength resultMetadataSection = serializer.deserialize(resultBytes);
         assertNotNull(resultMetadataSection);
 
-        assertEquals(metadataSection, resultMetadataSection);
+        assertEquals(metadataSection, resultMetadataSection.metadataSection());
     }
 
     @ParameterizedTest

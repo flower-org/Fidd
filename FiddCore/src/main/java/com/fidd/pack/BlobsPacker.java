@@ -1,5 +1,8 @@
 package com.fidd.pack;
 
+import com.fidd.core.metadata.NotEnoughBytesException;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -53,7 +56,7 @@ public class BlobsPacker {
         return buffer.array();
     }
 
-    public static List<byte[]> unpackBlobs(byte[] packedData) {
+    public static Pair<Long, List<byte[]>> unpackBlobs(byte[] packedData) throws NotEnoughBytesException {
         if (packedData.length < 4) {
             throw new IllegalArgumentException("Can't read uint32 BLOB count. packedData.length " + packedData.length);
         }
@@ -70,7 +73,7 @@ public class BlobsPacker {
         // Validate blob count
         if (blobCount < 0) { throw new IllegalArgumentException("Invalid BLOB count."); }
         if (packedData.length < totalSize) {
-            throw new IllegalArgumentException("Can't read BLOB sizes. blobCount " + blobCount
+            throw new NotEnoughBytesException("Can't read BLOB sizes. blobCount " + blobCount
                     + "; packedData.length " + packedData.length);
         }
 
@@ -84,9 +87,9 @@ public class BlobsPacker {
             totalSize += size;
         }
 
-        if (totalSize != packedData.length)  {
-            throw new IllegalArgumentException("Size mismatch. totalSize: " + totalSize +
-                    "; packedData.length " + packedData.length);
+        if (totalSize < packedData.length)  {
+            throw new NotEnoughBytesException("Size mismatch. totalSize: " + totalSize +
+                    "; packedData.length " + packedData.length, totalSize);
         }
 
         // Read each blob size and BLOB data
@@ -97,6 +100,6 @@ public class BlobsPacker {
             blobs.add(blob); // Add to the list
         }
 
-        return blobs;
+        return Pair.of(totalSize, blobs);
     }
 }

@@ -24,7 +24,4 @@ public interface FiddFileMetadata {
 
     @Nullable String authorsPublicKeyFormat();
     @Nullable byte[] authorsPublicKey();
-
-    // Format of FiddFileMetadata Signature section
-    @Nullable String authorsFiddFileMetadataSignatureFormat();
 }

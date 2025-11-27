@@ -17,12 +17,9 @@ public class YamlLogicalFileMetadataSerializerTest {
     public void testSerializeAndDeserialize() {
         LogicalFileMetadata logicalFileMetadata = ImmutableLogicalFileMetadata.builder()
                 .updateType(LogicalFileMetadata.FiddUpdateType.CREATE_OVERRIDE)
-                .mimeType("text/css")
-                .encodingType("zip")
                 .filePath("/what/not_sure.zip")
                 .createdAt(1234L)
                 .updatedAt(2345L)
-                .authorsLogicalFileMetadataSignatureFormat("FFMT")
                 .authorsFileSignatureFormat("FMT")
                 .authorsFileSignature(new byte[] {2,3,4,5,6,7})
                 .build();

@@ -36,6 +36,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,7 @@ import javax.annotation.Nullable;
 import javax.security.auth.x500.X500Principal;
 import java.io.File;
 import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.prefs.Preferences;
@@ -115,14 +117,14 @@ public class MainForm {
         baseRepositories = new DefaultBaseRepositories();
     }
 
-    protected @Nullable X509Certificate getCurrentCertificate() {
+    protected @Nullable Pair<X509Certificate, PrivateKey> getCurrentCertificate() {
         if (keyProvider == null) { return null; }
         KeyContext keyContext = keyProvider.getKeyContext();
 
         if (keyContext instanceof RsaKeyContext) {
             X509Certificate certificate = ((RsaKeyContext) keyContext).certificate();
-            //PrivateKey key = ((RsaKeyContext) keyContext).privateKey();
-            return certificate;
+            PrivateKey key = ((RsaKeyContext) keyContext).privateKey();
+            return Pair.of(certificate, key);
         } else {
             throw new RuntimeException("Unsupported Key Context: " + keyContext.getClass());
         }
@@ -394,13 +396,16 @@ public class MainForm {
                 return;
             }
             X509Certificate currentCert = null;
+            PrivateKey privateKey = null;
             if (createFileAndKeySignatures || addFiddFileMetadataSignature || addLogicalFileSignatures || addLogicalFileMetadataSignatures) {
                 try {
-                    currentCert = getCurrentCertificate();
-                    if (currentCert == null) {
+                    Pair<X509Certificate, PrivateKey> pair = getCurrentCertificate();
+                    if (pair == null) {
                         JavaFxUtils.showMessage("Certificate load error", "Certificate load error. If you do not plan to use a certificate, click \"Uncheck All Signatures\".");
                         return;
                     }
+                    currentCert = pair.getLeft();
+                    privateKey = pair.getRight();
                 } catch (Exception e) {
                     JavaFxUtils.showMessage("Certificate load error", "Certificate load error. If you do not plan to use a certificate, click \"Uncheck All Signatures\".\n" + e.getMessage());
                     LOGGER.error("Certificate was not loaded", e);
@@ -414,6 +419,7 @@ public class MainForm {
                     originalDirectory,
                     packedContentDirectory,
                     currentCert,
+                    privateKey,
                     messageNumber,
                     postId,
 
