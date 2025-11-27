@@ -229,19 +229,20 @@ public class FiddPackManager {
         byte[] fiddKeyBytes = fiddKeySerializer.serialize(fiddKey);
         Files.write(fiddKeyFile.toPath(), fiddKeyBytes);
 
+        // 5. File signatures
         if (createFileAndKeySignatures) {
-            // 5. Form Fidd file signature
+            // 5.1 Form Fidd file signature
             try (FileChannel inputChannel = FileChannel.open(fiddFile.toPath(), StandardOpenOption.READ)) {
                 InputStream inputFileStream = Channels.newInputStream(inputChannel);
-                signerChecker.signData(inputFileStream, authorsPrivateKey);
-                Files.write(fiddFileSignature.toPath(), fiddKeyBytes);
+                byte[] fiddFileSignatureBytes = signerChecker.signData(inputFileStream, authorsPrivateKey);
+                Files.write(fiddFileSignature.toPath(), fiddFileSignatureBytes);
             }
 
-            // 6. Form FiddKey file signature
+            // 5.2 Form FiddKey file signature
             try (FileChannel inputChannel = FileChannel.open(fiddKeyFile.toPath(), StandardOpenOption.READ)) {
                 InputStream inputFileStream = Channels.newInputStream(inputChannel);
-                signerChecker.signData(inputFileStream, authorsPrivateKey);
-                Files.write(fiddKeyFileSignature.toPath(), fiddKeyBytes);
+                byte[] fiddKeyFileSignatureBytes = signerChecker.signData(inputFileStream, authorsPrivateKey);
+                Files.write(fiddKeyFileSignature.toPath(), fiddKeyFileSignatureBytes);
             }
         }
     }
