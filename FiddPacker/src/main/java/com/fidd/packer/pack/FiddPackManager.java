@@ -105,6 +105,8 @@ public class FiddPackManager {
                                 boolean addFiddFileMetadataSignature,
                                 boolean addLogicalFileSignatures,
                                 boolean addLogicalFileMetadataSignatures,
+
+                                boolean includePublicKey,
                                 PublicKeySerializer publicKeySerializer,
                                 SignerChecker signerChecker,
 
@@ -145,8 +147,7 @@ public class FiddPackManager {
                 messageNumber,
                 postId,
                 logicalFileMetadataSerializer.name(),
-                (createFileAndKeySignatures || addFiddFileMetadataSignature || addLogicalFileSignatures || addLogicalFileMetadataSignatures)
-                        ? Pair.of(authorsPublicKey, publicKeySerializer) : null,
+                includePublicKey ? Pair.of(authorsPublicKey, publicKeySerializer) : null,
                 createFileAndKeySignatures ? signerChecker.name() : null
         );
 

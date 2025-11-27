@@ -70,6 +70,7 @@ public class MainForm {
     final static String SIGN_LOGICAL_FILE_METADATAS = "SIGN_LOGICAL_FILE_METADATAS";
     final static String SIGN_FIDD_FILE_METADATA = "SIGN_FIDD_FILE_METADATA";
     final static String ADD_CRCS_TO_FIDD_KEY = "ADD_CRCS_TO_FIDD_KEY";
+    final static String INCLUDE_PUBLIC_KEY = "INCLUDE_PUBLIC_KEY";
 
     final static String MIN_GAP_SIZE_TEXT_FIELD = "MIN_GAP_SIZE_TEXT_FIELD";
     final static String MAX_GAP_SIZE_TEXT_FIELD = "MAX_GAP_SIZE_TEXT_FIELD";
@@ -104,6 +105,7 @@ public class MainForm {
     @FXML @Nullable CheckBox signLogicalFileMetadatasCheckBox;
     @FXML @Nullable CheckBox signFiddFileMetadataCheckBox;
     @FXML @Nullable CheckBox addCrcsToFiddKeyCheckBox;
+    @FXML @Nullable CheckBox includePublicKeyCheckBox;
 
     @FXML @Nullable TextField minGapSizeTextField;
     @FXML @Nullable TextField maxGapSizeTextField;
@@ -214,6 +216,7 @@ public class MainForm {
         initCheckBox(checkNotNull(signLogicalFileMetadatasCheckBox), getUserPreference(SIGN_LOGICAL_FILE_METADATAS));
         initCheckBox(checkNotNull(signFiddFileMetadataCheckBox), getUserPreference(SIGN_FIDD_FILE_METADATA));
         initCheckBox(checkNotNull(addCrcsToFiddKeyCheckBox), getUserPreference(ADD_CRCS_TO_FIDD_KEY));
+        initCheckBox(checkNotNull(includePublicKeyCheckBox), StringUtils.defaultIfBlank(getUserPreference(INCLUDE_PUBLIC_KEY), "true"));
 
         String minGapSizeStr = getUserPreference(MIN_GAP_SIZE_TEXT_FIELD);
         if (StringUtils.isBlank(minGapSizeStr)) { minGapSizeStr = "0"; }
@@ -240,6 +243,7 @@ public class MainForm {
         checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
         checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
         checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(includePublicKeyCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
 
         checkNotNull(minGapSizeTextField).textProperty().addListener(this::fiddPackerTextChanged);
         checkNotNull(maxGapSizeTextField).textProperty().addListener(this::fiddPackerTextChanged);
@@ -268,6 +272,7 @@ public class MainForm {
         boolean signLogicalFileMetadatas = checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().get();
         boolean signFiddFileMetadata = checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().get();
         boolean addCrcsToFiddKey = checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().get();
+        boolean includePublicKey = checkNotNull(includePublicKeyCheckBox).selectedProperty().get();
 
         String minGapSize = checkNotNull(minGapSizeTextField).textProperty().get();
         String maxGapSize = checkNotNull(maxGapSizeTextField).textProperty().get();
@@ -275,7 +280,7 @@ public class MainForm {
         updateFiddPackerPreferences(encryptionAlgorithm, fiddKey, fiddFileMetadata, logicalFileMetadata, publicKeyFormat,
                 signatureFormat, randomGenerator, metadataContainer, crcCalculator, Boolean.toString(signFiddFileAndFiddKey),
                 Boolean.toString(signLogicalFiles), Boolean.toString(signLogicalFileMetadatas),
-                Boolean.toString(signFiddFileMetadata), Boolean.toString(addCrcsToFiddKey),
+                Boolean.toString(signFiddFileMetadata), Boolean.toString(addCrcsToFiddKey), Boolean.toString(includePublicKey),
                 minGapSize, maxGapSize);
     }
 
@@ -284,7 +289,7 @@ public class MainForm {
                                                 String randomGenerator, String metadataContainer, String crcCalculator,
                                                 String signFiddFileAndFiddKey,
                                                 String signLogicalFiles, String signLogicalFileMetadatas,
-                                                String signFiddFileMetadata, String addCrcsToFiddKey,
+                                                String signFiddFileMetadata, String addCrcsToFiddKey, String includePublicKey,
                                                 String minGapSize,
                                                 String maxGapSize) {
         Preferences userPreferences = Preferences.userRoot();
@@ -303,6 +308,7 @@ public class MainForm {
         updateUserPreference(userPreferences, SIGN_LOGICAL_FILE_METADATAS, StringUtils.defaultIfBlank(signLogicalFileMetadatas, ""));
         updateUserPreference(userPreferences, SIGN_FIDD_FILE_METADATA, StringUtils.defaultIfBlank(signFiddFileMetadata, ""));
         updateUserPreference(userPreferences, ADD_CRCS_TO_FIDD_KEY, StringUtils.defaultIfBlank(addCrcsToFiddKey, ""));
+        updateUserPreference(userPreferences, INCLUDE_PUBLIC_KEY, StringUtils.defaultIfBlank(includePublicKey, ""));
 
         updateUserPreference(userPreferences, MIN_GAP_SIZE_TEXT_FIELD, StringUtils.defaultIfBlank(minGapSize, ""));
         updateUserPreference(userPreferences, MAX_GAP_SIZE_TEXT_FIELD, StringUtils.defaultIfBlank(maxGapSize, ""));
@@ -376,6 +382,7 @@ public class MainForm {
             boolean addFiddFileMetadataSignature = checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().get();
             boolean addLogicalFileSignatures = checkNotNull(signLogicalFilesCheckBox).selectedProperty().get();
             boolean addLogicalFileMetadataSignatures = checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().get();
+            boolean includePublicKey = checkNotNull(includePublicKeyCheckBox).selectedProperty().get();
 
             PublicKeySerializer publicKeySerializer = getComboBoxSelectionFromRepo(baseRepositories.publicKeyFormatRepo(), publicKeyFormatComboBox);
             SignerChecker signerChecker = getComboBoxSelectionFromRepo(baseRepositories.signatureFormatRepo(), signatureFormatComboBox);
@@ -436,6 +443,8 @@ public class MainForm {
                     addFiddFileMetadataSignature,
                     addLogicalFileSignatures,
                     addLogicalFileMetadataSignatures,
+
+                    includePublicKey,
                     publicKeySerializer,
                     signerChecker,
 
