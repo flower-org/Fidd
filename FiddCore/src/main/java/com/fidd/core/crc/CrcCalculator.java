@@ -1,6 +1,7 @@
 package com.fidd.core.crc;
 
 import com.fidd.core.NamedEntry;
+import com.fidd.core.encryption.EncryptionAlgorithm;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +10,7 @@ import java.util.zip.Checksum;
 public interface CrcCalculator extends NamedEntry {
     byte[] calculateCrc(byte[] data);
     byte[] calculateCrc(InputStream dataStream) throws IOException;
+    EncryptionAlgorithm.CrcCallback newCrcCallback();
 
     default byte[] calculateCrc(byte[] data, Checksum checksum) {
         checksum.update(data, 0, data.length);
@@ -24,7 +26,7 @@ public interface CrcCalculator extends NamedEntry {
         return toBytes(checksum.getValue());
     }
 
-    private byte[] toBytes(long value) {
+    static byte[] toBytes(long value) {
         // Always return 4-byte checksum (big-endian)
         return new byte[] {
                 (byte) ((value >> 24) & 0xFF),

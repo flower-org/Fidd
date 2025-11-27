@@ -1,6 +1,8 @@
 package com.fidd.core.crc.adler32;
 
 import com.fidd.core.crc.CrcCalculator;
+import com.fidd.core.crc.DefaultCrcCallback;
+import com.fidd.core.encryption.EncryptionAlgorithm;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +17,11 @@ public class Adler32Calculator implements CrcCalculator {
     @Override
     public byte[] calculateCrc(InputStream dataStream) throws IOException {
         return calculateCrc(dataStream, new Adler32());
+    }
+
+    @Override
+    public EncryptionAlgorithm.CrcCallback newCrcCallback() {
+        return new DefaultCrcCallback(new Adler32());
     }
 
     @Override

@@ -32,7 +32,7 @@ public class EncryptionAlgorithmTest {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(originalText.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        encryptionAlgorithm.encrypt(keyData, List.of(inputStream), outputStream);
+        encryptionAlgorithm.encrypt(keyData, List.of(inputStream), outputStream, null);
         byte[] ciphertext = outputStream.toByteArray();
 
         // Decrypt the ciphertext
@@ -58,7 +58,7 @@ public class EncryptionAlgorithmTest {
         ByteArrayInputStream inputStream2 = new ByteArrayInputStream(originalText.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        encryptionAlgorithm.encrypt(keyData, List.of(inputStream, inputStream2), outputStream);
+        encryptionAlgorithm.encrypt(keyData, List.of(inputStream, inputStream2), outputStream, null);
         byte[] ciphertext = outputStream.toByteArray();
 
         // Decrypt the ciphertext
@@ -96,7 +96,7 @@ public class EncryptionAlgorithmTest {
     void testEncryptWithInvalidKeyData(EncryptionAlgorithm encryptionAlgorithm) {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(originalText.getBytes(StandardCharsets.UTF_8));
         RuntimeException thrown = assertThrows(RuntimeException.class,
-                () -> encryptionAlgorithm.encrypt(new byte[0], List.of(inputStream), new ByteArrayOutputStream()));
+                () -> encryptionAlgorithm.encrypt(new byte[0], List.of(inputStream), new ByteArrayOutputStream(), null));
         assertNotNull(thrown);
     }
 
@@ -120,7 +120,7 @@ public class EncryptionAlgorithmTest {
 
         ByteArrayInputStream in = new ByteArrayInputStream(plaintext);
         ByteArrayOutputStream encryptedOut = new ByteArrayOutputStream();
-        encryptionAlgorithm.encrypt(key, List.of(in), encryptedOut);
+        encryptionAlgorithm.encrypt(key, List.of(in), encryptedOut, null);
 
         byte[] ciphertext = encryptedOut.toByteArray();
 

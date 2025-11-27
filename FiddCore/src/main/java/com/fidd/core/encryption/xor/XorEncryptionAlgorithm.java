@@ -2,6 +2,7 @@ package com.fidd.core.encryption.xor;
 
 import com.fidd.core.encryption.RandomAccessEncryptionAlgorithm;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -36,10 +37,12 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     }
 
     @Override
-    public long encrypt(byte[] keyData, List<InputStream> plaintexts, OutputStream ciphertext) {
+    public long encrypt(byte[] keyData, List<InputStream> plaintexts, OutputStream ciphertext,
+                        @Nullable CrcCallback ciphertextCrcCallback) {
         long bytesWritten = 0;
         for (InputStream plaintext : plaintexts) {
-            bytesWritten += processStream(keyData, (int)(bytesWritten % keyData.length), -1, plaintext, ciphertext);
+            bytesWritten += processStream(keyData, (int)(bytesWritten % keyData.length), -1, plaintext,
+                    ciphertext, ciphertextCrcCallback);
         }
         return bytesWritten;
     }
@@ -47,7 +50,7 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     @Override
     public long decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext) {
         // Same operation
-        return processStream(keyData, 0, -1, ciphertext, plaintext);
+        return processStream(keyData, 0, -1, ciphertext, plaintext, null);
     }
 
     @Override
@@ -60,7 +63,7 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     @Override
     public void randomAccessDecrypt(byte[] keyData, long offset, int length, InputStream ciphertextAtOffset, OutputStream plaintext) {
         // For simplicity, just reuse the stream processor
-        processStream(keyData, (int)(offset % keyData.length), length, ciphertextAtOffset, plaintext);
+        processStream(keyData, (int)(offset % keyData.length), length, ciphertextAtOffset, plaintext, null);
     }
 
     // --- Helper methods ---
@@ -72,12 +75,15 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
         return result;
     }
 
-    private long processStream(byte[] keyData, int keyOffset, int length, InputStream in, OutputStream out) {
+    private long processStream(byte[] keyData, int keyOffset, int length, InputStream in, OutputStream out,
+                               @Nullable CrcCallback ciphertextCrcCallback) {
         try {
             int b;
             int i = 0;
             while ((b = in.read()) != -1) {
-                out.write(b ^ keyData[(keyOffset + i) % keyData.length]);
+                int byteToWrite = b ^ keyData[(keyOffset + i) % keyData.length];
+                out.write(byteToWrite);
+                if (ciphertextCrcCallback != null) { ciphertextCrcCallback.write(byteToWrite); }
                 i++;
                 if (length != -1 && i >= length) {
                     break;

@@ -10,6 +10,7 @@ import java.util.List;
 
 import com.flower.crypt.Cryptor;
 
+import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -60,7 +61,8 @@ public class Aes256CbcEncryptionAlgorithm implements EncryptionAlgorithm {
     }
 
     @Override
-    public long encrypt(byte[] keyData, List<InputStream> plaintexts, OutputStream ciphertext) {
+    public long encrypt(byte[] keyData, List<InputStream> plaintexts, OutputStream ciphertext,
+                        @Nullable CrcCallback ciphertextCrcCallback) {
         Aes256KeyAndIv keyAndIv = Aes256KeyAndIv.deserialize(keyData);
         SecretKeySpec secretKeySpec = new SecretKeySpec(keyAndIv.aes256Key(), AES);
         long totalBytesWritten = 0;
@@ -77,6 +79,7 @@ public class Aes256CbcEncryptionAlgorithm implements EncryptionAlgorithm {
                         byte[] output = cipher.update(buffer, 0, bytesRead);
                         if (output != null) {
                             ciphertext.write(output);
+                            if (ciphertextCrcCallback != null) { ciphertextCrcCallback.write(output); }
                             totalBytesWritten += output.length;
                         }
                     }
@@ -84,6 +87,7 @@ public class Aes256CbcEncryptionAlgorithm implements EncryptionAlgorithm {
                 byte[] finalOutput = cipher.doFinal();
                 if (finalOutput != null) {
                     ciphertext.write(finalOutput);
+                    if (ciphertextCrcCallback != null) { ciphertextCrcCallback.write(finalOutput); }
                     totalBytesWritten += finalOutput.length;
                 }
             } catch (Exception e) {

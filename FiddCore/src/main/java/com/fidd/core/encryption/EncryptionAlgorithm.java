@@ -7,13 +7,19 @@ import java.io.OutputStream;
 import java.util.List;
 
 public interface EncryptionAlgorithm extends NamedEntry {
+    interface CrcCallback {
+        void write(byte[] b);
+        void write(int b);
+        byte[] getCrc();
+    }
+
     byte[] generateNewKeyData();
 
     byte[] encrypt(byte[] keyData, byte[] plaintext);
     byte[] decrypt(byte[] keyData, byte[] ciphertext);
 
     /** @return Bytes written to output stream ciphertext */
-    long encrypt(byte[] keyData, List<InputStream> plaintext, OutputStream ciphertext);
+    long encrypt(byte[] keyData, List<InputStream> plaintext, OutputStream ciphertext, CrcCallback ciphertextCrcCallback);
     /** @return Bytes written to output stream plaintext */
     long decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext);
 
