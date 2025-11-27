@@ -515,4 +515,16 @@ public class MainForm {
             alert.showAndWait();
         }
     }
+
+    public void openPackedContentFolderForUnpack() {
+        // TODO: implement
+    }
+
+    public void openContentFolderForUnpack() {
+        // TODO: implement
+    }
+
+    public void checkUncheckAllValidations() {
+        // TODO: implement
+    }
 }
