@@ -56,7 +56,7 @@ public class FiddPackManager {
             String postId,
             String logicalFileMetadataFormat,
             @Nullable Pair<X509Certificate, PublicKeySerializer> publicKeySerializerAndKey,
-            @Nullable String fiddFileMetadataSignatureFormat
+            @Nullable String fiddFileAndFiddKeySignatureFormat
     ) {
         // Build FiddFileMetadata
         ImmutableFiddFileMetadata.Builder fiddFileMetadataBuilder = ImmutableFiddFileMetadata.builder()
@@ -71,8 +71,15 @@ public class FiddPackManager {
         if (publicKeySerializerAndKey != null) {
             X509Certificate authorsPublicKey = publicKeySerializerAndKey.getKey();
             PublicKeySerializer publicKeySerializer = publicKeySerializerAndKey.getValue();
-            fiddFileMetadataBuilder.authorsPublicKeyFormat(checkNotNull(publicKeySerializer).name())
+            fiddFileMetadataBuilder
+                    .authorsPublicKeyFormat(checkNotNull(publicKeySerializer).name())
                     .authorsPublicKey(publicKeySerializer.serialize(authorsPublicKey));
+        }
+
+        if (fiddFileAndFiddKeySignatureFormat != null) {
+            fiddFileMetadataBuilder
+                    .authorsFiddFileSignatureFormat(fiddFileAndFiddKeySignatureFormat)
+                    .authorsFiddKeyFileSignatureFormat(fiddFileAndFiddKeySignatureFormat);
         }
 
         return fiddFileMetadataBuilder.build();
@@ -140,7 +147,7 @@ public class FiddPackManager {
                 logicalFileMetadataSerializer.name(),
                 (createFileAndKeySignatures || addFiddFileMetadataSignature || addLogicalFileSignatures || addLogicalFileMetadataSignatures)
                         ? Pair.of(authorsPublicKey, publicKeySerializer) : null,
-                addFiddFileMetadataSignature ? signerChecker.name() : null
+                createFileAndKeySignatures ? signerChecker.name() : null
         );
 
         // 3. Form FiddFile
@@ -222,11 +229,21 @@ public class FiddPackManager {
         byte[] fiddKeyBytes = fiddKeySerializer.serialize(fiddKey);
         Files.write(fiddKeyFile.toPath(), fiddKeyBytes);
 
-        // 5. Form Fidd file signature
-        // TODO: implement
+        if (createFileAndKeySignatures) {
+            // 5. Form Fidd file signature
+            try (FileChannel inputChannel = FileChannel.open(fiddFile.toPath(), StandardOpenOption.READ)) {
+                InputStream inputFileStream = Channels.newInputStream(inputChannel);
+                signerChecker.signData(inputFileStream, authorsPrivateKey);
+                Files.write(fiddFileSignature.toPath(), fiddKeyBytes);
+            }
 
-        // 6. Form FiddKey file signature
-        // TODO: implement
+            // 6. Form FiddKey file signature
+            try (FileChannel inputChannel = FileChannel.open(fiddKeyFile.toPath(), StandardOpenOption.READ)) {
+                InputStream inputFileStream = Channels.newInputStream(inputChannel);
+                signerChecker.signData(inputFileStream, authorsPrivateKey);
+                Files.write(fiddKeyFileSignature.toPath(), fiddKeyBytes);
+            }
+        }
     }
 
     public static FiddKey.Section createFiddKeySection(long sectionOffset, long sectionLength,

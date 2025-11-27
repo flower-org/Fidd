@@ -889,14 +889,14 @@ public class MainForm {
     public void openSignHashFile() {
         try {
             FileChooser fileChooser = new FileChooser();
-            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Detached Signature (*.sig, *.bin)", "*.sig", "*.bin"));
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Detached Signature (*.sign, *.sig, *.bin)", "*.sign", "*.sig", "*.bin"));
             fileChooser.setTitle("Save signature to file");
 
             File signatureFile = fileChooser.showSaveDialog(mainStage);
             if (signatureFile == null) { return; }
 
-            if (!signatureFile.getName().endsWith(".bin") && !signatureFile.getName().endsWith(".sig")) {
-                signatureFile = new File(signatureFile.getPath()  + ".sig");
+            if (!signatureFile.getName().endsWith(".bin") && !signatureFile.getName().endsWith(".sig") && !signatureFile.getName().endsWith(".sign")) {
+                signatureFile = new File(signatureFile.getPath()  + ".sign");
             }
 
             checkNotNull(rsaSignHashFileTextField).textProperty().set(signatureFile.getPath());
