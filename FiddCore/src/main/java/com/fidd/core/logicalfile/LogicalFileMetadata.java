@@ -1,5 +1,6 @@
 package com.fidd.core.logicalfile;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
@@ -9,6 +10,7 @@ import javax.annotation.Nullable;
 @Value.Immutable
 @JsonSerialize(as = ImmutableLogicalFileMetadata.class)
 @JsonDeserialize(as = ImmutableLogicalFileMetadata.class)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public interface LogicalFileMetadata {
     enum FiddUpdateType {
         CREATE_OVERRIDE,

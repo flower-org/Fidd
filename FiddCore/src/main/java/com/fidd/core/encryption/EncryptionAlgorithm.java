@@ -8,6 +8,8 @@ import java.io.OutputStream;
 import java.util.List;
 
 public interface EncryptionAlgorithm extends NamedEntry {
+    String UNENCRYPTED = "UNENCRYPTED";
+
     interface CrcCallback {
         void write(byte[] b);
         void write(int b);

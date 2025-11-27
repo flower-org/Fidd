@@ -257,9 +257,8 @@ public class FiddPackManager {
                 .sectionOffset(sectionOffset)
                 .sectionLength(sectionLength);
 
-        //TODO: What if there is no encryption - don't add those values? they are @Nullable
-        //TODO: special name - UNENCRYPTED?
-        if (encryptionAlgorithm != null) {
+        // If encryption algorithm is not specified it means the data is unencrypted
+        if (!encryptionAlgorithm.name().equals(EncryptionAlgorithm.UNENCRYPTED)) {
             sectionBuilder
                     .encryptionAlgorithm(encryptionAlgorithm.name())
                     .encryptionKeyData(sectionKey);

@@ -1,11 +1,11 @@
 package com.fidd.base;
 
-import com.fidd.core.NamedEntry;
 import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.crc.adler32.Adler32Calculator;
 import com.fidd.core.crc.crc32.Crc32Calculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
+import com.fidd.core.encryption.unencrypted.NoEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddfile.yaml.YamlFiddFileMetadataSerializer;
@@ -26,10 +26,6 @@ import com.fidd.core.random.secure.SecureRandomGeneratorType;
 import java.util.List;
 
 public class DefaultBaseRepositories implements BaseRepositories {
-    <T extends NamedEntry> Repository<T> createEmpty() {
-        return new MapRepository<>(null, List.of());
-    }
-
     static final Repository<EncryptionAlgorithm> ENCRYPTION_ALGORITHM_REPO;
     static final Repository<FiddKeySerializer> FIDD_KEY_FORMAT_REPO;
     static final Repository<MetadataContainerSerializer> METADATA_SECTION_FORMAT_REPO;
@@ -43,7 +39,8 @@ public class DefaultBaseRepositories implements BaseRepositories {
     static {
         Aes256CbcEncryptionAlgorithm aes256Cbc = new Aes256CbcEncryptionAlgorithm();
         XorEncryptionAlgorithm xor = new XorEncryptionAlgorithm();
-        ENCRYPTION_ALGORITHM_REPO = new MapRepository<>(aes256Cbc.name(), List.of(aes256Cbc, xor));
+        NoEncryptionAlgorithm noEncryption = new NoEncryptionAlgorithm();
+        ENCRYPTION_ALGORITHM_REPO = new MapRepository<>(aes256Cbc.name(), List.of(aes256Cbc, xor, noEncryption));
 
         YamlFiddKeySerializer yamlFiddKeySerializer = new YamlFiddKeySerializer();
         FIDD_KEY_FORMAT_REPO = new MapRepository<>(yamlFiddKeySerializer.name(), List.of(yamlFiddKeySerializer));
