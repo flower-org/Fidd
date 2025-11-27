@@ -1,6 +1,7 @@
 package com.fidd.core.encryption.aes256;
 
 import com.fidd.core.encryption.EncryptionAlgorithm;
+import com.fidd.core.random.plain.PlainRandomGeneratorType;
 import org.junit.jupiter.api.Test;
 
 import java.security.SecureRandom;
@@ -65,7 +66,7 @@ public class Aes256KeyAndIvTest {
     @Test
     void testGenerateNewKeyData() {
         EncryptionAlgorithm encryptionAlgorithm = new Aes256CbcEncryptionAlgorithm();
-        byte[] keyData = encryptionAlgorithm.generateNewKeyData();
+        byte[] keyData = encryptionAlgorithm.generateNewKeyData(new PlainRandomGeneratorType());
         assertNotNull(keyData);
         // Check if keyData can deserialize correctly
         Aes256KeyAndIv serializedKeyAndIv = Aes256KeyAndIv.deserialize(keyData);

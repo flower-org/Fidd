@@ -2,6 +2,7 @@ package com.fidd.core.encryption;
 
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
+import com.fidd.core.random.plain.PlainRandomGeneratorType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -27,7 +28,7 @@ public class EncryptionAlgorithmTest {
     @ParameterizedTest
     @MethodSource("encryptionAlgorithms")
     void testEncryptDecryptStream(EncryptionAlgorithm encryptionAlgorithm) {
-        byte[] keyData = encryptionAlgorithm.generateNewKeyData();
+        byte[] keyData = encryptionAlgorithm.generateNewKeyData(new PlainRandomGeneratorType());
         // Encrypt the original text
         ByteArrayInputStream inputStream = new ByteArrayInputStream(originalText.getBytes(StandardCharsets.UTF_8));
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -52,7 +53,7 @@ public class EncryptionAlgorithmTest {
     @ParameterizedTest
     @MethodSource("encryptionAlgorithms")
     void testEncryptDecryptMultiStream(EncryptionAlgorithm encryptionAlgorithm) {
-        byte[] keyData = encryptionAlgorithm.generateNewKeyData();
+        byte[] keyData = encryptionAlgorithm.generateNewKeyData(new PlainRandomGeneratorType());
         // Encrypt the original text
         ByteArrayInputStream inputStream = new ByteArrayInputStream(originalText.getBytes(StandardCharsets.UTF_8));
         ByteArrayInputStream inputStream2 = new ByteArrayInputStream(originalText.getBytes(StandardCharsets.UTF_8));
@@ -77,7 +78,7 @@ public class EncryptionAlgorithmTest {
     @ParameterizedTest
     @MethodSource("encryptionAlgorithms")
     void testEncryptDecrypt(EncryptionAlgorithm encryptionAlgorithm) {
-        byte[] keyData = encryptionAlgorithm.generateNewKeyData();
+        byte[] keyData = encryptionAlgorithm.generateNewKeyData(new PlainRandomGeneratorType());
         byte[] plaintext = originalText.getBytes(StandardCharsets.UTF_8);
 
         // Encrypt the plaintext
@@ -103,7 +104,7 @@ public class EncryptionAlgorithmTest {
     @ParameterizedTest
     @MethodSource("encryptionAlgorithms")
     void testEncryptDecryptSymmetry(EncryptionAlgorithm encryptionAlgorithm) {
-        byte[] key = encryptionAlgorithm.generateNewKeyData();
+        byte[] key = encryptionAlgorithm.generateNewKeyData(new PlainRandomGeneratorType());
         byte[] plaintext = "Hello, World!".getBytes();
 
         byte[] ciphertext = encryptionAlgorithm.encrypt(key, plaintext);
@@ -115,7 +116,7 @@ public class EncryptionAlgorithmTest {
     @ParameterizedTest
     @MethodSource("encryptionAlgorithms")
     void testStreamEncryptDecrypt(EncryptionAlgorithm encryptionAlgorithm) {
-        byte[] key = encryptionAlgorithm.generateNewKeyData();
+        byte[] key = encryptionAlgorithm.generateNewKeyData(new PlainRandomGeneratorType());
         byte[] plaintext = "Stream test data".getBytes();
 
         ByteArrayInputStream in = new ByteArrayInputStream(plaintext);

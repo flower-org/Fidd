@@ -5,9 +5,9 @@ import com.fidd.core.encryption.EncryptionAlgorithm;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.SecureRandom;
 import java.util.List;
 
+import com.fidd.core.random.RandomGeneratorType;
 import com.flower.crypt.Cryptor;
 
 import javax.annotation.Nullable;
@@ -25,13 +25,9 @@ public class Aes256CbcEncryptionAlgorithm implements EncryptionAlgorithm {
     }
 
     @Override
-    public byte[] generateNewKeyData() {
-        byte[] aesKey = Cryptor.generateAESKeyRaw();
-        byte[] aesIv = Cryptor.generateAESIV();
-
-        // Generate random key and IV
-        new SecureRandom().nextBytes(aesKey);
-        new SecureRandom().nextBytes(aesIv);
+    public byte[] generateNewKeyData(RandomGeneratorType random) {
+        byte[] aesKey = Cryptor.generateAESKeyRaw(random.generator());
+        byte[] aesIv = Cryptor.generateAESIV(random.generator());
 
         Aes256KeyAndIv original = new Aes256KeyAndIv(aesKey, aesIv);
 

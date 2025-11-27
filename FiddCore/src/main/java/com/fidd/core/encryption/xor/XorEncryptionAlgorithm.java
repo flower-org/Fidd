@@ -1,6 +1,7 @@
 package com.fidd.core.encryption.xor;
 
 import com.fidd.core.encryption.RandomAccessEncryptionAlgorithm;
+import com.fidd.core.random.RandomGeneratorType;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -17,11 +18,9 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
 
     // Generate a random key of fixed length
     @Override
-    public byte[] generateNewKeyData() {
+    public byte[] generateNewKeyData(RandomGeneratorType random) {
         byte[] key = new byte[32]; // 256-bit key
-        for (int i = 0; i < key.length; i++) {
-            key[i] = (byte) (Math.random() * 256);
-        }
+        random.generator().nextBytes(key);
         return key;
     }
 

@@ -1,6 +1,7 @@
 package com.fidd.core.encryption;
 
 import com.fidd.core.NamedEntry;
+import com.fidd.core.random.RandomGeneratorType;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,7 +14,7 @@ public interface EncryptionAlgorithm extends NamedEntry {
         byte[] getCrc();
     }
 
-    byte[] generateNewKeyData();
+    byte[] generateNewKeyData(RandomGeneratorType random);
 
     byte[] encrypt(byte[] keyData, byte[] plaintext);
     byte[] decrypt(byte[] keyData, byte[] ciphertext);

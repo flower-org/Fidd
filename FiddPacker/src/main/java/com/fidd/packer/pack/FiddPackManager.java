@@ -171,7 +171,7 @@ public class FiddPackManager {
                     // 3.2.1.1 Encrypt and add LogicalFile
                     FilePathTuple file = files.get(i);
                     long logicalFileSectionOffset = position;
-                    byte[] logicalFileSectionKey = encryptionAlgorithm.generateNewKeyData();
+                    byte[] logicalFileSectionKey = encryptionAlgorithm.generateNewKeyData(randomGenerator);
 
                     LengthAndCrc logicalFileSectionLengthAndCrc =
                             addLogicalFileWithMetadata(originalDirectory, file.file(),
@@ -197,7 +197,7 @@ public class FiddPackManager {
                 if ((i+1) == fiddFileMetadataSectionPosition) {
                     // 3.2.2.1 Encrypt and add FiddFileMetadata
                     long fiddFileMetadataSectionOffset = position;
-                    byte[] fiddFileMetadataSectionKey = encryptionAlgorithm.generateNewKeyData();
+                    byte[] fiddFileMetadataSectionKey = encryptionAlgorithm.generateNewKeyData(randomGenerator);
 
                     LengthAndCrc fiddFileMetadataSectionLengthAndCrc =
                             addFiddFileMetadata(outputStream, fiddFileMetadata, fiddFileMetadataSerializer,
@@ -220,7 +220,7 @@ public class FiddPackManager {
 
         // 4. Form FiddKey file
         ImmutableFiddKey.Builder fiddKeyBuilder = ImmutableFiddKey.builder();
-        Collections.shuffle(logicalFilesSections);
+        shuffle(logicalFilesSections, randomGenerator.generator());
         fiddKeyBuilder.fiddFileMetadata(checkNotNull(fiddFileMetadataSection))
                 .logicalFiles(logicalFilesSections);
 
