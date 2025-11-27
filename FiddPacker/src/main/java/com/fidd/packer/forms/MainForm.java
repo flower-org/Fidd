@@ -71,6 +71,7 @@ public class MainForm {
     final static String SIGN_FIDD_FILE_METADATA = "SIGN_FIDD_FILE_METADATA";
     final static String ADD_CRCS_TO_FIDD_KEY = "ADD_CRCS_TO_FIDD_KEY";
     final static String INCLUDE_PUBLIC_KEY = "INCLUDE_PUBLIC_KEY";
+    final static String INCLUDE_MESSAGE_CREATION_TIME = "INCLUDE_MESSAGE_CREATION_TIME";
 
     final static String MIN_GAP_SIZE_TEXT_FIELD = "MIN_GAP_SIZE_TEXT_FIELD";
     final static String MAX_GAP_SIZE_TEXT_FIELD = "MAX_GAP_SIZE_TEXT_FIELD";
@@ -106,6 +107,7 @@ public class MainForm {
     @FXML @Nullable CheckBox signFiddFileMetadataCheckBox;
     @FXML @Nullable CheckBox addCrcsToFiddKeyCheckBox;
     @FXML @Nullable CheckBox includePublicKeyCheckBox;
+    @FXML @Nullable CheckBox includeMessageCreationTimeCheckBox;
 
     @FXML @Nullable TextField minGapSizeTextField;
     @FXML @Nullable TextField maxGapSizeTextField;
@@ -217,6 +219,7 @@ public class MainForm {
         initCheckBox(checkNotNull(signFiddFileMetadataCheckBox), getUserPreference(SIGN_FIDD_FILE_METADATA));
         initCheckBox(checkNotNull(addCrcsToFiddKeyCheckBox), getUserPreference(ADD_CRCS_TO_FIDD_KEY));
         initCheckBox(checkNotNull(includePublicKeyCheckBox), StringUtils.defaultIfBlank(getUserPreference(INCLUDE_PUBLIC_KEY), "true"));
+        initCheckBox(checkNotNull(includeMessageCreationTimeCheckBox), getUserPreference(INCLUDE_MESSAGE_CREATION_TIME));
 
         String minGapSizeStr = getUserPreference(MIN_GAP_SIZE_TEXT_FIELD);
         if (StringUtils.isBlank(minGapSizeStr)) { minGapSizeStr = "0"; }
@@ -244,6 +247,7 @@ public class MainForm {
         checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
         checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
         checkNotNull(includePublicKeyCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(includeMessageCreationTimeCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
 
         checkNotNull(minGapSizeTextField).textProperty().addListener(this::fiddPackerTextChanged);
         checkNotNull(maxGapSizeTextField).textProperty().addListener(this::fiddPackerTextChanged);
@@ -273,6 +277,7 @@ public class MainForm {
         boolean signFiddFileMetadata = checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().get();
         boolean addCrcsToFiddKey = checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().get();
         boolean includePublicKey = checkNotNull(includePublicKeyCheckBox).selectedProperty().get();
+        boolean includeMessageCreationTime = checkNotNull(includeMessageCreationTimeCheckBox).selectedProperty().get();
 
         String minGapSize = checkNotNull(minGapSizeTextField).textProperty().get();
         String maxGapSize = checkNotNull(maxGapSizeTextField).textProperty().get();
@@ -280,7 +285,7 @@ public class MainForm {
         updateFiddPackerPreferences(encryptionAlgorithm, fiddKey, fiddFileMetadata, logicalFileMetadata, publicKeyFormat,
                 signatureFormat, randomGenerator, metadataContainer, crcCalculator, Boolean.toString(signFiddFileAndFiddKey),
                 Boolean.toString(signLogicalFiles), Boolean.toString(signLogicalFileMetadatas),
-                Boolean.toString(signFiddFileMetadata), Boolean.toString(addCrcsToFiddKey), Boolean.toString(includePublicKey),
+                Boolean.toString(signFiddFileMetadata), Boolean.toString(addCrcsToFiddKey), Boolean.toString(includePublicKey), Boolean.toString(includeMessageCreationTime),
                 minGapSize, maxGapSize);
     }
 
@@ -289,7 +294,7 @@ public class MainForm {
                                                 String randomGenerator, String metadataContainer, String crcCalculator,
                                                 String signFiddFileAndFiddKey,
                                                 String signLogicalFiles, String signLogicalFileMetadatas,
-                                                String signFiddFileMetadata, String addCrcsToFiddKey, String includePublicKey,
+                                                String signFiddFileMetadata, String addCrcsToFiddKey, String includePublicKey, String includeMessageCreationTime,
                                                 String minGapSize,
                                                 String maxGapSize) {
         Preferences userPreferences = Preferences.userRoot();
@@ -309,6 +314,7 @@ public class MainForm {
         updateUserPreference(userPreferences, SIGN_FIDD_FILE_METADATA, StringUtils.defaultIfBlank(signFiddFileMetadata, ""));
         updateUserPreference(userPreferences, ADD_CRCS_TO_FIDD_KEY, StringUtils.defaultIfBlank(addCrcsToFiddKey, ""));
         updateUserPreference(userPreferences, INCLUDE_PUBLIC_KEY, StringUtils.defaultIfBlank(includePublicKey, ""));
+        updateUserPreference(userPreferences, INCLUDE_MESSAGE_CREATION_TIME, StringUtils.defaultIfBlank(includeMessageCreationTime, ""));
 
         updateUserPreference(userPreferences, MIN_GAP_SIZE_TEXT_FIELD, StringUtils.defaultIfBlank(minGapSize, ""));
         updateUserPreference(userPreferences, MAX_GAP_SIZE_TEXT_FIELD, StringUtils.defaultIfBlank(maxGapSize, ""));
@@ -378,6 +384,7 @@ public class MainForm {
                 return;
             }
 
+            boolean includeMessageCreationTime = checkNotNull(includeMessageCreationTimeCheckBox).selectedProperty().get();
             boolean createFileAndKeySignatures = checkNotNull(signFiddFileAndFiddKeyCheckBox).selectedProperty().get();
             boolean addFiddFileMetadataSignature = checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().get();
             boolean addLogicalFileSignatures = checkNotNull(signLogicalFilesCheckBox).selectedProperty().get();
@@ -438,6 +445,8 @@ public class MainForm {
                     randomGenerator,
                     minGapSize,
                     maxGapSize,
+
+                    includeMessageCreationTime,
 
                     createFileAndKeySignatures,
                     addFiddFileMetadataSignature,

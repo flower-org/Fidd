@@ -56,7 +56,8 @@ public class FiddPackManager {
             String postId,
             String logicalFileMetadataFormat,
             @Nullable Pair<X509Certificate, PublicKeySerializer> publicKeySerializerAndKey,
-            @Nullable String fiddFileAndFiddKeySignatureFormat
+            @Nullable String fiddFileAndFiddKeySignatureFormat,
+            boolean includeMessageCreationTime
     ) {
         // Build FiddFileMetadata
         ImmutableFiddFileMetadata.Builder fiddFileMetadataBuilder = ImmutableFiddFileMetadata.builder()
@@ -82,6 +83,10 @@ public class FiddPackManager {
                     .authorsFiddKeyFileSignatureFormat(fiddFileAndFiddKeySignatureFormat);
         }
 
+        if (includeMessageCreationTime) {
+            fiddFileMetadataBuilder.messageCreationTime(System.currentTimeMillis());
+        }
+
         return fiddFileMetadataBuilder.build();
     }
 
@@ -100,6 +105,8 @@ public class FiddPackManager {
                                 RandomGeneratorType randomGenerator,
                                 long minGapSize,
                                 long maxGapSize,
+
+                                boolean includeMessageCreationTime,
 
                                 boolean createFileAndKeySignatures,
                                 boolean addFiddFileMetadataSignature,
@@ -148,7 +155,8 @@ public class FiddPackManager {
                 postId,
                 logicalFileMetadataSerializer.name(),
                 includePublicKey ? Pair.of(authorsPublicKey, publicKeySerializer) : null,
-                createFileAndKeySignatures ? signerChecker.name() : null
+                createFileAndKeySignatures ? signerChecker.name() : null,
+                includeMessageCreationTime
         );
 
         // 3. Form FiddFile

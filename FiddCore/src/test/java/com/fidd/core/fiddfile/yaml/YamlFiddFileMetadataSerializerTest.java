@@ -24,6 +24,7 @@ public class YamlFiddFileMetadataSerializerTest {
                 .isNewOrSquash(true)
                 .isDelete(false)
                 .previousMessageNumber(122L)
+                .messageCreationTime(System.currentTimeMillis())
                 .authorsPublicKeyFormat("FMT2")
                 .authorsPublicKey(new byte[] {1,2,3,4,5})
                 .build();

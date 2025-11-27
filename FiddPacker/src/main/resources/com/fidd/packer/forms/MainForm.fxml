@@ -222,6 +222,8 @@
                                        <children>
                                           <Label text="Message Number:" />
                                           <TextField fx:id="messageNumberTextField" GridPane.columnIndex="1" />
+                                          <Label text="Include Creation Time:" GridPane.rowIndex="1" />
+                                          <CheckBox fx:id="includeMessageCreationTimeCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                        </children>
                                     </GridPane>
                                     <Label style="-fx-font-weight: bold;" text="Fidd File Metadata:" GridPane.rowIndex="6" />
