@@ -115,7 +115,7 @@
                                           <ComboBox fx:id="fiddKeyComboBox" prefWidth="250.0" GridPane.columnIndex="1" />
                                           <ComboBox fx:id="fiddFileMetadataComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                           <ComboBox fx:id="logicalFileMetadataComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                          <ComboBox fx:id="metadataSectionComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                          <ComboBox fx:id="metadataContainerComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                           <Label text="Metadata Section:" GridPane.rowIndex="1" />
                                        </children>
                                     </GridPane>

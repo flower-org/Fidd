@@ -1,8 +1,8 @@
 package com.fidd.core.metadata.blobs;
 
-import com.fidd.core.metadata.ImmutableMetadataSection;
-import com.fidd.core.metadata.MetadataSection;
-import com.fidd.core.metadata.MetadataSectionSerializer;
+import com.fidd.core.metadata.ImmutableMetadataContainer;
+import com.fidd.core.metadata.MetadataContainer;
+import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.metadata.NotEnoughBytesException;
 import com.fidd.pack.BlobsPacker;
 import org.apache.commons.lang3.tuple.Pair;
@@ -10,27 +10,27 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public class BlobsMetadataSectionSerializer implements MetadataSectionSerializer {
+public class BlobsMetadataContainerSerializer implements MetadataContainerSerializer {
     @Override
-    public byte[] serialize(MetadataSection metadataSection) {
-        byte[] metadataFormat = metadataSection.metadataFormat().getBytes(StandardCharsets.UTF_8);
-        byte[] metadata = metadataSection.metadata();
+    public byte[] serialize(MetadataContainer metadataContainer) {
+        byte[] metadataFormat = metadataContainer.metadataFormat().getBytes(StandardCharsets.UTF_8);
+        byte[] metadata = metadataContainer.metadata();
 
         byte[] signatureFormat;
-        if (metadataSection.signatureFormat() != null) {
-            signatureFormat = metadataSection.signatureFormat().getBytes(StandardCharsets.UTF_8);
+        if (metadataContainer.signatureFormat() != null) {
+            signatureFormat = metadataContainer.signatureFormat().getBytes(StandardCharsets.UTF_8);
         } else { signatureFormat = new byte[] {}; }
 
         byte[] signature;
-        if (metadataSection.signature() != null) {
-            signature = metadataSection.signature();
+        if (metadataContainer.signature() != null) {
+            signature = metadataContainer.signature();
         } else { signature = new byte[] {}; }
 
         return BlobsPacker.packBlobs(signature, metadata, signatureFormat, metadataFormat);
     }
 
     @Override
-    public MetadataSectionAndLength deserialize(byte[] metadataBytes) throws NotEnoughBytesException {
+    public MetadataContainerAndLength deserialize(byte[] metadataBytes) throws NotEnoughBytesException {
         final Pair<Long, List<byte[]>> unpacked = BlobsPacker.unpackBlobs(metadataBytes);
 
         final long lengthBytes = unpacked.getLeft();
@@ -41,7 +41,7 @@ public class BlobsMetadataSectionSerializer implements MetadataSectionSerializer
         byte[] signatureFormat = parts.get(2);
         byte[] metadataFormat = parts.get(3);
 
-        ImmutableMetadataSection.Builder builder = ImmutableMetadataSection.builder()
+        ImmutableMetadataContainer.Builder builder = ImmutableMetadataContainer.builder()
                 .metadataFormat(new String(metadataFormat, StandardCharsets.UTF_8))
                 .metadata(metadata);
 
@@ -52,16 +52,16 @@ public class BlobsMetadataSectionSerializer implements MetadataSectionSerializer
             builder.signature(signature);
         }
 
-        MetadataSection metadataSection = builder.build();
-        return new MetadataSectionAndLength() {
+        MetadataContainer metadataContainer = builder.build();
+        return new MetadataContainerAndLength() {
             @Override
             public long lengthBytes() {
                 return lengthBytes;
             }
 
             @Override
-            public MetadataSection metadataSection() {
-                return metadataSection;
+            public MetadataContainer metadataContainer() {
+                return metadataContainer;
             }
         };
     }

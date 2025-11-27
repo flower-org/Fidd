@@ -8,7 +8,7 @@ import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKeySerializer;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
-import com.fidd.core.metadata.MetadataSectionSerializer;
+import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
 import com.fidd.core.pki.SignerChecker;
 import com.fidd.core.random.RandomGeneratorType;
@@ -63,7 +63,7 @@ public class MainForm {
     final static String PUBLIC_KEY_FORMAT = "PUBLIC_KEY_FORMAT";
     final static String SIGNATURE_FORMAT = "SIGNATURE_FORMAT";
     final static String RANDOM_GENERATOR = "RANDOM_GENERATOR";
-    final static String METADATA_SECTION = "METADATA_SECTION";
+    final static String METADATA_CONTAINER = "METADATA_CONTAINER";
     final static String CRC_CALCULATOR = "CRC_CALCULATOR";
     final static String SIGN_FIDD_FILE_AND_FIDD_KEY = "SIGN_FIDD_FILE_AND_FIDD_KEY";
     final static String SIGN_LOGICAL_FILES = "SIGN_LOGICAL_FILES";
@@ -90,7 +90,7 @@ public class MainForm {
     @FXML @Nullable TextField postIdTextField;
 
     @FXML @Nullable ComboBox<String> fiddKeyComboBox;
-    @FXML @Nullable ComboBox<String> metadataSectionComboBox;
+    @FXML @Nullable ComboBox<String> metadataContainerComboBox;
     @FXML @Nullable ComboBox<String> fiddFileMetadataComboBox;
     @FXML @Nullable ComboBox<String> logicalFileMetadataComboBox;
     @FXML @Nullable ComboBox<String> publicKeyFormatComboBox;
@@ -200,13 +200,13 @@ public class MainForm {
     public void loadFiddPackerChooserPreferences() {
         initRepositoryComboBox(baseRepositories.encryptionAlgorithmRepo(), checkNotNull(encryptionAlgorithmComboBox), getUserPreference(ENCRYPTION_ALGORITHM));
         initRepositoryComboBox(baseRepositories.fiddKeyFormatRepo(), checkNotNull(fiddKeyComboBox), getUserPreference(FIDD_KEY));
-        initRepositoryComboBox(baseRepositories.metadataSectionFormatRepo(), checkNotNull(metadataSectionComboBox), getUserPreference(METADATA_SECTION));
+        initRepositoryComboBox(baseRepositories.metadataContainerFormatRepo(), checkNotNull(metadataContainerComboBox), getUserPreference(METADATA_CONTAINER));
         initRepositoryComboBox(baseRepositories.fiddFileMetadataFormatRepo(), checkNotNull(fiddFileMetadataComboBox), getUserPreference(FIDD_FILE_METADATA));
         initRepositoryComboBox(baseRepositories.logicalFileMetadataFormatRepo(), checkNotNull(logicalFileMetadataComboBox), getUserPreference(LOGICAL_FILE_METADATA));
         initRepositoryComboBox(baseRepositories.publicKeyFormatRepo(), checkNotNull(publicKeyFormatComboBox), getUserPreference(PUBLIC_KEY_FORMAT));
         initRepositoryComboBox(baseRepositories.signatureFormatRepo(), checkNotNull(signatureFormatComboBox), getUserPreference(SIGNATURE_FORMAT));
         initRepositoryComboBox(baseRepositories.randomGeneratorsRepo(), checkNotNull(randomGeneratorComboBox), getUserPreference(RANDOM_GENERATOR));
-        initRepositoryComboBox(baseRepositories.metadataSectionFormatRepo(), checkNotNull(metadataSectionComboBox), getUserPreference(METADATA_SECTION));
+        initRepositoryComboBox(baseRepositories.metadataContainerFormatRepo(), checkNotNull(metadataContainerComboBox), getUserPreference(METADATA_CONTAINER));
         initRepositoryComboBox(baseRepositories.crcCalculatorsRepo(), checkNotNull(crcCalculatorComboBox), getUserPreference(CRC_CALCULATOR));
 
         initCheckBox(checkNotNull(signFiddFileAndFiddKeyCheckBox), getUserPreference(SIGN_FIDD_FILE_AND_FIDD_KEY));
@@ -232,7 +232,7 @@ public class MainForm {
         checkNotNull(publicKeyFormatComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
         checkNotNull(signatureFormatComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
         checkNotNull(randomGeneratorComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
-        checkNotNull(metadataSectionComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
+        checkNotNull(metadataContainerComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
         checkNotNull(crcCalculatorComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
 
         checkNotNull(signFiddFileAndFiddKeyCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
@@ -262,7 +262,7 @@ public class MainForm {
         String signatureFormat = checkNotNull(signatureFormatComboBox).valueProperty().get();
         String randomGenerator = checkNotNull(randomGeneratorComboBox).valueProperty().get();
         String crcCalculator = checkNotNull(crcCalculatorComboBox).valueProperty().get();
-        String metadataSection = checkNotNull(metadataSectionComboBox).valueProperty().get();
+        String metadataContainer = checkNotNull(metadataContainerComboBox).valueProperty().get();
         boolean signFiddFileAndFiddKey = checkNotNull(signFiddFileAndFiddKeyCheckBox).selectedProperty().get();
         boolean signLogicalFiles = checkNotNull(signLogicalFilesCheckBox).selectedProperty().get();
         boolean signLogicalFileMetadatas = checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().get();
@@ -273,7 +273,7 @@ public class MainForm {
         String maxGapSize = checkNotNull(maxGapSizeTextField).textProperty().get();
 
         updateFiddPackerPreferences(encryptionAlgorithm, fiddKey, fiddFileMetadata, logicalFileMetadata, publicKeyFormat,
-                signatureFormat, randomGenerator, metadataSection, crcCalculator, Boolean.toString(signFiddFileAndFiddKey),
+                signatureFormat, randomGenerator, metadataContainer, crcCalculator, Boolean.toString(signFiddFileAndFiddKey),
                 Boolean.toString(signLogicalFiles), Boolean.toString(signLogicalFileMetadatas),
                 Boolean.toString(signFiddFileMetadata), Boolean.toString(addCrcsToFiddKey),
                 minGapSize, maxGapSize);
@@ -281,7 +281,7 @@ public class MainForm {
 
     public static void updateFiddPackerPreferences(String encryptionAlgorithm, String fiddKey, String fiddFileMetadata,
                                                 String logicalFileMetadata, String publicKeyFormat, String signatureFormat,
-                                                String randomGenerator, String metadataSection, String crcCalculator,
+                                                String randomGenerator, String metadataContainer, String crcCalculator,
                                                 String signFiddFileAndFiddKey,
                                                 String signLogicalFiles, String signLogicalFileMetadatas,
                                                 String signFiddFileMetadata, String addCrcsToFiddKey,
@@ -296,7 +296,7 @@ public class MainForm {
         updateUserPreference(userPreferences, PUBLIC_KEY_FORMAT, StringUtils.defaultIfBlank(publicKeyFormat, ""));
         updateUserPreference(userPreferences, SIGNATURE_FORMAT, StringUtils.defaultIfBlank(signatureFormat, ""));
         updateUserPreference(userPreferences, RANDOM_GENERATOR, StringUtils.defaultIfBlank(randomGenerator, ""));
-        updateUserPreference(userPreferences, METADATA_SECTION, StringUtils.defaultIfBlank(metadataSection, ""));
+        updateUserPreference(userPreferences, METADATA_CONTAINER, StringUtils.defaultIfBlank(metadataContainer, ""));
         updateUserPreference(userPreferences, CRC_CALCULATOR, StringUtils.defaultIfBlank(crcCalculator, ""));
         updateUserPreference(userPreferences, SIGN_FIDD_FILE_AND_FIDD_KEY, StringUtils.defaultIfBlank(signFiddFileAndFiddKey, ""));
         updateUserPreference(userPreferences, SIGN_LOGICAL_FILES, StringUtils.defaultIfBlank(signLogicalFiles, ""));
@@ -352,7 +352,7 @@ public class MainForm {
             }
 
             FiddKeySerializer fiddKeySerializer = getComboBoxSelectionFromRepo(baseRepositories.fiddKeyFormatRepo(), fiddKeyComboBox);
-            MetadataSectionSerializer metadataSectionSerializer = getComboBoxSelectionFromRepo(baseRepositories.metadataSectionFormatRepo(), metadataSectionComboBox);
+            MetadataContainerSerializer metadataContainerSerializer = getComboBoxSelectionFromRepo(baseRepositories.metadataContainerFormatRepo(), metadataContainerComboBox);
             FiddFileMetadataSerializer fiddFileMetadataSerializer = getComboBoxSelectionFromRepo(baseRepositories.fiddFileMetadataFormatRepo(), fiddFileMetadataComboBox);
             LogicalFileMetadataSerializer logicalFileMetadataSerializer = getComboBoxSelectionFromRepo(baseRepositories.logicalFileMetadataFormatRepo(), logicalFileMetadataComboBox);
             EncryptionAlgorithm encryptionAlgorithm = getComboBoxSelectionFromRepo(baseRepositories.encryptionAlgorithmRepo(), encryptionAlgorithmComboBox);
@@ -424,7 +424,7 @@ public class MainForm {
                     postId,
 
                     fiddKeySerializer,
-                    metadataSectionSerializer,
+                    metadataContainerSerializer,
                     fiddFileMetadataSerializer,
                     logicalFileMetadataSerializer,
                     encryptionAlgorithm,
@@ -442,6 +442,8 @@ public class MainForm {
                     addCrcsToFiddKey,
                     crcCalculator
             );
+
+            JavaFxUtils.showMessage("Fidd Pack Complete!");
         } catch (Exception e) {
             LOGGER.error("Packing error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
