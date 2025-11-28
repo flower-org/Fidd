@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableFiddFileMetadata.class)
@@ -29,6 +30,6 @@ public interface FiddFileMetadata {
     @Nullable String authorsPublicKeyFormat();
     @Nullable byte[] authorsPublicKey();
 
-    @Nullable String authorsFiddFileSignatureFormat();
-    @Nullable String authorsFiddKeyFileSignatureFormat();
+    @Nullable List<String> authorsFiddFileSignatureFormats();
+    @Nullable List<String> authorsFiddKeyFileSignatureFormats();
 }

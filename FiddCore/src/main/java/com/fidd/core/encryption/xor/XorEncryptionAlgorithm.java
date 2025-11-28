@@ -37,11 +37,11 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
 
     @Override
     public long encrypt(byte[] keyData, List<InputStream> plaintexts, OutputStream ciphertext,
-                        @Nullable CrcCallback ciphertextCrcCallback) {
+                        @Nullable List<CrcCallback> ciphertextCrcCallbacks) {
         long bytesWritten = 0;
         for (InputStream plaintext : plaintexts) {
             bytesWritten += processStream(keyData, (int)(bytesWritten % keyData.length), -1, plaintext,
-                    ciphertext, ciphertextCrcCallback);
+                    ciphertext, ciphertextCrcCallbacks);
         }
         return bytesWritten;
     }
@@ -75,7 +75,7 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     }
 
     private long processStream(byte[] keyData, int keyOffset, int length, InputStream in, OutputStream out,
-                               @Nullable CrcCallback ciphertextCrcCallback) {
+                               @Nullable List<CrcCallback> ciphertextCrcCallbacks) {
         try {
             byte[] buffer = new byte[8192]; // 8 KB buffer
             long total = 0;
@@ -93,10 +93,10 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
                 out.write(buffer, 0, read);
 
                 // CRC callback
-                if (ciphertextCrcCallback != null) {
+                if (ciphertextCrcCallbacks != null) {
                     // If callback only supports write(byte[]):
                     byte[] chunk = Arrays.copyOf(buffer, read);
-                    ciphertextCrcCallback.write(chunk);
+                    ciphertextCrcCallbacks.forEach(c -> c.write(chunk));
                 }
 
                 total += read;

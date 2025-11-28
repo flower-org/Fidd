@@ -22,7 +22,7 @@ public interface EncryptionAlgorithm extends NamedEntry {
     byte[] decrypt(byte[] keyData, byte[] ciphertext);
 
     /** @return Bytes written to output stream ciphertext */
-    long encrypt(byte[] keyData, List<InputStream> plaintext, OutputStream ciphertext, CrcCallback ciphertextCrcCallback);
+    long encrypt(byte[] keyData, List<InputStream> plaintext, OutputStream ciphertext, List<CrcCallback> ciphertextCrcCallbacks);
     /** @return Bytes written to output stream plaintext */
     long decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext);
 }

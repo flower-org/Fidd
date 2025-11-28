@@ -35,11 +35,11 @@ public class NoEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
 
     @Override
     public long encrypt(byte[] keyData, List<InputStream> plaintexts, OutputStream ciphertext,
-                        @Nullable CrcCallback ciphertextCrcCallback) {
+                        @Nullable List<CrcCallback> ciphertextCrcCallbacks) {
         long bytesWritten = 0;
         for (InputStream plaintext : plaintexts) {
             bytesWritten += processStream(-1, plaintext,
-                    ciphertext, ciphertextCrcCallback);
+                    ciphertext, ciphertextCrcCallbacks);
         }
         return bytesWritten;
     }
@@ -63,7 +63,7 @@ public class NoEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
 
     // --- Helper methods ---
     private long processStream(int length, InputStream in, OutputStream out,
-                               @Nullable CrcCallback ciphertextCrcCallback) {
+                               @Nullable List<CrcCallback> ciphertextCrcCallbacks) {
         try {
             byte[] buffer = new byte[8192]; // 8 KB buffer
             long total = 0;
@@ -74,9 +74,9 @@ public class NoEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
 
                 out.write(buffer, 0, read);
 
-                if (ciphertextCrcCallback != null) {
+                if (ciphertextCrcCallbacks != null) {
                     byte[] chunk = Arrays.copyOf(buffer, read);
-                    ciphertextCrcCallback.write(chunk); // process chunk
+                    ciphertextCrcCallbacks.forEach(c -> c.write(chunk)); // process chunk
                 }
 
                 total += read;

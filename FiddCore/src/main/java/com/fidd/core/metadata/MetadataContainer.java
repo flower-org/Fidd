@@ -3,9 +3,11 @@ package com.fidd.core.metadata;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fidd.core.common.FiddSignature;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableMetadataContainer.class)
@@ -15,6 +17,5 @@ public interface MetadataContainer {
     String metadataFormat();
     byte[] metadata();
 
-    @Nullable String signatureFormat();
-    @Nullable byte[] signature();
+    @Nullable List<FiddSignature> signatures();
 }

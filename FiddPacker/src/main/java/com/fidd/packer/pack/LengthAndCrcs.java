@@ -6,19 +6,20 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableLengthAndCrc.class)
-@JsonDeserialize(as = ImmutableLengthAndCrc.class)
+@JsonSerialize(as = ImmutableLengthAndCrcs.class)
+@JsonDeserialize(as = ImmutableLengthAndCrcs.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public interface LengthAndCrc {
+public interface LengthAndCrcs {
     long length();
-    @Nullable byte[] crc();
+    @Nullable List<byte[]> crcs();
 
-    static LengthAndCrc of(long length, @Nullable byte[] crc) {
-        ImmutableLengthAndCrc.Builder lengthAndCrcBuilder = ImmutableLengthAndCrc.builder()
+    static LengthAndCrcs of(long length, @Nullable List<byte[]> crcs) {
+        ImmutableLengthAndCrcs.Builder lengthAndCrcBuilder = ImmutableLengthAndCrcs.builder()
                 .length(length);
-        if (crc != null) { lengthAndCrcBuilder.crc(crc); }
+        if (crcs != null) { lengthAndCrcBuilder.crcs(crcs); }
         return lengthAndCrcBuilder.build();
     }
 }

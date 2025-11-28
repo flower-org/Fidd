@@ -1,5 +1,6 @@
 package com.fidd.core.metadata.blobs;
 
+import com.fidd.core.common.FiddSignature;
 import com.fidd.core.metadata.ImmutableMetadataContainer;
 import com.fidd.core.metadata.MetadataContainer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
@@ -8,25 +9,29 @@ import com.fidd.pack.BlobsPacker;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 public class BlobsMetadataContainerSerializer implements MetadataContainerSerializer {
     @Override
     public byte[] serialize(MetadataContainer metadataContainer) {
+        List<byte[]> blobs = new ArrayList<>();
+
+        if (metadataContainer.signatures() != null) {
+            for (FiddSignature fiddSignature : metadataContainer.signatures()) {
+                byte[] signatureFormat = fiddSignature.format().getBytes(StandardCharsets.UTF_8);
+                byte[] signature = fiddSignature.bytes();
+                blobs.add(signatureFormat);
+                blobs.add(signature);
+            }
+        }
+
         byte[] metadataFormat = metadataContainer.metadataFormat().getBytes(StandardCharsets.UTF_8);
         byte[] metadata = metadataContainer.metadata();
+        blobs.add(metadataFormat);
+        blobs.add(metadata);
 
-        byte[] signatureFormat;
-        if (metadataContainer.signatureFormat() != null) {
-            signatureFormat = metadataContainer.signatureFormat().getBytes(StandardCharsets.UTF_8);
-        } else { signatureFormat = new byte[] {}; }
-
-        byte[] signature;
-        if (metadataContainer.signature() != null) {
-            signature = metadataContainer.signature();
-        } else { signature = new byte[] {}; }
-
-        return BlobsPacker.packBlobs(signature, metadata, signatureFormat, metadataFormat);
+        return BlobsPacker.packBlobs(blobs);
     }
 
     @Override
@@ -36,23 +41,22 @@ public class BlobsMetadataContainerSerializer implements MetadataContainerSerial
         final long lengthBytes = unpacked.getLeft();
         final List<byte[]> parts = unpacked.getRight();
 
-        byte[] signature = parts.get(0);
-        byte[] metadata = parts.get(1);
-        byte[] signatureFormat = parts.get(2);
-        byte[] metadataFormat = parts.get(3);
+        byte[] metadataFormat = parts.get(parts.size()-2);
+        byte[] metadata = parts.get(parts.size()-1);
 
-        ImmutableMetadataContainer.Builder builder = ImmutableMetadataContainer.builder()
+        List<FiddSignature> signatures = new ArrayList<>();
+        for (int i = 0; i < parts.size()-2; i+=2) {
+            byte[] signatureFormat = parts.get(i);
+            byte[] signature = parts.get(i + 1);
+            signatures.add(FiddSignature.of(new String(signatureFormat, StandardCharsets.UTF_8), signature));
+        }
+
+        MetadataContainer metadataContainer = ImmutableMetadataContainer.builder()
                 .metadataFormat(new String(metadataFormat, StandardCharsets.UTF_8))
-                .metadata(metadata);
+                .metadata(metadata)
+                .signatures(signatures)
+                .build();
 
-        if (signatureFormat.length > 0) {
-            builder.signatureFormat(new String(signatureFormat, StandardCharsets.UTF_8));
-        }
-        if (signature.length > 0) {
-            builder.signature(signature);
-        }
-
-        MetadataContainer metadataContainer = builder.build();
         return new MetadataContainerAndLength() {
             @Override
             public long lengthBytes() {

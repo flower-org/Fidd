@@ -455,10 +455,10 @@ public class MainForm {
 
                     includePublicKey,
                     publicKeySerializer,
-                    signerChecker,
+                    List.of(signerChecker),
 
                     addCrcsToFiddKey,
-                    crcCalculator
+                    List.of(crcCalculator)
             );
 
             JavaFxUtils.showMessage("Fidd Pack Complete!");
