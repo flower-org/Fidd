@@ -355,6 +355,8 @@
                                                       <CheckBox fx:id="validateFiddFileAndFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" />
                                                       <Label text="Validate CRCs in Fidd Key:" GridPane.rowIndex="1" />
                                                       <CheckBox fx:id="validateCrcsInFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                      <Label text="Author's Public Key:" GridPane.rowIndex="2" />
+                                                       <ComboBox fx:id="publicKeySourceComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                                    </children>
                                                 </GridPane>
                                                 <GridPane GridPane.columnIndex="1" GridPane.rowIndex="5">

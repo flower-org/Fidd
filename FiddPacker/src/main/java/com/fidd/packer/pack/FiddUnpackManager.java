@@ -12,6 +12,12 @@ public class FiddUnpackManager {
         void log(String log);
     }
 
+    public enum PublicKeySource {
+        MESSAGE_EMBEDDED,
+        SUPPLIED_PARAMETER,
+        MESSAGE_FALL_BACK_TO_PARAMETER
+    }
+
     public static void fiddUnpackPost(BaseRepositories baseRepositories,
                                       File fiddFile,
                                       File fiddKeyFile,
@@ -26,6 +32,7 @@ public class FiddUnpackManager {
                                       boolean validateLogicalFileMetadatas,
                                       boolean validateLogicalFiles,
 
+                                      PublicKeySource publicKeySource,
                                       @Nullable X509Certificate currentCert,
 
                                       ProgressCallback progressCallback) {

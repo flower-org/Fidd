@@ -57,6 +57,9 @@ import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_FILE_NAME_PREF;
 import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_KEY_FILE_NAME;
 import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_KEY_FILE_NAME_PREF;
 import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_SIGNATURE_EXT;
+import static com.fidd.packer.pack.FiddUnpackManager.PublicKeySource.MESSAGE_EMBEDDED;
+import static com.fidd.packer.pack.FiddUnpackManager.PublicKeySource.MESSAGE_FALL_BACK_TO_PARAMETER;
+import static com.fidd.packer.pack.FiddUnpackManager.PublicKeySource.SUPPLIED_PARAMETER;
 import static com.flower.crypt.keys.UserPreferencesManager.getUserPreference;
 import static com.flower.crypt.keys.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -92,6 +95,12 @@ public class MainForm {
     final static String VALIDATE_LOGICAL_FILES = "VALIDATE_LOGICAL_FILES";
 
     final static String SIGNATURE_FILES_DELIMITER = ";";
+
+    final static String PUBLIC_KEY_SOURCE = "PUBLIC_KEY_SOURCE";
+
+    final static String PUBLIC_KEY_OPTION_MESSAGE = "Use Public Key from Message";
+    final static String PUBLIC_KEY_OPTION_UI = "Use Public Key from UI";
+    final static String PUBLIC_KEY_OPTION_MESSAGE_FALL_BACK_TO_UI = "Use from Message, fall back to UI";
 
     @Nullable Stage mainStage;
 
@@ -142,6 +151,8 @@ public class MainForm {
     @FXML @Nullable TextField fiddFileSignaturesTextField;
     @FXML @Nullable TextField fiddKeyFileTextField;
     @FXML @Nullable TextField fiddKeyFileSignaturesTextField;
+
+    @FXML @Nullable ComboBox<String> publicKeySourceComboBox;
 
     @FXML @Nullable TextArea unpackLogTextArea;
 
@@ -261,6 +272,10 @@ public class MainForm {
         initCheckBox(checkNotNull(validateLogicalFileMetadatasCheckBox), StringUtils.defaultIfBlank(getUserPreference(VALIDATE_LOGICAL_FILE_METADATAS), "true"));
         initCheckBox(checkNotNull(validateLogicalFilesCheckBox), StringUtils.defaultIfBlank(getUserPreference(VALIDATE_LOGICAL_FILES), "true"));
 
+        initComboBox(List.of(PUBLIC_KEY_OPTION_MESSAGE, PUBLIC_KEY_OPTION_UI, PUBLIC_KEY_OPTION_MESSAGE_FALL_BACK_TO_UI),
+                checkNotNull(publicKeySourceComboBox),
+                StringUtils.defaultIfBlank(getUserPreference(PUBLIC_KEY_SOURCE), PUBLIC_KEY_OPTION_MESSAGE));
+
         String minGapSizeStr = getUserPreference(MIN_GAP_SIZE_TEXT_FIELD);
         if (StringUtils.isBlank(minGapSizeStr)) { minGapSizeStr = "0"; }
         checkNotNull(minGapSizeTextField).textProperty().set(minGapSizeStr);
@@ -298,6 +313,8 @@ public class MainForm {
         checkNotNull(validateFiddFileMetadataCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
         checkNotNull(validateLogicalFileMetadatasCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
         checkNotNull(validateLogicalFilesCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+
+        checkNotNull(publicKeySourceComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
     }
 
     public void fiddPackerTextChanged(ObservableValue<? extends String> observable, String _old, String _new) {
@@ -336,6 +353,8 @@ public class MainForm {
         boolean validateLogicalFileMetadatas = checkNotNull(validateLogicalFileMetadatasCheckBox).selectedProperty().get();
         boolean validateLogicalFiles = checkNotNull(validateLogicalFilesCheckBox).selectedProperty().get();
 
+        String publicKeySource = checkNotNull(publicKeySourceComboBox).valueProperty().get();
+
         updateFiddPackerPreferences(encryptionAlgorithm, fiddKey, fiddFileMetadata, logicalFileMetadata, publicKeyFormat,
                 signatureFormat, randomGenerator, metadataContainer, crcCalculator, Boolean.toString(signFiddFileAndFiddKey),
                 Boolean.toString(signLogicalFiles), Boolean.toString(signLogicalFileMetadatas),
@@ -344,7 +363,9 @@ public class MainForm {
 
                 Boolean.toString(ignoreValidationFailures), Boolean.toString(validateFiddFileAndFiddKey),
                 Boolean.toString(validateCrcsInFiddKey), Boolean.toString(validateFiddFileMetadata),
-                Boolean.toString(validateLogicalFileMetadatas), Boolean.toString(validateLogicalFiles)
+                Boolean.toString(validateLogicalFileMetadatas), Boolean.toString(validateLogicalFiles),
+
+                publicKeySource
         );
     }
 
@@ -362,7 +383,9 @@ public class MainForm {
                                                 String validateCrcsInFiddKey,
                                                 String validateFiddFileMetadata,
                                                 String validateLogicalFileMetadatas,
-                                                String validateLogicalFiles
+                                                String validateLogicalFiles,
+
+                                                String publicKeySource
                                                ) {
         Preferences userPreferences = Preferences.userRoot();
 
@@ -392,6 +415,8 @@ public class MainForm {
         updateUserPreference(userPreferences, VALIDATE_FIDD_FILE_METADATA, StringUtils.defaultIfBlank(validateFiddFileMetadata, ""));
         updateUserPreference(userPreferences, VALIDATE_LOGICAL_FILE_METADATAS, StringUtils.defaultIfBlank(validateLogicalFileMetadatas, ""));
         updateUserPreference(userPreferences, VALIDATE_LOGICAL_FILES, StringUtils.defaultIfBlank(validateLogicalFiles, ""));
+
+        updateUserPreference(userPreferences, PUBLIC_KEY_SOURCE, StringUtils.defaultIfBlank(publicKeySource, ""));
     }
 
     static <J> void initRepositoryComboBox(Repository<J> repo, ComboBox<String> combo, @Nullable String selected) {
@@ -400,6 +425,18 @@ public class MainForm {
 
         if (StringUtils.isBlank(selected)) {
             selected = repo.defaultKey();
+        }
+        if (!StringUtils.isBlank(selected)) {
+            combo.getSelectionModel().select(selected);
+        }
+    }
+
+    static void initComboBox(List<String> options, ComboBox<String> combo, @Nullable String selected) {
+        ObservableList<String> list = FXCollections.observableArrayList(options);
+        combo.setItems(list);
+
+        if (StringUtils.isBlank(selected)) {
+            selected = list.get(0);
         }
         if (!StringUtils.isBlank(selected)) {
             combo.getSelectionModel().select(selected);
@@ -818,17 +855,40 @@ public class MainForm {
             boolean validateLogicalFileMetadatas = checkNotNull(validateLogicalFileMetadatasCheckBox).selectedProperty().get();
             boolean validateLogicalFiles = checkNotNull(validateLogicalFilesCheckBox).selectedProperty().get();
 
+            FiddUnpackManager.PublicKeySource publicKeySource;
+            String publicKeySourceStr = checkNotNull(publicKeySourceComboBox).valueProperty().get();
+            switch (publicKeySourceStr) {
+                case PUBLIC_KEY_OPTION_MESSAGE:
+                    publicKeySource = MESSAGE_EMBEDDED;
+                    break;
+                case PUBLIC_KEY_OPTION_UI:
+                    publicKeySource = SUPPLIED_PARAMETER;
+                    break;
+                case PUBLIC_KEY_OPTION_MESSAGE_FALL_BACK_TO_UI:
+                    publicKeySource = MESSAGE_FALL_BACK_TO_PARAMETER;
+                    break;
+                default:
+                    throw new RuntimeException("Unknown PublicKeySource: " + publicKeySourceStr);
+            }
+
             X509Certificate currentCert = null;
             try {
                 Pair<X509Certificate, PrivateKey> pair = getCurrentCertificate();
                 if (pair == null) {
-                    JavaFxUtils.showMessage("Certificate load error", "Certificate load error. If you do not plan to use a certificate, click \"Uncheck All Signatures\".");
+                    JavaFxUtils.showMessage("Certificate load error",
+                            "Certificate load error. If you do not plan to use a certificate, click \"Uncheck All Signatures\".");
                     return;
                 }
                 currentCert = pair.getLeft();
             } catch (Exception e) {
                 // TODO: log textarea output?
                 LOGGER.error("Certificate was not loaded", e);
+                if (publicKeySource == SUPPLIED_PARAMETER || publicKeySource == MESSAGE_FALL_BACK_TO_PARAMETER) {
+                    JavaFxUtils.showMessage("Certificate load error",
+                            "Certificate load error. If you do not plan to specify a certificate, choose \"" +
+                                    PUBLIC_KEY_OPTION_MESSAGE + "\".\n" + e.getMessage());
+                    return;
+                }
             }
 
             // TODO: Progress Bar modal window
@@ -847,6 +907,7 @@ public class MainForm {
                     validateLogicalFileMetadatas,
                     validateLogicalFiles,
 
+                    publicKeySource,
                     currentCert,
                     s -> checkNotNull(unpackLogTextArea).appendText(s + '\n'));
 
