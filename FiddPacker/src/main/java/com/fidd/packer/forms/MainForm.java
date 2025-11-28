@@ -23,6 +23,7 @@ import com.flower.crypt.keys.forms.RsaPkcs11KeyProvider;
 import com.flower.crypt.keys.forms.RsaRawKeyProvider;
 import com.flower.crypt.keys.forms.TabKeyProvider;
 import com.flower.fxutils.JavaFxUtils;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -47,6 +48,8 @@ import java.io.File;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -158,6 +161,27 @@ public class MainForm {
 
     BaseRepositories baseRepositories;
 
+    final FiddUnpackManager.ProgressCallback mainFormProgressCallback = new FiddUnpackManager.ProgressCallback() {
+        private static final DateTimeFormatter FORMATTER =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        public static String timestamp() {
+            return LocalDateTime.now().format(FORMATTER);
+        }
+
+        @Override
+        public void log(String log) {
+            LOGGER.info(log);
+            checkNotNull(unpackLogTextArea).appendText(timestamp() + " " + log + '\n');
+        }
+
+        @Override
+        public void warn(String log) {
+            LOGGER.warn(log);
+            checkNotNull(unpackLogTextArea).appendText(timestamp() + " " + "WARNING! " + log + '\n');
+        }
+    };
+
     public MainForm() {
         //This form is created automatically.
         //No need to load fxml explicitly
@@ -195,6 +219,13 @@ public class MainForm {
         AnchorPane.setRightAnchor(keyProviderForm, 0.0);
 
         keyProvider.initPreferences();
+
+        checkNotNull(packedContentFolderForUnpackTextField).textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observableValue, String _old, String _new) {
+                findFiddFiles(_new);
+            }
+        });
 
         loadFiddPackerChooserPreferences();
         setFiddPackerPreferencesHandlers();
@@ -695,45 +726,50 @@ public class MainForm {
         File directory = chooseDirectory(packedContentFolder);
         if (directory != null) {
             checkNotNull(packedContentFolderForUnpackTextField).textProperty().set(directory.getPath());
-
-            // TODO: find other files - move to "on change" event for packedContentFolderForUnpackTextField
-            findFiddFiles(directory);
+            // find other files - logic is "on change" event for packedContentFolderForUnpackTextField
         }
     }
 
-    protected void findFiddFiles(File directory) {
+    protected void findFiddFiles(String directoryStr) {
         checkNotNull(fiddFileTextField).textProperty().set("");
         checkNotNull(fiddFileSignaturesTextField).textProperty().set("");
         checkNotNull(fiddKeyFileTextField).textProperty().set("");
         checkNotNull(fiddKeyFileSignaturesTextField).textProperty().set("");
 
-        File[] subFiles = directory.listFiles(File::isFile);
-        if (subFiles != null) {
-            List<Long> fiddFileSignatures = new ArrayList<>();
-            List<Long> fiddKeyFileSignatures = new ArrayList<>();
-            for (File subFile : subFiles) {
-                String filename = subFile.getName();
-                if (filename.equals(DEFAULT_FIDD_FILE_NAME)) {
-                    checkNotNull(fiddFileTextField).textProperty().set(filename);
-                } else if (filename.equals(DEFAULT_FIDD_KEY_FILE_NAME)) {
-                    checkNotNull(fiddKeyFileTextField).textProperty().set(filename);
-                } else if (filename.startsWith(DEFAULT_FIDD_FILE_NAME_PREF) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
-                    Long signatureNum = getSignatureNum(filename, DEFAULT_FIDD_FILE_NAME_PREF, DEFAULT_FIDD_SIGNATURE_EXT);
-                    if (signatureNum != null) { fiddFileSignatures.add(signatureNum); }
-                } else if (filename.startsWith(DEFAULT_FIDD_KEY_FILE_NAME_PREF) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
-                    Long keySignatureNum = getSignatureNum(filename, DEFAULT_FIDD_KEY_FILE_NAME_PREF, DEFAULT_FIDD_SIGNATURE_EXT);
-                    if (keySignatureNum != null) { fiddKeyFileSignatures.add(keySignatureNum); }
+        try {
+            File directory = new File(directoryStr);
+            File[] subFiles = directory.listFiles(File::isFile);
+            if (subFiles != null) {
+                List<Long> fiddFileSignatures = new ArrayList<>();
+                List<Long> fiddKeyFileSignatures = new ArrayList<>();
+                for (File subFile : subFiles) {
+                    String filename = subFile.getName();
+                    if (filename.equals(DEFAULT_FIDD_FILE_NAME)) {
+                        checkNotNull(fiddFileTextField).textProperty().set(filename);
+                    } else if (filename.equals(DEFAULT_FIDD_KEY_FILE_NAME)) {
+                        checkNotNull(fiddKeyFileTextField).textProperty().set(filename);
+                    } else if (filename.startsWith(DEFAULT_FIDD_FILE_NAME_PREF) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
+                        Long signatureNum = getSignatureNum(filename, DEFAULT_FIDD_FILE_NAME_PREF, DEFAULT_FIDD_SIGNATURE_EXT);
+                        if (signatureNum != null) {
+                            fiddFileSignatures.add(signatureNum);
+                        }
+                    } else if (filename.startsWith(DEFAULT_FIDD_KEY_FILE_NAME_PREF) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
+                        Long keySignatureNum = getSignatureNum(filename, DEFAULT_FIDD_KEY_FILE_NAME_PREF, DEFAULT_FIDD_SIGNATURE_EXT);
+                        if (keySignatureNum != null) {
+                            fiddKeyFileSignatures.add(keySignatureNum);
+                        }
+                    }
                 }
+
+                Collections.sort(fiddFileSignatures);
+                Collections.sort(fiddKeyFileSignatures);
+
+                checkNotNull(fiddFileSignaturesTextField).textProperty().set(String.join(SIGNATURE_FILES_DELIMITER,
+                        fiddFileSignatures.stream().map(n -> DEFAULT_FIDD_FILE_NAME_PREF + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
+                checkNotNull(fiddKeyFileSignaturesTextField).textProperty().set(String.join(SIGNATURE_FILES_DELIMITER,
+                        fiddKeyFileSignatures.stream().map(n -> DEFAULT_FIDD_KEY_FILE_NAME_PREF + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
             }
-
-            Collections.sort(fiddFileSignatures);
-            Collections.sort(fiddKeyFileSignatures);
-
-            checkNotNull(fiddFileSignaturesTextField).textProperty().set(String.join(SIGNATURE_FILES_DELIMITER,
-                    fiddFileSignatures.stream().map(n -> DEFAULT_FIDD_FILE_NAME_PREF + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
-            checkNotNull(fiddKeyFileSignaturesTextField).textProperty().set(String.join(SIGNATURE_FILES_DELIMITER,
-                    fiddKeyFileSignatures.stream().map(n -> DEFAULT_FIDD_KEY_FILE_NAME_PREF + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
-        }
+        } catch (Exception ignored) {}
     }
 
     @Nullable public static Long getSignatureNum(String filename, String prefix, String postfix) {
@@ -893,6 +929,7 @@ public class MainForm {
 
             // TODO: Progress Bar modal window
 
+            boolean throwOnValidationFailures = !ignoreValidationFailures;
             FiddUnpackManager.fiddUnpackPost(baseRepositories,
                     fiddFile,
                     fiddKeyFile,
@@ -900,7 +937,7 @@ public class MainForm {
                     fiddKeyFileSignatures,
                     contentFolder,
 
-                    ignoreValidationFailures,
+                    throwOnValidationFailures,
                     validateFiddFileAndFiddKey,
                     validateCrcsInFiddKey,
                     validateFiddFileMetadata,
@@ -909,7 +946,7 @@ public class MainForm {
 
                     publicKeySource,
                     currentCert,
-                    s -> checkNotNull(unpackLogTextArea).appendText(s + '\n'));
+                    mainFormProgressCallback);
 
             JavaFxUtils.showMessage("Fidd Unpack Complete!");
         } catch (Exception e) {

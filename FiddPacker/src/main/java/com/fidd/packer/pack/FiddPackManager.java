@@ -489,19 +489,19 @@ public class FiddPackManager {
 
         byte[] fiddFileMetadataSectionBytes = metadataContainerSerializer.serialize(metadataContainer);
 
-        // 3. Calculate Metadata Section CRC for FiddKey (if needed)
+        // 3. Encrypt Metadata Section
+        byte[] encryptedFiddFileMetadataSectionBytes = encryptionAlgorithm.encrypt(fiddFileMetadataSectionKey,
+                fiddFileMetadataSectionBytes);
+
+        // 4. Calculate Metadata Section CRC for FiddKey (if needed)
         List<byte[]> crcs = null;
         if (addCrcsToFiddKey) {
             crcs = new ArrayList<>();
             for (CrcCalculator crcCalculator : crcCalculators) {
-                byte[] crc = crcCalculator.calculateCrc(fiddFileMetadataSectionBytes);
+                byte[] crc = crcCalculator.calculateCrc(encryptedFiddFileMetadataSectionBytes);
                 crcs.add(crc);
             }
         }
-
-        // 4. Encrypt Metadata Section
-        byte[] encryptedFiddFileMetadataSectionBytes = encryptionAlgorithm.encrypt(fiddFileMetadataSectionKey,
-                fiddFileMetadataSectionBytes);
 
         // 5. Write Metadata Section to Fidd File
         outputStream.write(encryptedFiddFileMetadataSectionBytes);
