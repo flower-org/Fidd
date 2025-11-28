@@ -351,9 +351,9 @@
                                              </rowConstraints>
                                              <children>
                                                 <Label text="Validate FiddFile and FiddKey:" />
-                                                <CheckBox mnemonicParsing="false" GridPane.columnIndex="1" />
+                                                <CheckBox fx:id="validateFiddFileAndFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" />
                                                 <Label text="Validate CRCs in Fidd Key:" GridPane.rowIndex="1" />
-                                                <CheckBox mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                <CheckBox fx:id="validateCrcsInFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                              </children>
                                           </GridPane>
                                           <GridPane GridPane.columnIndex="1" GridPane.rowIndex="5">
@@ -368,11 +368,11 @@
                                              </rowConstraints>
                                              <children>
                                                 <Label text="Validate LogicalFiles:" GridPane.rowIndex="2" />
-                                                <CheckBox mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                <CheckBox fx:id="validateLogicalFilesCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                                 <Label text="Validate LogicalFileMetadatas:" GridPane.rowIndex="1" />
-                                                <CheckBox mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                <CheckBox fx:id="validateLogicalFileMetadatasCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                                 <Label text="Validate FiddFileMetadata:" />
-                                                <CheckBox mnemonicParsing="false" GridPane.columnIndex="1" />
+                                                <CheckBox fx:id="validateFiddFileMetadataCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" />
                                              </children>
                                           </GridPane>
                                           <GridPane GridPane.columnIndex="1" GridPane.rowIndex="3">
@@ -405,14 +405,14 @@
                                                 <Button mnemonicParsing="false" onAction="#checkUncheckAllValidations" text="Check/Uncheck All" GridPane.columnIndex="1" />
                                              </children>
                                           </GridPane>
-                                          <CheckBox mnemonicParsing="false" text="Unpack even if Validations fail" GridPane.columnIndex="1" />
+                                          <CheckBox fx:id="ignoreValidationFailuresCheckBox" mnemonicParsing="false" text="Ignore Validation Failures" GridPane.columnIndex="1" />
                                        </children>
                                     </GridPane>
                                     <TitledPane animated="false" text="Unpack Log">
                                       <content>
                                         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                              <children>
-                                                <TextArea layoutX="53.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                                                <TextArea editable="false" layoutX="53.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
                                              </children>
                                           </AnchorPane>
                                       </content>

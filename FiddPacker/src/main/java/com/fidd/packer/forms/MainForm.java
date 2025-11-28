@@ -76,6 +76,13 @@ public class MainForm {
     final static String MIN_GAP_SIZE_TEXT_FIELD = "MIN_GAP_SIZE_TEXT_FIELD";
     final static String MAX_GAP_SIZE_TEXT_FIELD = "MAX_GAP_SIZE_TEXT_FIELD";
 
+    final static String IGNORE_VALIDATION_FAILURES = "IGNORE_VALIDATION_FAILURES";
+    final static String VALIDATE_FIDD_FILE_AND_FIDD_KEY = "VALIDATE_FIDD_FILE_AND_FIDD_KEY";
+    final static String VALIDATE_CRCS_IN_FIDD_KEY = "VALIDATE_CRCS_IN_FIDD_KEY";
+    final static String VALIDATE_FIDD_FILE_METADATA = "VALIDATE_FIDD_FILE_METADATA";
+    final static String VALIDATE_LOGICAL_FILE_METADATAS = "VALIDATE_LOGICAL_FILE_METADATAS";
+    final static String VALIDATE_LOGICAL_FILES = "VALIDATE_LOGICAL_FILES";
+
     @Nullable Stage mainStage;
 
     @FXML @Nullable AnchorPane topPane;
@@ -111,6 +118,13 @@ public class MainForm {
 
     @FXML @Nullable TextField minGapSizeTextField;
     @FXML @Nullable TextField maxGapSizeTextField;
+
+    @FXML @Nullable CheckBox ignoreValidationFailuresCheckBox;
+    @FXML @Nullable CheckBox validateFiddFileAndFiddKeyCheckBox;
+    @FXML @Nullable CheckBox validateCrcsInFiddKeyCheckBox;
+    @FXML @Nullable CheckBox validateFiddFileMetadataCheckBox;
+    @FXML @Nullable CheckBox validateLogicalFileMetadatasCheckBox;
+    @FXML @Nullable CheckBox validateLogicalFilesCheckBox;
 
     BaseRepositories baseRepositories;
 
@@ -221,6 +235,13 @@ public class MainForm {
         initCheckBox(checkNotNull(includePublicKeyCheckBox), StringUtils.defaultIfBlank(getUserPreference(INCLUDE_PUBLIC_KEY), "true"));
         initCheckBox(checkNotNull(includeMessageCreationTimeCheckBox), getUserPreference(INCLUDE_MESSAGE_CREATION_TIME));
 
+        initCheckBox(checkNotNull(ignoreValidationFailuresCheckBox), StringUtils.defaultIfBlank(getUserPreference(IGNORE_VALIDATION_FAILURES), "true"));
+        initCheckBox(checkNotNull(validateFiddFileAndFiddKeyCheckBox), StringUtils.defaultIfBlank(getUserPreference(VALIDATE_FIDD_FILE_AND_FIDD_KEY), "true"));
+        initCheckBox(checkNotNull(validateCrcsInFiddKeyCheckBox), StringUtils.defaultIfBlank(getUserPreference(VALIDATE_CRCS_IN_FIDD_KEY), "true"));
+        initCheckBox(checkNotNull(validateFiddFileMetadataCheckBox), StringUtils.defaultIfBlank(getUserPreference(VALIDATE_FIDD_FILE_METADATA), "true"));
+        initCheckBox(checkNotNull(validateLogicalFileMetadatasCheckBox), StringUtils.defaultIfBlank(getUserPreference(VALIDATE_LOGICAL_FILE_METADATAS), "true"));
+        initCheckBox(checkNotNull(validateLogicalFilesCheckBox), StringUtils.defaultIfBlank(getUserPreference(VALIDATE_LOGICAL_FILES), "true"));
+
         String minGapSizeStr = getUserPreference(MIN_GAP_SIZE_TEXT_FIELD);
         if (StringUtils.isBlank(minGapSizeStr)) { minGapSizeStr = "0"; }
         checkNotNull(minGapSizeTextField).textProperty().set(minGapSizeStr);
@@ -251,6 +272,13 @@ public class MainForm {
 
         checkNotNull(minGapSizeTextField).textProperty().addListener(this::fiddPackerTextChanged);
         checkNotNull(maxGapSizeTextField).textProperty().addListener(this::fiddPackerTextChanged);
+
+        checkNotNull(ignoreValidationFailuresCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(validateFiddFileAndFiddKeyCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(validateCrcsInFiddKeyCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(validateFiddFileMetadataCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(validateLogicalFileMetadatasCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+        checkNotNull(validateLogicalFilesCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
     }
 
     public void fiddPackerTextChanged(ObservableValue<? extends String> observable, String _old, String _new) {
@@ -282,11 +310,23 @@ public class MainForm {
         String minGapSize = checkNotNull(minGapSizeTextField).textProperty().get();
         String maxGapSize = checkNotNull(maxGapSizeTextField).textProperty().get();
 
+        boolean ignoreValidationFailures = checkNotNull(ignoreValidationFailuresCheckBox).selectedProperty().get();
+        boolean validateFiddFileAndFiddKey = checkNotNull(validateFiddFileAndFiddKeyCheckBox).selectedProperty().get();
+        boolean validateCrcsInFiddKey = checkNotNull(validateCrcsInFiddKeyCheckBox).selectedProperty().get();
+        boolean validateFiddFileMetadata = checkNotNull(validateFiddFileMetadataCheckBox).selectedProperty().get();
+        boolean validateLogicalFileMetadatas = checkNotNull(validateLogicalFileMetadatasCheckBox).selectedProperty().get();
+        boolean validateLogicalFiles = checkNotNull(validateLogicalFilesCheckBox).selectedProperty().get();
+
         updateFiddPackerPreferences(encryptionAlgorithm, fiddKey, fiddFileMetadata, logicalFileMetadata, publicKeyFormat,
                 signatureFormat, randomGenerator, metadataContainer, crcCalculator, Boolean.toString(signFiddFileAndFiddKey),
                 Boolean.toString(signLogicalFiles), Boolean.toString(signLogicalFileMetadatas),
                 Boolean.toString(signFiddFileMetadata), Boolean.toString(addCrcsToFiddKey), Boolean.toString(includePublicKey), Boolean.toString(includeMessageCreationTime),
-                minGapSize, maxGapSize);
+                minGapSize, maxGapSize,
+
+                Boolean.toString(ignoreValidationFailures), Boolean.toString(validateFiddFileAndFiddKey),
+                Boolean.toString(validateCrcsInFiddKey), Boolean.toString(validateFiddFileMetadata),
+                Boolean.toString(validateLogicalFileMetadatas), Boolean.toString(validateLogicalFiles)
+        );
     }
 
     public static void updateFiddPackerPreferences(String encryptionAlgorithm, String fiddKey, String fiddFileMetadata,
@@ -296,7 +336,15 @@ public class MainForm {
                                                 String signLogicalFiles, String signLogicalFileMetadatas,
                                                 String signFiddFileMetadata, String addCrcsToFiddKey, String includePublicKey, String includeMessageCreationTime,
                                                 String minGapSize,
-                                                String maxGapSize) {
+                                                String maxGapSize,
+
+                                                String ignoreValidationFailures,
+                                                String validateFiddFileAndFiddKey,
+                                                String validateCrcsInFiddKey,
+                                                String validateFiddFileMetadata,
+                                                String validateLogicalFileMetadatas,
+                                                String validateLogicalFiles
+                                               ) {
         Preferences userPreferences = Preferences.userRoot();
 
         updateUserPreference(userPreferences, ENCRYPTION_ALGORITHM, StringUtils.defaultIfBlank(encryptionAlgorithm, ""));
@@ -318,6 +366,13 @@ public class MainForm {
 
         updateUserPreference(userPreferences, MIN_GAP_SIZE_TEXT_FIELD, StringUtils.defaultIfBlank(minGapSize, ""));
         updateUserPreference(userPreferences, MAX_GAP_SIZE_TEXT_FIELD, StringUtils.defaultIfBlank(maxGapSize, ""));
+
+        updateUserPreference(userPreferences, IGNORE_VALIDATION_FAILURES, StringUtils.defaultIfBlank(ignoreValidationFailures, ""));
+        updateUserPreference(userPreferences, VALIDATE_FIDD_FILE_AND_FIDD_KEY, StringUtils.defaultIfBlank(validateFiddFileAndFiddKey, ""));
+        updateUserPreference(userPreferences, VALIDATE_CRCS_IN_FIDD_KEY, StringUtils.defaultIfBlank(validateCrcsInFiddKey, ""));
+        updateUserPreference(userPreferences, VALIDATE_FIDD_FILE_METADATA, StringUtils.defaultIfBlank(validateFiddFileMetadata, ""));
+        updateUserPreference(userPreferences, VALIDATE_LOGICAL_FILE_METADATAS, StringUtils.defaultIfBlank(validateLogicalFileMetadatas, ""));
+        updateUserPreference(userPreferences, VALIDATE_LOGICAL_FILES, StringUtils.defaultIfBlank(validateLogicalFiles, ""));
     }
 
     static <J> void initRepositoryComboBox(Repository<J> repo, ComboBox<String> combo, @Nullable String selected) {
@@ -354,12 +409,12 @@ public class MainForm {
         try {
             File originalDirectory = new File(checkNotNull(originalFolderTextField).textProperty().get());
             if (!originalDirectory.exists()) {
-                JavaFxUtils.showMessage("Original Folder doesn't exist");
+                JavaFxUtils.showMessage("Original Folder doesn't exist", originalDirectory.getAbsolutePath());
                 return;
             }
-            File packedContentDirectory = new File(checkNotNull(packedContentFolderTextField).textProperty().get());
-            if (!packedContentDirectory.exists()) {
-                JavaFxUtils.showMessage("Packed Content Folder doesn't exist");
+            File packedContentDirectoryRoot = new File(checkNotNull(packedContentFolderTextField).textProperty().get());
+            if (!packedContentDirectoryRoot.exists()) {
+                JavaFxUtils.showMessage("Packed Content Root Folder doesn't exist", packedContentDirectoryRoot.getAbsolutePath());
                 return;
             }
 
@@ -409,6 +464,20 @@ public class MainForm {
                 JavaFxUtils.showMessage("Value Mismatch", "PostId can't be blank");
                 return;
             }
+
+            File packedContentDirectory = new File(packedContentDirectoryRoot, Long.toString(messageNumber));
+            if (packedContentDirectory.exists()) {
+                JavaFxUtils.YesNo result = JavaFxUtils.showYesNoDialog("Packed Content Folder already exists. Try to delete?", packedContentDirectory.getAbsolutePath());
+                if (result == JavaFxUtils.YesNo.YES) {
+                    if (!packedContentDirectory.delete()) {
+                        JavaFxUtils.showMessage("Deletion failed: The Packed Content Folder may contain files or subfolders.", packedContentDirectory.getAbsolutePath());
+                        return;
+                    }
+                } else {
+                    return;
+                }
+            }
+
             X509Certificate currentCert = null;
             PrivateKey privateKey = null;
             if (createFileAndKeySignatures || addFiddFileMetadataSignature || addLogicalFileSignatures || addLogicalFileMetadataSignatures) {
@@ -425,6 +494,11 @@ public class MainForm {
                     LOGGER.error("Certificate was not loaded", e);
                     return;
                 }
+            }
+
+            if (!packedContentDirectory.mkdir()) {
+                JavaFxUtils.showMessage("Failed to create Packed Content Folder: ", packedContentDirectory.getAbsolutePath());
+                return;
             }
 
             // TODO: Progress Bar modal window
@@ -462,6 +536,8 @@ public class MainForm {
             );
 
             JavaFxUtils.showMessage("Fidd Pack Complete!");
+
+            formMessageNumber(packedContentDirectoryRoot);
         } catch (Exception e) {
             LOGGER.error("Packing error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
@@ -488,6 +564,7 @@ public class MainForm {
         File directory = chooseDirectory(initialDirectory);
         if (directory != null) {
             checkNotNull(originalFolderTextField).textProperty().set(directory.getPath());
+            checkNotNull(postIdTextField).textProperty().set(directory.getName());
         }
     }
 
@@ -497,6 +574,32 @@ public class MainForm {
         File directory = chooseDirectory(initialDirectory);
         if (directory != null) {
             checkNotNull(packedContentFolderTextField).textProperty().set(directory.getPath());
+            formMessageNumber(directory);
+        }
+    }
+
+    protected void formMessageNumber(File directory) {
+        File[] subfolders = directory.listFiles(File::isDirectory);
+        if (subfolders != null) {
+            long maxMessageNumber = 0L;
+            for (File subfolder : subfolders) {
+                try {
+                    long number = Long.parseLong(subfolder.getName());
+                    if (number > maxMessageNumber) {
+                        maxMessageNumber = number;
+                    }
+                } catch (Exception e) {
+                    // Ignored
+                }
+            }
+
+            long rawThousand = maxMessageNumber / 1000L;
+            boolean roundUp = (maxMessageNumber - (rawThousand * 1000L)) >= 500L;
+            if (roundUp) { rawThousand += 1L; }
+            rawThousand += 1L;
+            maxMessageNumber = rawThousand * 1000L;
+
+            checkNotNull(messageNumberTextField).textProperty().set(Long.toString(maxMessageNumber));
         }
     }
 
