@@ -46,6 +46,8 @@ import java.io.File;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.prefs.Preferences;
 
@@ -125,6 +127,13 @@ public class MainForm {
     @FXML @Nullable CheckBox validateFiddFileMetadataCheckBox;
     @FXML @Nullable CheckBox validateLogicalFileMetadatasCheckBox;
     @FXML @Nullable CheckBox validateLogicalFilesCheckBox;
+
+    @FXML @Nullable TextField packedContentFolderForUnpackTextField;
+    @FXML @Nullable TextField contentFolderForUnpackTextField;
+    @FXML @Nullable TextField fiddFileTextField;
+    @FXML @Nullable TextField fiddFileSignaturesTextField;
+    @FXML @Nullable TextField fiddKeyFileTextField;
+    @FXML @Nullable TextField fiddKeyFileSignaturesTextField;
 
     BaseRepositories baseRepositories;
 
@@ -545,8 +554,6 @@ public class MainForm {
         }
     }
 
-    public void unpackFolder() {}
-
     private @Nullable File chooseDirectory(@Nullable File initialDirectory) {
         DirectoryChooser directoryChooser = new DirectoryChooser();
         if (initialDirectory != null && initialDirectory.exists()) {
@@ -636,14 +643,74 @@ public class MainForm {
     }
 
     public void openPackedContentFolderForUnpack() {
-        // TODO: implement
+        File packedContentFolder;
+        packedContentFolder = new File(checkNotNull(packedContentFolderForUnpackTextField).textProperty().get());
+        File directory = chooseDirectory(packedContentFolder);
+        if (directory != null) {
+            checkNotNull(packedContentFolderForUnpackTextField).textProperty().set(directory.getPath());
+
+            // TODO: find other files - move to on change
+            findFiddFiles(directory);
+        }
+    }
+
+    protected void findFiddFiles(File directory) {
+        checkNotNull(fiddFileTextField).textProperty().set("");
+        checkNotNull(fiddFileSignaturesTextField).textProperty().set("");
+        checkNotNull(fiddKeyFileTextField).textProperty().set("");
+        checkNotNull(fiddKeyFileSignaturesTextField).textProperty().set("");
+
+        File[] subFiles = directory.listFiles(File::isFile);
+        if (subFiles != null) {
+            List<String> fiddFileSignatures = new ArrayList<>();
+            List<String> fiddKeyFileSignatures = new ArrayList<>();
+            for (File subFile : subFiles) {
+                String filename = subFile.getName();
+                if (filename.equals(FiddPackManager.DEFAULT_FIDD_FILE_NAME)) {
+                    checkNotNull(fiddFileTextField).textProperty().set(filename);
+                } else if (filename.equals(FiddPackManager.DEFAULT_FIDD_KEY_FILE_NAME)) {
+                    checkNotNull(fiddKeyFileTextField).textProperty().set(filename);
+                } else if (filename.startsWith(FiddPackManager.DEFAULT_FIDD_FILE_NAME) && filename.endsWith(FiddPackManager.DEFAULT_FIDD_SIGNATURE_EXT)) {
+                    fiddFileSignatures.add(filename);
+                } else if (filename.startsWith(FiddPackManager.DEFAULT_FIDD_KEY_FILE_NAME) && filename.endsWith(FiddPackManager.DEFAULT_FIDD_SIGNATURE_EXT)) {
+                    fiddKeyFileSignatures.add(filename);
+                }
+            }
+
+            Collections.sort(fiddFileSignatures);
+            checkNotNull(fiddFileSignaturesTextField).textProperty().set(String.join(";", fiddFileSignatures));
+            Collections.sort(fiddKeyFileSignatures);
+            checkNotNull(fiddKeyFileSignaturesTextField).textProperty().set(String.join(";", fiddKeyFileSignatures));
+        }
     }
 
     public void openContentFolderForUnpack() {
-        // TODO: implement
+        File contentFolder = new File(checkNotNull(contentFolderForUnpackTextField).textProperty().get());
+        File directory = chooseDirectory(contentFolder);
+        if (directory != null) {
+            checkNotNull(contentFolderForUnpackTextField).textProperty().set(directory.getPath());
+        }
     }
 
     public void checkUncheckAllValidations() {
+        boolean toggle = false;
+
+        if (!checkNotNull(validateFiddFileAndFiddKeyCheckBox).selectedProperty().get() ||
+                !checkNotNull(validateCrcsInFiddKeyCheckBox).selectedProperty().get() ||
+                !checkNotNull(validateFiddFileMetadataCheckBox).selectedProperty().get() ||
+                !checkNotNull(validateLogicalFileMetadatasCheckBox).selectedProperty().get() ||
+                !checkNotNull(validateLogicalFilesCheckBox).selectedProperty().get()) {
+            toggle = true;
+        }
+
+        checkNotNull(validateFiddFileAndFiddKeyCheckBox).selectedProperty().set(toggle);
+        checkNotNull(validateCrcsInFiddKeyCheckBox).selectedProperty().set(toggle);
+        checkNotNull(validateFiddFileMetadataCheckBox).selectedProperty().set(toggle);
+        checkNotNull(validateLogicalFileMetadatasCheckBox).selectedProperty().set(toggle);
+        checkNotNull(validateLogicalFilesCheckBox).selectedProperty().set(toggle);
+    }
+
+    public void unpackFolder() {
         // TODO: implement
     }
 }

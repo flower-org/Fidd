@@ -279,7 +279,7 @@
                                                       <ColumnConstraints halignment="RIGHT" hgrow="ALWAYS" />
                                                    </columnConstraints>
                                                    <children>
-                                                      <Button mnemonicParsing="false" onAction="#packFolder" style="-fx-font-size: 15;" text="-&gt; Unpack folder  -&gt;" GridPane.halignment="RIGHT">
+                                                      <Button mnemonicParsing="false" onAction="#unpackFolder" style="-fx-font-size: 15;" text="-&gt; Unpack folder  -&gt;" GridPane.halignment="RIGHT">
                                                          <GridPane.margin>
                                                             <Insets right="10.0" />
                                                          </GridPane.margin>
@@ -296,7 +296,7 @@
                                                    </rowConstraints>
                                                    <children>
                                                       <Button mnemonicParsing="false" onAction="#openPackedContentFolderForUnpack" text="Packed content folder" />
-                                                      <TextField GridPane.columnIndex="1">
+                                                      <TextField fx:id="packedContentFolderForUnpackTextField" GridPane.columnIndex="1">
                                                          <GridPane.margin>
                                                             <Insets right="10.0" />
                                                          </GridPane.margin>
@@ -313,7 +313,7 @@
                                                    </rowConstraints>
                                                    <children>
                                                       <Button mnemonicParsing="false" onAction="#openContentFolderForUnpack" text="Content folder" />
-                                                      <TextField GridPane.columnIndex="1" />
+                                                      <TextField fx:id="contentFolderForUnpackTextField" GridPane.columnIndex="1" />
                                                    </children>
                                                 </GridPane>
                                                 <GridPane GridPane.rowIndex="3">
