@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class YamlFiddFileMetadataSerializerTest {
     @Test
     public void testSerializeAndDeserialize() {
+        long time = System.currentTimeMillis();
         FiddFileMetadata fiddFileMetadata = ImmutableFiddFileMetadata.builder()
                 .logicalFileMetadataFormatVersion("FMT")
                 .messageNumber(123L)
@@ -24,7 +25,8 @@ public class YamlFiddFileMetadataSerializerTest {
                 .isNewOrSquash(true)
                 .isDelete(false)
                 .previousMessageNumber(122L)
-                .messageCreationTime(System.currentTimeMillis())
+                .originalMessageCreationTime(time)
+                .messageCreationTime(time)
                 .authorsPublicKeyFormat("FMT2")
                 .authorsPublicKey(new byte[] {1,2,3,4,5})
                 .build();

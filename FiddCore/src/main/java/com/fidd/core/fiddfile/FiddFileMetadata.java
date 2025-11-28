@@ -25,6 +25,7 @@ public interface FiddFileMetadata {
     boolean isNewOrSquash();
     boolean isDelete();
 
+    @Nullable Long originalMessageCreationTime();
     @Nullable Long messageCreationTime();
 
     @Nullable String authorsPublicKeyFormat();

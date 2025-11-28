@@ -88,7 +88,10 @@ public class FiddPackManager {
         }
 
         if (includeMessageCreationTime) {
-            fiddFileMetadataBuilder.messageCreationTime(System.currentTimeMillis());
+            long time = System.currentTimeMillis();
+            fiddFileMetadataBuilder
+                    .originalMessageCreationTime(time)
+                    .messageCreationTime(time);
         }
 
         return fiddFileMetadataBuilder.build();
