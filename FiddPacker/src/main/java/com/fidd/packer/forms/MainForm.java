@@ -13,6 +13,7 @@ import com.fidd.core.pki.PublicKeySerializer;
 import com.fidd.core.pki.SignerChecker;
 import com.fidd.core.random.RandomGeneratorType;
 import com.fidd.packer.pack.FiddPackManager;
+import com.fidd.packer.pack.FiddUnpackManager;
 import com.flower.crypt.PkiUtil;
 import com.flower.crypt.keys.KeyContext;
 import com.flower.crypt.keys.RsaKeyContext;
@@ -51,6 +52,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.prefs.Preferences;
 
+import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_FILE_NAME;
+import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_FILE_NAME_PREF;
+import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_KEY_FILE_NAME;
+import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_KEY_FILE_NAME_PREF;
+import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_SIGNATURE_EXT;
 import static com.flower.crypt.keys.UserPreferencesManager.getUserPreference;
 import static com.flower.crypt.keys.UserPreferencesManager.updateUserPreference;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -84,6 +90,8 @@ public class MainForm {
     final static String VALIDATE_FIDD_FILE_METADATA = "VALIDATE_FIDD_FILE_METADATA";
     final static String VALIDATE_LOGICAL_FILE_METADATAS = "VALIDATE_LOGICAL_FILE_METADATAS";
     final static String VALIDATE_LOGICAL_FILES = "VALIDATE_LOGICAL_FILES";
+
+    final static String SIGNATURE_FILES_DELIMITER = ";";
 
     @Nullable Stage mainStage;
 
@@ -134,6 +142,8 @@ public class MainForm {
     @FXML @Nullable TextField fiddFileSignaturesTextField;
     @FXML @Nullable TextField fiddKeyFileTextField;
     @FXML @Nullable TextField fiddKeyFileSignaturesTextField;
+
+    @FXML @Nullable TextArea unpackLogTextArea;
 
     BaseRepositories baseRepositories;
 
@@ -649,7 +659,7 @@ public class MainForm {
         if (directory != null) {
             checkNotNull(packedContentFolderForUnpackTextField).textProperty().set(directory.getPath());
 
-            // TODO: find other files - move to on change
+            // TODO: find other files - move to "on change" event for packedContentFolderForUnpackTextField
             findFiddFiles(directory);
         }
     }
@@ -662,26 +672,54 @@ public class MainForm {
 
         File[] subFiles = directory.listFiles(File::isFile);
         if (subFiles != null) {
-            List<String> fiddFileSignatures = new ArrayList<>();
-            List<String> fiddKeyFileSignatures = new ArrayList<>();
+            List<Long> fiddFileSignatures = new ArrayList<>();
+            List<Long> fiddKeyFileSignatures = new ArrayList<>();
             for (File subFile : subFiles) {
                 String filename = subFile.getName();
-                if (filename.equals(FiddPackManager.DEFAULT_FIDD_FILE_NAME)) {
+                if (filename.equals(DEFAULT_FIDD_FILE_NAME)) {
                     checkNotNull(fiddFileTextField).textProperty().set(filename);
-                } else if (filename.equals(FiddPackManager.DEFAULT_FIDD_KEY_FILE_NAME)) {
+                } else if (filename.equals(DEFAULT_FIDD_KEY_FILE_NAME)) {
                     checkNotNull(fiddKeyFileTextField).textProperty().set(filename);
-                } else if (filename.startsWith(FiddPackManager.DEFAULT_FIDD_FILE_NAME) && filename.endsWith(FiddPackManager.DEFAULT_FIDD_SIGNATURE_EXT)) {
-                    fiddFileSignatures.add(filename);
-                } else if (filename.startsWith(FiddPackManager.DEFAULT_FIDD_KEY_FILE_NAME) && filename.endsWith(FiddPackManager.DEFAULT_FIDD_SIGNATURE_EXT)) {
-                    fiddKeyFileSignatures.add(filename);
+                } else if (filename.startsWith(DEFAULT_FIDD_FILE_NAME_PREF) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
+                    Long signatureNum = getSignatureNum(filename, DEFAULT_FIDD_FILE_NAME_PREF, DEFAULT_FIDD_SIGNATURE_EXT);
+                    if (signatureNum != null) { fiddFileSignatures.add(signatureNum); }
+                } else if (filename.startsWith(DEFAULT_FIDD_KEY_FILE_NAME_PREF) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
+                    Long keySignatureNum = getSignatureNum(filename, DEFAULT_FIDD_KEY_FILE_NAME_PREF, DEFAULT_FIDD_SIGNATURE_EXT);
+                    if (keySignatureNum != null) { fiddKeyFileSignatures.add(keySignatureNum); }
                 }
             }
 
             Collections.sort(fiddFileSignatures);
-            checkNotNull(fiddFileSignaturesTextField).textProperty().set(String.join(";", fiddFileSignatures));
             Collections.sort(fiddKeyFileSignatures);
-            checkNotNull(fiddKeyFileSignaturesTextField).textProperty().set(String.join(";", fiddKeyFileSignatures));
+
+            checkNotNull(fiddFileSignaturesTextField).textProperty().set(String.join(SIGNATURE_FILES_DELIMITER,
+                    fiddFileSignatures.stream().map(n -> DEFAULT_FIDD_FILE_NAME_PREF + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
+            checkNotNull(fiddKeyFileSignaturesTextField).textProperty().set(String.join(SIGNATURE_FILES_DELIMITER,
+                    fiddKeyFileSignatures.stream().map(n -> DEFAULT_FIDD_KEY_FILE_NAME_PREF + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
         }
+    }
+
+    @Nullable public static Long getSignatureNum(String filename, String prefix, String postfix) {
+        String num = stripPrefixAndPostfix(filename, prefix, postfix);
+        try {
+            return Long.parseLong(num);
+        } catch (NumberFormatException ne) {
+            return null;
+        }
+    }
+
+    public static String stripPrefixAndPostfix(String str, @Nullable String prefix, @Nullable String postfix) {
+        // Remove prefix if present
+        if (prefix != null && str.startsWith(prefix)) {
+            str = str.substring(prefix.length());
+        }
+
+        // Remove postfix if present
+        if (postfix != null && str.endsWith(postfix)) {
+            str = str.substring(0, str.length() - postfix.length());
+        }
+
+        return str;
     }
 
     public void openContentFolderForUnpack() {
@@ -711,6 +749,112 @@ public class MainForm {
     }
 
     public void unpackFolder() {
-        // TODO: implement
+        try {
+            File packedContentFolder = new File(checkNotNull(packedContentFolderForUnpackTextField).textProperty().get());
+            if (!packedContentFolder.exists()) {
+                JavaFxUtils.showMessage("Packed Content Folder doesn't exist", packedContentFolder.getAbsolutePath());
+                return;
+            }
+            File contentFolder = new File(checkNotNull(contentFolderForUnpackTextField).textProperty().get());
+            if (!contentFolder.exists()) {
+                JavaFxUtils.showMessage("Content Root Folder doesn't exist", contentFolder.getAbsolutePath());
+                return;
+            }
+
+            String fiddFileName = checkNotNull(fiddFileTextField).textProperty().get();
+            if (StringUtils.isBlank(fiddFileName)) {
+                JavaFxUtils.showMessage("Fidd File not found");
+                return;
+            }
+            File fiddFile = new File(packedContentFolder, fiddFileName);
+            if (!fiddFile.exists()) {
+                JavaFxUtils.showMessage("Fidd File doesn't exist", fiddFile.getAbsolutePath());
+                return;
+            }
+
+            String fiddKeyFileName = checkNotNull(fiddKeyFileTextField).textProperty().get();
+            if (StringUtils.isBlank(fiddKeyFileName)) {
+                JavaFxUtils.showMessage("Fidd Key File not found");
+                return;
+            }
+            File fiddKeyFile = new File(packedContentFolder, fiddKeyFileName);
+            if (!fiddKeyFile.exists()) {
+                JavaFxUtils.showMessage("Fidd Key File doesn't exist", fiddKeyFile.getAbsolutePath());
+                return;
+            }
+
+            List<File> fiddFileSignatures = new ArrayList<>();
+            String fiddFileSignatureFileNames = checkNotNull(fiddFileSignaturesTextField).textProperty().get();
+            if (!StringUtils.isBlank(fiddFileSignatureFileNames)) {
+                String[] signatureFileNames = fiddFileSignatureFileNames.split(SIGNATURE_FILES_DELIMITER);
+                for (String signatureFileName : signatureFileNames) {
+                    File signatureFile = new File(packedContentFolder, signatureFileName);
+                    if (!signatureFile.exists()) {
+                        JavaFxUtils.showMessage("Fidd Signature File doesn't exist", signatureFile.getAbsolutePath());
+                        return;
+                    }
+                    fiddFileSignatures.add(signatureFile);
+                }
+            }
+
+            List<File> fiddKeyFileSignatures = new ArrayList<>();
+            String fiddKeyFileSignatureFileNames = checkNotNull(fiddKeyFileSignaturesTextField).textProperty().get();
+            if (!StringUtils.isBlank(fiddKeyFileSignatureFileNames)) {
+                String[] signatureFileNames = fiddKeyFileSignatureFileNames.split(SIGNATURE_FILES_DELIMITER);
+                for (String signatureFileName : signatureFileNames) {
+                    File signatureFile = new File(packedContentFolder, signatureFileName);
+                    if (!signatureFile.exists()) {
+                        JavaFxUtils.showMessage("Fidd Key Signature File doesn't exist", signatureFile.getAbsolutePath());
+                        return;
+                    }
+                    fiddKeyFileSignatures.add(signatureFile);
+                }
+            }
+
+            boolean ignoreValidationFailures = checkNotNull(ignoreValidationFailuresCheckBox).selectedProperty().get();
+            boolean validateFiddFileAndFiddKey = checkNotNull(validateFiddFileAndFiddKeyCheckBox).selectedProperty().get();
+            boolean validateCrcsInFiddKey = checkNotNull(validateCrcsInFiddKeyCheckBox).selectedProperty().get();
+            boolean validateFiddFileMetadata = checkNotNull(validateFiddFileMetadataCheckBox).selectedProperty().get();
+            boolean validateLogicalFileMetadatas = checkNotNull(validateLogicalFileMetadatasCheckBox).selectedProperty().get();
+            boolean validateLogicalFiles = checkNotNull(validateLogicalFilesCheckBox).selectedProperty().get();
+
+            X509Certificate currentCert = null;
+            try {
+                Pair<X509Certificate, PrivateKey> pair = getCurrentCertificate();
+                if (pair == null) {
+                    JavaFxUtils.showMessage("Certificate load error", "Certificate load error. If you do not plan to use a certificate, click \"Uncheck All Signatures\".");
+                    return;
+                }
+                currentCert = pair.getLeft();
+            } catch (Exception e) {
+                // TODO: log textarea output?
+                LOGGER.error("Certificate was not loaded", e);
+            }
+
+            // TODO: Progress Bar modal window
+
+            FiddUnpackManager.fiddUnpackPost(baseRepositories,
+                    fiddFile,
+                    fiddKeyFile,
+                    fiddFileSignatures,
+                    fiddKeyFileSignatures,
+                    contentFolder,
+
+                    ignoreValidationFailures,
+                    validateFiddFileAndFiddKey,
+                    validateCrcsInFiddKey,
+                    validateFiddFileMetadata,
+                    validateLogicalFileMetadatas,
+                    validateLogicalFiles,
+
+                    currentCert,
+                    s -> checkNotNull(unpackLogTextArea).appendText(s + '\n'));
+
+            JavaFxUtils.showMessage("Fidd Unpack Complete!");
+        } catch (Exception e) {
+            LOGGER.error("Unpacking error", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
     }
 }

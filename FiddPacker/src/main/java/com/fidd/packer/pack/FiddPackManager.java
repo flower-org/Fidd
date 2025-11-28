@@ -50,6 +50,9 @@ public class FiddPackManager {
     public static final String DEFAULT_FIDD_KEY_FILE_NAME = "fidd.key";
     public static final String DEFAULT_FIDD_SIGNATURE_EXT = ".sign";
 
+    public static final String DEFAULT_FIDD_FILE_NAME_PREF = DEFAULT_FIDD_FILE_NAME + ".";
+    public static final String DEFAULT_FIDD_KEY_FILE_NAME_PREF = DEFAULT_FIDD_KEY_FILE_NAME + ".";
+
     private static final int IO_BUFFER_SIZE = 8192; // 8 KB buffer size
 
     public static FiddFileMetadata createNewPostFiddFileMetadata(
@@ -141,8 +144,8 @@ public class FiddPackManager {
         }
 
         for (int i = 0; i < signerCheckers.size(); i++) {
-            File fiddFileSignature = new File(packedContentDirectory, DEFAULT_FIDD_FILE_NAME + "." + i + DEFAULT_FIDD_SIGNATURE_EXT);
-            File fiddKeyFileSignature = new File(packedContentDirectory, DEFAULT_FIDD_KEY_FILE_NAME + "." + i + DEFAULT_FIDD_SIGNATURE_EXT);
+            File fiddFileSignature = new File(packedContentDirectory, DEFAULT_FIDD_FILE_NAME_PREF + i + DEFAULT_FIDD_SIGNATURE_EXT);
+            File fiddKeyFileSignature = new File(packedContentDirectory, DEFAULT_FIDD_KEY_FILE_NAME_PREF + i + DEFAULT_FIDD_SIGNATURE_EXT);
             if (createFileAndKeySignatures) {
                 if (fiddFileSignature.exists()) {
                     throw new IllegalArgumentException("Cannot create file: Fidd File Signature exists: " + fiddFileSignature.getAbsolutePath());
