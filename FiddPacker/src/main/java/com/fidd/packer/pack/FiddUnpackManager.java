@@ -4,8 +4,18 @@ import com.fidd.base.BaseRepositories;
 import com.fidd.base.Repository;
 import com.fidd.core.common.FiddSignature;
 import com.fidd.core.crc.CrcCalculator;
+import com.fidd.core.encryption.EncryptionAlgorithm;
+import com.fidd.core.fiddfile.FiddFileMetadata;
+import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKey;
 import com.fidd.core.fiddkey.FiddKeySerializer;
+import com.fidd.core.metadata.MetadataContainer;
+import com.fidd.core.metadata.MetadataContainerSerializer;
+import com.fidd.core.metadata.NotEnoughBytesException;
+import com.fidd.core.pki.PublicKeySerializer;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -18,6 +28,8 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class FiddUnpackManager {
+    final static Logger LOGGER = LoggerFactory.getLogger(FiddUnpackManager.class);
+
     public interface ProgressCallback {
         void log(String log);
         void warn(String log);
@@ -49,6 +61,10 @@ public class FiddUnpackManager {
                                       @Nullable X509Certificate currentCert,
 
                                       ProgressCallback progressCallback) throws IOException {
+        // TODO: hardcoding this to "BLOBS" for now
+        MetadataContainerSerializer metadataContainerSerializer =
+                checkNotNull(baseRepositories.metadataContainerFormatRepo().get("BLOBS"));
+
         progressCallback.log("Unpacking " + fiddFile.getAbsolutePath());
 
         // 1. Load Fidd.Key file (format detection)
@@ -94,9 +110,88 @@ public class FiddUnpackManager {
             }
         }
 
-
         // 3. Load FiddFileMetadata
+        progressCallback.log("3. Loading FiddFileMetadata");
+
+        Pair<FiddFileMetadata, MetadataContainer> fiddFileMetadataAndContainer =
+                loadFiddFileMetadata(fiddFile, baseRepositories, checkNotNull(fiddKey).fiddFileMetadata(),
+                    metadataContainerSerializer, progressCallback);
+
+        FiddFileMetadata fiddFileMetadata = fiddFileMetadataAndContainer.getLeft();
+        MetadataContainer fiddFileContainer = fiddFileMetadataAndContainer.getRight();
+
         // 4. Try to get Public Key from FiddFileMetadata
+        if (fiddFileMetadata.authorsPublicKey() == null) {
+            progressCallback.warn("FiddFileMetadata doesn't contain author's PublicKey");
+        } else {
+            X509Certificate publicKey = null;
+            String publicKeyFormat = fiddFileMetadata.authorsPublicKeyFormat();
+            progressCallback.log("FiddFileMetadata contains author's PublicKey in format: " + publicKeyFormat);
+
+            PublicKeySerializer publicKeySerializer = baseRepositories.publicKeyFormatRepo().get(publicKeyFormat);
+            if (publicKeySerializer != null) {
+                try {
+                    publicKey = publicKeySerializer.deserialize(fiddFileMetadata.authorsPublicKey());
+                    progressCallback.log("PublicKey from FiddFileMetadata successfully deserialized.");
+
+                    if (publicKeySource == PublicKeySource.SUPPLIED_PARAMETER) {
+                        progressCallback.warn("However, UI Certificate will be used for signature validation due to PublicKeySource: `" + publicKeySource + "`");
+                    } else {
+                        currentCert = publicKey;
+                        progressCallback.log("PublicKey from FiddFileMetadata will be used for signature validation due to PublicKeySource: `" + publicKeySource + "`");
+                    }
+                } catch (Exception e) {
+                    String errorText = "Failed to deserialize PublicKey: format " + publicKeyFormat;
+                    progressCallback.warn(errorText);
+                    LOGGER.warn(errorText, e);
+                }
+            } else {
+                progressCallback.warn("Can't deserialize PublicKeyPublicKey format is not supported: " + publicKeyFormat);
+            }
+        }
+    }
+
+    private static Pair<FiddFileMetadata, MetadataContainer> loadFiddFileMetadata(File fiddFile,
+                                                                                   BaseRepositories baseRepositories,
+                                                                                   FiddKey.Section fiddFileMetadataSection,
+                                                                                   MetadataContainerSerializer metadataContainerSerializer,
+                                                                                   ProgressCallback progressCallback
+                                                                         ) throws IOException {
+        try (SubFileInputStream metadataSectionStream =
+                new SubFileInputStream(fiddFile, fiddFileMetadataSection.sectionOffset(), fiddFileMetadataSection.sectionLength())) {
+            String encryptionAlgorithmName = fiddFileMetadataSection.encryptionAlgorithm();
+            progressCallback.log("Loading and decrypting FiddFileMetadata Section: Encryption Algorithm " + encryptionAlgorithmName);
+            byte[] sectionBytes = metadataSectionStream.readAllBytes();
+            EncryptionAlgorithm encryptionAlgorithm = baseRepositories.encryptionAlgorithmRepo().get(encryptionAlgorithmName);
+            if (encryptionAlgorithm == null) {
+                warnAndMaybeThrow("Can't load FiddFileMetadata Encryption algorithm " + encryptionAlgorithmName +
+                        " not supported. Can't Proceed!", progressCallback, true);
+            }
+
+            byte[] metadataContainerBytes = checkNotNull(encryptionAlgorithm).decrypt(fiddFileMetadataSection.encryptionKeyData(), sectionBytes);
+            progressCallback.log("FiddFileMetadata Section decrypted successfully");
+
+            progressCallback.log("Loading FiddFileMetadata Container using format: " + metadataContainerSerializer.name());
+            MetadataContainerSerializer.MetadataContainerAndLength metadataContainer =
+                    metadataContainerSerializer.deserialize(metadataContainerBytes);
+
+            String fiddFileMetadataFormat = metadataContainer.metadataContainer().metadataFormat();
+            progressCallback.log("Loading FiddFileMetadata using format: " + fiddFileMetadataFormat);
+            FiddFileMetadataSerializer fiddFileMetadataSerializer =
+                    baseRepositories.fiddFileMetadataFormatRepo().get(fiddFileMetadataFormat);
+            if (fiddFileMetadataSerializer == null) {
+                String errorText = "Unsupported Format for FiddFileMetadata: " + fiddFileMetadataFormat + ". Can't proceed!";
+                warnAndMaybeThrow(errorText, progressCallback, true);
+            }
+            FiddFileMetadata fiddFileMetadata =
+                    checkNotNull(fiddFileMetadataSerializer).deserialize(metadataContainer.metadataContainer().metadata());
+
+            progressCallback.log("FiddFileMetadata loaded");
+            return Pair.of(fiddFileMetadata, metadataContainer.metadataContainer());
+        } catch (NotEnoughBytesException ne) {
+            // Shouldn't happen
+            throw new RuntimeException(ne);
+        }
     }
 
     private static boolean hasCrcs(FiddKey.Section section) {
@@ -148,8 +243,9 @@ public class FiddUnpackManager {
                                        long sectionOffset,
                                        long sectionLength,
                                        byte[] crc) throws IOException {
-        SubFileInputStream sectionStream = new SubFileInputStream(fiddFile, sectionOffset, sectionLength);
-        byte[] calcCrc = crcCalculator.calculateCrc(sectionStream);
-        return Arrays.equals(crc, calcCrc);
+        try (SubFileInputStream sectionStream = new SubFileInputStream(fiddFile, sectionOffset, sectionLength)) {
+            byte[] calcCrc = crcCalculator.calculateCrc(sectionStream);
+            return Arrays.equals(crc, calcCrc);
+        }
     }
 }
