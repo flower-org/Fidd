@@ -593,11 +593,7 @@ public class MainForm {
                 }
             }
 
-            long rawThousand = maxMessageNumber / 1000L;
-            boolean roundUp = (maxMessageNumber - (rawThousand * 1000L)) >= 500L;
-            if (roundUp) { rawThousand += 1L; }
-            rawThousand += 1L;
-            maxMessageNumber = rawThousand * 1000L;
+            maxMessageNumber += 1L;
 
             checkNotNull(messageNumberTextField).textProperty().set(Long.toString(maxMessageNumber));
         }
