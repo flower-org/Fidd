@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.security.cert.X509Certificate;
@@ -187,11 +186,62 @@ public class FiddUnpackManager {
                 progressCallback, currentCert, throwOnValidationFailure);
 
         // 8. Load LogicalFile Sections
-        validateAndMaterializeLogicalFile();
+        progressCallback.log("8. Loading and Materializing Logical Files");
+        for (int i = 0; i < fiddKey.logicalFiles().size(); i++) {
+            FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
+            //validateAndMaterializeLogicalFile(i, baseRepositories, fiddFile, logicalFileSection, contentFolder, progressCallback);
+        }
     }
 
-    private static void validateAndMaterializeLogicalFile() {
+    private static void validateAndMaterializeLogicalFile(int logicalFileIndex, BaseRepositories baseRepositories,
+                                                          File fiddFile, FiddKey.Section logicalFileSection,
+                                                          File contentFolder, ProgressCallback progressCallback) throws IOException {
+        progressCallback.log("Processing Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
 
+        String encryptionAlgorithmName = logicalFileSection.encryptionAlgorithm();
+        progressCallback.log("Section Encryption Algorithm: " + encryptionAlgorithmName);
+        EncryptionAlgorithm encryptionAlgorithm = baseRepositories.encryptionAlgorithmRepo().get(encryptionAlgorithmName);
+        if (encryptionAlgorithm == null) {
+            progressCallback.log("EncryptionAlgorithm " + encryptionAlgorithmName + " not supported - can't process Section #" +
+                    (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
+        } else {
+            getLogicalFileMetadata(logicalFileIndex, baseRepositories, encryptionAlgorithm, fiddFile, logicalFileSection,
+                    contentFolder, progressCallback);
+
+            //
+        }
+    }
+
+    private static void getLogicalFileMetadata(int logicalFileIndex, BaseRepositories baseRepositories,
+                                               EncryptionAlgorithm encryptionAlgorithm, File fiddFile,
+                                               FiddKey.Section logicalFileSection, File contentFolder,
+                                               ProgressCallback progressCallback) throws IOException {
+        progressCallback.log("Getting LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
+
+        int bufferIncrement = 48;
+        byte[] loadBuffer = new byte[bufferIncrement];
+        byte[] mdBuffer = new byte[bufferIncrement];
+        int mdBufferPos = 0; // current write position
+
+        try (SubFileInputStream sectionInputStream =
+                     new SubFileInputStream(fiddFile, logicalFileSection.sectionOffset(), logicalFileSection.sectionLength())) {
+            int bytesRead;
+            while ((bytesRead = sectionInputStream.read(loadBuffer)) != -1) {
+                // Ensure mdBuffer has enough space
+                if (mdBufferPos + bytesRead > mdBuffer.length) {
+                    // Grow mdBuffer
+                    int newSize = Math.max(mdBuffer.length + bufferIncrement, mdBufferPos + bytesRead);
+                    byte[] newBuffer = new byte[newSize];
+                    System.arraycopy(mdBuffer, 0, newBuffer, 0, mdBufferPos);
+                    mdBuffer = newBuffer;
+                }
+
+                // Copy from loadBuffer into mdBuffer
+                System.arraycopy(loadBuffer, 0, mdBuffer, mdBufferPos, bytesRead);
+                mdBufferPos += bytesRead;
+
+            }
+        }
     }
 
     private static void validateFile(BaseRepositories baseRepositories, File dataFile, List<File> signatureFiles,

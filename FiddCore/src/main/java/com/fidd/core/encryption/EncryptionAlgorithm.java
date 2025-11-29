@@ -10,6 +10,10 @@ import java.util.List;
 public interface EncryptionAlgorithm extends NamedEntry {
     String UNENCRYPTED = "UNENCRYPTED";
 
+    interface Decryptor {
+        byte[] decrypt(byte[] ciphertext);
+    }
+
     interface CrcCallback {
         void write(byte[] b);
         void write(int b);
@@ -25,4 +29,6 @@ public interface EncryptionAlgorithm extends NamedEntry {
     long encrypt(byte[] keyData, List<InputStream> plaintext, OutputStream ciphertext, List<CrcCallback> ciphertextCrcCallbacks);
     /** @return Bytes written to output stream plaintext */
     long decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext);
+
+//    Decryptor getDecryptor(byte[] keyData);
 }
