@@ -11,7 +11,12 @@ public interface EncryptionAlgorithm extends NamedEntry {
     String UNENCRYPTED = "UNENCRYPTED";
 
     interface Decryptor {
-        byte[] decrypt(byte[] ciphertext);
+        default byte[] decrypt(byte[] buffer) {
+            return decrypt(buffer, buffer.length);
+        }
+
+        byte[] decrypt(byte[] buffer, int bytesRead);
+        byte[] doFinal();
     }
 
     interface CrcCallback {
@@ -30,5 +35,6 @@ public interface EncryptionAlgorithm extends NamedEntry {
     /** @return Bytes written to output stream plaintext */
     long decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext);
 
-//    Decryptor getDecryptor(byte[] keyData);
+    Decryptor getDecryptor(byte[] keyData);
+    InputStream getDecryptedStream(byte[] keyData, InputStream stream);
 }

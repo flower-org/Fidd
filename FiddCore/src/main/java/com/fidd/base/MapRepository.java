@@ -12,8 +12,13 @@ public class MapRepository<T extends NamedEntry> implements Repository<T> {
     private final List<T> entriesInOriginalOrder;
     private final Map<String, T> registry;
     @Nullable String defaultKey;
+    @Nullable T nullEntry;
 
     public MapRepository(@Nullable String defaultKey, List<T> entries) {
+        this(defaultKey, entries, null);
+    }
+
+    public MapRepository(@Nullable String defaultKey, List<T> entries, @Nullable T nullEntry) {
         this.defaultKey = defaultKey;
         this.entriesInOriginalOrder = entries;
         HashMap<String, T> registry = new HashMap<>();
@@ -21,6 +26,7 @@ public class MapRepository<T extends NamedEntry> implements Repository<T> {
             registry.put(entry.name(), entry);
         }
         this.registry = Map.copyOf(registry);
+        this.nullEntry = nullEntry;
     }
 
     @Override
@@ -29,7 +35,10 @@ public class MapRepository<T extends NamedEntry> implements Repository<T> {
     }
 
     @Override
-    public @Nullable T get(String name) {
+    public @Nullable T get(@Nullable String name) {
+        if (name == null) {
+            return nullEntry;
+        }
         return registry.get(name);
     }
 

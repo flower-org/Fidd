@@ -13,12 +13,11 @@ import java.util.List;
 @JsonDeserialize(as = ImmutableFiddFileMetadata.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public interface FiddFileMetadata {
-    String logicalFileMetadataFormatVersion();
-
     Long messageNumber();
     /** Post originally published as msg number */
     Long originalMessageNumber(); //
     @Nullable Long previousMessageNumber();
+
     String postId();
     Integer versionNumber();
 

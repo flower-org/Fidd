@@ -58,14 +58,12 @@ public class FiddPackManager {
     public static FiddFileMetadata createNewPostFiddFileMetadata(
             long messageNumber,
             String postId,
-            String logicalFileMetadataFormat,
             @Nullable Pair<X509Certificate, PublicKeySerializer> publicKeySerializerAndKey,
             @Nullable List<String> fiddFileAndFiddKeySignatureFormats,
             boolean includeMessageCreationTime
     ) {
         // Build FiddFileMetadata
         ImmutableFiddFileMetadata.Builder fiddFileMetadataBuilder = ImmutableFiddFileMetadata.builder()
-                .logicalFileMetadataFormatVersion(logicalFileMetadataFormat)
                 .messageNumber(messageNumber)
                 .originalMessageNumber(messageNumber)
                 .postId(postId)
@@ -163,7 +161,6 @@ public class FiddPackManager {
         FiddFileMetadata fiddFileMetadata = createNewPostFiddFileMetadata(
                 messageNumber,
                 postId,
-                logicalFileMetadataSerializer.name(),
                 includePublicKey ? Pair.of(authorsPublicKey, publicKeySerializer) : null,
                 createFileAndKeySignatures ? signerCheckers.stream().map(NamedEntry::name).toList() : null,
                 includeMessageCreationTime
@@ -391,7 +388,7 @@ public class FiddPackManager {
         {
             ImmutableMetadataContainer.Builder metadataContainerBuilder = ImmutableMetadataContainer.builder();
             metadataContainerBuilder
-                    .metadataFormat(metadataContainerSerializer.name())
+                    .metadataFormat(logicalFileMetadataSerializer.name())
                     .metadata(metadataBytes);
 
             if (addLogicalFileMetadataSignatures) {

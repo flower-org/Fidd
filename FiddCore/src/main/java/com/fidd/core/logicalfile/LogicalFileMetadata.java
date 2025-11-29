@@ -17,7 +17,7 @@ public interface LogicalFileMetadata {
     enum FiddUpdateType {
         CREATE_OVERRIDE,
         DELETE
-        //TOO: add diffs
+        //TODO: add diffs
     }
 
     FiddUpdateType updateType();

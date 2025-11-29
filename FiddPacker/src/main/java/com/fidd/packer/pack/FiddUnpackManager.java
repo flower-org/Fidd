@@ -9,6 +9,8 @@ import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKey;
 import com.fidd.core.fiddkey.FiddKeySerializer;
+import com.fidd.core.logicalfile.LogicalFileMetadata;
+import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.metadata.MetadataContainer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.metadata.NotEnoughBytesException;
@@ -19,9 +21,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -189,13 +194,17 @@ public class FiddUnpackManager {
         progressCallback.log("8. Loading and Materializing Logical Files");
         for (int i = 0; i < fiddKey.logicalFiles().size(); i++) {
             FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
-            //validateAndMaterializeLogicalFile(i, baseRepositories, fiddFile, logicalFileSection, contentFolder, progressCallback);
+            validateAndMaterializeLogicalFile(i, baseRepositories, fiddFile, logicalFileSection,
+                    metadataContainerSerializer, contentFolder, progressCallback, currentCert, throwOnValidationFailure);
         }
     }
 
     private static void validateAndMaterializeLogicalFile(int logicalFileIndex, BaseRepositories baseRepositories,
                                                           File fiddFile, FiddKey.Section logicalFileSection,
-                                                          File contentFolder, ProgressCallback progressCallback) throws IOException {
+                                                          MetadataContainerSerializer metadataContainerSerializer,
+                                                          File contentFolder, ProgressCallback progressCallback,
+                                                          @Nullable X509Certificate publicKey,
+                                                          boolean throwOnValidationFailure) throws IOException {
         progressCallback.log("Processing Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
 
         String encryptionAlgorithmName = logicalFileSection.encryptionAlgorithm();
@@ -205,42 +214,127 @@ public class FiddUnpackManager {
             progressCallback.log("EncryptionAlgorithm " + encryptionAlgorithmName + " not supported - can't process Section #" +
                     (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
         } else {
-            getLogicalFileMetadata(logicalFileIndex, baseRepositories, encryptionAlgorithm, fiddFile, logicalFileSection,
-                    contentFolder, progressCallback);
+            Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength> pair =
+                getLogicalFileMetadata(logicalFileIndex, baseRepositories, encryptionAlgorithm, fiddFile,
+                        logicalFileSection, metadataContainerSerializer, contentFolder, progressCallback, throwOnValidationFailure);
 
-            //
+            if (pair != null) {
+                progressCallback.log("Validating LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
+                validateMetadataContainer(baseRepositories, pair.getRight().metadataContainer(), progressCallback,
+                        publicKey, throwOnValidationFailure);
+
+                LogicalFileMetadata logicalFileMetadata = pair.getLeft();
+                String logicalFileName = logicalFileMetadata.filePath();
+                progressCallback.log("Validating and materializing LogicalFile \"" + logicalFileMetadata.filePath() +
+                        "\" for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
+
+                {
+                    if (logicalFileMetadata.authorsFileSignatures() == null) {
+                        progressCallback.log("LogicalFileMetadata for \"" + logicalFileMetadata.filePath() + "\" has no signatures");
+                    } else {
+                        long logicalFileMetadataLengthBytes = pair.getRight().lengthBytes();
+                        progressCallback.log("logicalFileSection.sectionLength() " + logicalFileSection.sectionLength() +
+                                "; logicalFileSection.sectionOffset() " + logicalFileSection.sectionOffset() +
+                                "; logicalFileMetadataLengthBytes " + logicalFileMetadataLengthBytes +
+                                "; fileSize " + (logicalFileSection.sectionLength() - logicalFileMetadataLengthBytes));
+
+                        for (int i = 0; i < logicalFileMetadata.authorsFileSignatures().size(); i++) {
+                            FiddSignature authorsFileSignature = logicalFileMetadata.authorsFileSignatures().get(i);
+
+                            try (InputStream logicalFileStream =
+                                        encryptionAlgorithm.getDecryptedStream(logicalFileSection.encryptionKeyData(),
+                                             new SubFileInputStream(fiddFile, logicalFileSection.sectionOffset(),
+                                                 logicalFileSection.sectionLength()))) {
+                                skipAll(logicalFileStream, logicalFileMetadataLengthBytes);
+
+                                try (InputStream signatureStream = new ByteArrayInputStream(authorsFileSignature.bytes())) {
+                                    validateFileSignature(i, logicalFileName, null,
+                                            logicalFileStream, signatureStream,
+                                            baseRepositories, authorsFileSignature.format(),
+                                            publicKey,
+                                            progressCallback, throwOnValidationFailure);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
-    private static void getLogicalFileMetadata(int logicalFileIndex, BaseRepositories baseRepositories,
+    public static void skipAll(InputStream stream, long n) throws IOException {
+        long remaining = n;
+        while (remaining > 0) {
+            long skipped = stream.skip(remaining);
+            if (skipped <= 0) {
+                // If skip() returns 0, try reading and discarding one byte
+                if (stream.read() == -1) {
+                    throw new EOFException("Reached end of stream before skipping " + n + " bytes");
+                }
+                skipped = 1;
+            }
+            remaining -= skipped;
+        }
+    }
+
+    public static byte[] concat(byte[] buffer1, byte[] buffer2) {
+        byte[] result = new byte[buffer1.length + buffer2.length];
+        System.arraycopy(buffer1, 0, result, 0, buffer1.length);
+        System.arraycopy(buffer2, 0, result, buffer1.length, buffer2.length);
+        return result;
+    }
+
+    @Nullable
+    private static Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength>
+                                    getLogicalFileMetadata(int logicalFileIndex, BaseRepositories baseRepositories,
                                                EncryptionAlgorithm encryptionAlgorithm, File fiddFile,
-                                               FiddKey.Section logicalFileSection, File contentFolder,
-                                               ProgressCallback progressCallback) throws IOException {
+                                               FiddKey.Section logicalFileSection,
+                                               MetadataContainerSerializer metadataContainerSerializer,
+                                               File contentFolder,
+                                               ProgressCallback progressCallback,
+                                               boolean throwOnValidationFailure) throws IOException {
         progressCallback.log("Getting LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
 
-        int bufferIncrement = 48;
-        byte[] loadBuffer = new byte[bufferIncrement];
-        byte[] mdBuffer = new byte[bufferIncrement];
-        int mdBufferPos = 0; // current write position
+        EncryptionAlgorithm.Decryptor decryptor = encryptionAlgorithm.getDecryptor(logicalFileSection.encryptionKeyData());
 
+        MetadataContainerSerializer.MetadataContainerAndLength metadataContainerAndLength = null;
         try (SubFileInputStream sectionInputStream =
                      new SubFileInputStream(fiddFile, logicalFileSection.sectionOffset(), logicalFileSection.sectionLength())) {
-            int bytesRead;
-            while ((bytesRead = sectionInputStream.read(loadBuffer)) != -1) {
-                // Ensure mdBuffer has enough space
-                if (mdBufferPos + bytesRead > mdBuffer.length) {
-                    // Grow mdBuffer
-                    int newSize = Math.max(mdBuffer.length + bufferIncrement, mdBufferPos + bytesRead);
-                    byte[] newBuffer = new byte[newSize];
-                    System.arraycopy(mdBuffer, 0, newBuffer, 0, mdBufferPos);
-                    mdBuffer = newBuffer;
+            byte[] cumul = new byte[0];
+            // TODO: change bufferSize to something like 4k or 8k
+            int bufferSize = (int)Math.min(8L, logicalFileSection.sectionLength());
+            byte[] buffer = new byte[bufferSize];
+            int totalRead = 0;
+            while (totalRead < logicalFileSection.sectionLength()) {
+                int bytesRead = sectionInputStream.read(buffer);
+                if (bytesRead == -1) {
+                    warnAndMaybeThrow("Failed to read metadata", progressCallback, throwOnValidationFailure);
+                    return null;
                 }
+                totalRead += bytesRead;
+                byte[] portion = decryptor.decrypt(buffer, bytesRead);
+                cumul = concat(cumul, portion);
 
-                // Copy from loadBuffer into mdBuffer
-                System.arraycopy(loadBuffer, 0, mdBuffer, mdBufferPos, bytesRead);
-                mdBufferPos += bytesRead;
-
+                try {
+                    metadataContainerAndLength = metadataContainerSerializer.deserialize(cumul);
+                    break;
+                } catch (NotEnoughBytesException ne) {
+                    // Load more bytes then
+                }
             }
+        }
+
+        String logicalFileMetadataFormat = checkNotNull(metadataContainerAndLength).metadataContainer().metadataFormat();
+        LogicalFileMetadataSerializer logicalFileMetadataSerializer =
+                baseRepositories.logicalFileMetadataFormatRepo().get(logicalFileMetadataFormat);
+        if (logicalFileMetadataSerializer == null) {
+            warnAndMaybeThrow("LogicalFileMetadata format " + logicalFileMetadataFormat + " is not supported.",
+                    progressCallback, throwOnValidationFailure);
+            return null;
+        } else {
+            LogicalFileMetadata logicalFileMetadata =
+                    logicalFileMetadataSerializer.deserialize(metadataContainerAndLength.metadataContainer().metadata());
+            return Pair.of(logicalFileMetadata, metadataContainerAndLength);
         }
     }
 
@@ -259,12 +353,28 @@ public class FiddUnpackManager {
                                               BaseRepositories baseRepositories, String signatureFormat,
                                               @Nullable X509Certificate publicKey,
                                               ProgressCallback progressCallback, boolean throwOnValidationFailure) throws IOException {
-        progressCallback.log("Validating file signature #" + signatureNumber + ": " + dataFile.getName() + "; signature file: " + signatureFile.getName());
+        try (FileInputStream signatureStream = new FileInputStream(signatureFile)) {
+            try (FileInputStream dataStream = new FileInputStream(dataFile)) {
+                validateFileSignature(signatureNumber, dataFile.getName(), signatureFile.getName(),
+                        dataStream, signatureStream,
+                        baseRepositories, signatureFormat, publicKey, progressCallback, throwOnValidationFailure);
+            }
+        }
+    }
+
+    private static void validateFileSignature(int signatureNumber,
+                                              String dataFileName, @Nullable String signatureFileName,
+                                              InputStream dataStream, InputStream signatureStream,
+                                              BaseRepositories baseRepositories, String signatureFormat,
+                                              @Nullable X509Certificate publicKey,
+                                              ProgressCallback progressCallback, boolean throwOnValidationFailure) throws IOException {
+        String signatureFileStr = (signatureFileName == null ? "" : "; signature file: " + signatureFileName);
+        progressCallback.log("Validating file signature #" + signatureNumber + ": " + dataFileName + signatureFileStr);
         progressCallback.log("File signature format: " + signatureFormat);
         SignerChecker signerChecker = baseRepositories.signatureFormatRepo().get(signatureFormat);
         if (publicKey == null) {
             String errorMessage = "File signature #" + signatureNumber + " validation failed - PublicKey not specified. " +
-                    dataFile.getName() + "; signature file: " + signatureFile.getName();
+                    dataFileName + signatureFileStr;
             if (signerChecker == null) {
                 warnAndMaybeThrow(errorMessage, progressCallback, false);
             } else {
@@ -275,21 +385,16 @@ public class FiddUnpackManager {
 
         if (signerChecker == null) {
             warnAndMaybeThrow("File signature #" + signatureNumber + " validation failed - signature format " +
-                    signatureFormat + " not supported. " + dataFile.getName() + "; signature file: " + signatureFile.getName(),
+                    signatureFormat + " not supported. " + dataFileName + signatureFileStr,
                     progressCallback, throwOnValidationFailure);
         } else {
-            try (FileInputStream signatureStream = new FileInputStream(signatureFile)) {
-                byte[] signature = signatureStream.readAllBytes();
-                try (FileInputStream dataStream = new FileInputStream(dataFile)) {
-                    boolean validationResult = signerChecker.verifySignature(dataStream, signature, checkNotNull(publicKey).getPublicKey());
-                    if (validationResult) {
-                        progressCallback.log("File signature #" + signatureNumber + " validation success: " + dataFile.getName() +
-                                "; signature file: " + signatureFile.getName());
-                    } else {
-                        warnAndMaybeThrow("File signature #" + signatureNumber + " validation failed: " + dataFile.getName() +
-                                "; signature file: " + signatureFile.getName(), progressCallback, throwOnValidationFailure);
-                    }
-                }
+            byte[] signature = signatureStream.readAllBytes();
+            boolean validationResult = signerChecker.verifySignature(dataStream, signature, checkNotNull(publicKey).getPublicKey());
+            if (validationResult) {
+                progressCallback.log("File signature #" + signatureNumber + " validation success: " + dataFileName + signatureFileStr);
+            } else {
+                warnAndMaybeThrow("File signature #" + signatureNumber + " validation failed: " + dataFileName + signatureFileStr,
+                        progressCallback, throwOnValidationFailure);
             }
         }
     }

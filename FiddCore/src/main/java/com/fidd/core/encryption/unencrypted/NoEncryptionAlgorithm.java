@@ -51,6 +51,26 @@ public class NoEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     }
 
     @Override
+    public InputStream getDecryptedStream(byte[] keyData, InputStream stream) {
+        return stream;
+    }
+
+    @Override
+    public Decryptor getRandomAccessDecryptor(byte[] keyData, long offset) {
+        return new Decryptor() {
+            @Override
+            public byte[] decrypt(byte[] buffer, int bytesRead) {
+                return Arrays.copyOf(buffer, bytesRead);
+            }
+
+            @Override
+            public byte[] doFinal() {
+                return new byte[0];
+            }
+        };
+    }
+
+    @Override
     public byte[] randomAccessDecrypt(byte[] keyData, byte[] ciphertext, long offset, int length) {
         return Arrays.copyOfRange(ciphertext, (int) offset, (int) offset + length);
     }

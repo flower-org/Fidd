@@ -40,7 +40,7 @@ public class DefaultBaseRepositories implements BaseRepositories {
         Aes256CbcEncryptionAlgorithm aes256Cbc = new Aes256CbcEncryptionAlgorithm();
         XorEncryptionAlgorithm xor = new XorEncryptionAlgorithm();
         NoEncryptionAlgorithm noEncryption = new NoEncryptionAlgorithm();
-        ENCRYPTION_ALGORITHM_REPO = new MapRepository<>(aes256Cbc.name(), List.of(aes256Cbc, xor, noEncryption));
+        ENCRYPTION_ALGORITHM_REPO = new MapRepository<>(aes256Cbc.name(), List.of(aes256Cbc, xor, noEncryption), noEncryption);
 
         YamlFiddKeySerializer yamlFiddKeySerializer = new YamlFiddKeySerializer();
         FIDD_KEY_FORMAT_REPO = new MapRepository<>(yamlFiddKeySerializer.name(), List.of(yamlFiddKeySerializer));

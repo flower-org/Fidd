@@ -17,7 +17,6 @@ public class YamlFiddFileMetadataSerializerTest {
     public void testSerializeAndDeserialize() {
         long time = System.currentTimeMillis();
         FiddFileMetadata fiddFileMetadata = ImmutableFiddFileMetadata.builder()
-                .logicalFileMetadataFormatVersion("FMT")
                 .messageNumber(123L)
                 .originalMessageNumber(123L)
                 .postId("Post123")

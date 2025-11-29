@@ -12,6 +12,7 @@ import com.flower.crypt.Cryptor;
 
 import javax.annotation.Nullable;
 import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -129,5 +130,50 @@ public class Aes256CbcEncryptionAlgorithm implements EncryptionAlgorithm {
         }
 
         return totalBytesWritten;
+    }
+
+    @Override
+    public Decryptor getDecryptor(byte[] keyData) {
+        try {
+            Aes256KeyAndIv keyAndIv = Aes256KeyAndIv.deserialize(keyData);
+            SecretKeySpec secretKeySpec = new SecretKeySpec(keyAndIv.aes256Key(), AES);
+
+            final Cipher cipher = Cipher.getInstance(AES_CBC_PKCS_5_PADDING);
+            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(keyAndIv.aes256Iv()));
+
+            return new Decryptor() {
+                @Override
+                public byte[] decrypt(byte[] ciphertext, int bytesRead) {
+                    return cipher.update(ciphertext, 0, bytesRead);
+                }
+
+                @Override
+                public byte[] doFinal() {
+                    try {
+                        return cipher.doFinal();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            };
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public InputStream getDecryptedStream(byte[] keyData, InputStream stream) {
+        try {
+            Aes256KeyAndIv keyAndIv = Aes256KeyAndIv.deserialize(keyData);
+            SecretKeySpec secretKeySpec = new SecretKeySpec(keyAndIv.aes256Key(), AES);
+
+            final Cipher cipher = Cipher.getInstance(AES_CBC_PKCS_5_PADDING);
+            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(keyAndIv.aes256Iv()));
+
+            // Wrap the input stream with decryption
+            return new CipherInputStream(stream, cipher);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

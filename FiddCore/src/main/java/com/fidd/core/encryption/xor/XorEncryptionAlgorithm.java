@@ -53,6 +53,12 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     }
 
     @Override
+    public InputStream getDecryptedStream(byte[] keyData, InputStream stream) {
+        // keyData is your XOR key
+        return new XorInputStream(stream, keyData);
+    }
+
+    @Override
     public byte[] randomAccessDecrypt(byte[] keyData, byte[] ciphertext, long offset, int length) {
         // Decrypt only a slice of the ciphertext
         byte[] slice = Arrays.copyOfRange(ciphertext, (int) offset, (int) offset + length);
@@ -63,6 +69,26 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     public void randomAccessDecrypt(byte[] keyData, long offset, int length, InputStream ciphertextAtOffset, OutputStream plaintext) {
         // For simplicity, just reuse the stream processor
         processStream(keyData, (int)(offset % keyData.length), length, ciphertextAtOffset, plaintext, null);
+    }
+
+    @Override
+    public Decryptor getRandomAccessDecryptor(byte[] keyData, long offset0) {
+        return new Decryptor() {
+            long myOffset = offset0;
+
+            @Override
+            public byte[] decrypt(byte[] buffer, int bytesRead) {
+                byte[] slice = Arrays.copyOf(buffer, bytesRead);
+                byte[] xord = xorWithKey(slice, keyData, (int)(myOffset % keyData.length));
+                myOffset += bytesRead;
+                return xord;
+            }
+
+            @Override
+            public byte[] doFinal() {
+                return new byte[0];
+            }
+        };
     }
 
     // --- Helper methods ---
