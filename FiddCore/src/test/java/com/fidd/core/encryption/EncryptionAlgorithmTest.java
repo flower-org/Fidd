@@ -1,6 +1,7 @@
 package com.fidd.core.encryption;
 
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
+import com.fidd.core.encryption.unencrypted.NoEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
 import com.fidd.core.random.plain.PlainRandomGeneratorType;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,7 +20,8 @@ public class EncryptionAlgorithmTest {
     static Stream<Arguments> encryptionAlgorithms() {
         return Stream.of(
                 Arguments.of(new Aes256CbcEncryptionAlgorithm()),
-                Arguments.of(new XorEncryptionAlgorithm())
+                Arguments.of(new XorEncryptionAlgorithm()),
+                Arguments.of(new NoEncryptionAlgorithm())
         );
     }
 
@@ -96,9 +98,11 @@ public class EncryptionAlgorithmTest {
     @MethodSource("encryptionAlgorithms")
     void testEncryptWithInvalidKeyData(EncryptionAlgorithm encryptionAlgorithm) {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(originalText.getBytes(StandardCharsets.UTF_8));
-        RuntimeException thrown = assertThrows(RuntimeException.class,
-                () -> encryptionAlgorithm.encrypt(new byte[0], List.of(inputStream), new ByteArrayOutputStream(), null));
-        assertNotNull(thrown);
+        if (!encryptionAlgorithm.name().equals(EncryptionAlgorithm.UNENCRYPTED)) {
+            RuntimeException thrown = assertThrows(RuntimeException.class,
+                    () -> encryptionAlgorithm.encrypt(new byte[0], List.of(inputStream), new ByteArrayOutputStream(), null));
+            assertNotNull(thrown);
+        }
     }
 
     @ParameterizedTest

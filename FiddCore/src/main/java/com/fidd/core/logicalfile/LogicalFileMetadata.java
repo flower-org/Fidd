@@ -1,19 +1,23 @@
 package com.fidd.core.logicalfile;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fidd.core.common.FiddSignature;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableLogicalFileMetadata.class)
 @JsonDeserialize(as = ImmutableLogicalFileMetadata.class)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public interface LogicalFileMetadata {
     enum FiddUpdateType {
         CREATE_OVERRIDE,
         DELETE
-        //TOO: add diffs
+        //TODO: add diffs
     }
 
     FiddUpdateType updateType();
@@ -24,6 +28,5 @@ public interface LogicalFileMetadata {
     @Nullable Long createdAt();
     @Nullable Long updatedAt();
 
-    @Nullable String authorsFileSignatureFormat();
-    @Nullable byte[] authorsFileSignature();
+    @Nullable List<FiddSignature> authorsFileSignatures();
 }

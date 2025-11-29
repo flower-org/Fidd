@@ -1,11 +1,13 @@
 package com.fidd.core.logicalfile.yaml;
 
+import com.fidd.core.common.FiddSignature;
 import com.fidd.core.logicalfile.ImmutableLogicalFileMetadata;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,8 +22,7 @@ public class YamlLogicalFileMetadataSerializerTest {
                 .filePath("/what/not_sure.zip")
                 .createdAt(1234L)
                 .updatedAt(2345L)
-                .authorsFileSignatureFormat("FMT")
-                .authorsFileSignature(new byte[] {2,3,4,5,6,7})
+                .authorsFileSignatures(List.of(FiddSignature.of("FMT", new byte[] {2,3,4,5,6,7})))
                 .build();
 
         YamlLogicalFileMetadataSerializer serializer = new YamlLogicalFileMetadataSerializer();

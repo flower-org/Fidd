@@ -7,7 +7,7 @@ public interface Repository<T> {
     /**
      * Returns the entry associated with the given name.
      */
-    @Nullable T get(String name);
+    @Nullable T get(@Nullable String name);
 
     /**
      * Checks if an entry with the given name exists.

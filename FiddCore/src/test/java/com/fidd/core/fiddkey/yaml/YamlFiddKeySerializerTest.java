@@ -1,5 +1,6 @@
 package com.fidd.core.fiddkey.yaml;
 
+import com.fidd.core.common.FiddSignature;
 import com.fidd.core.fiddkey.FiddKey;
 import com.fidd.core.fiddkey.ImmutableFiddKey;
 import com.fidd.core.fiddkey.ImmutableSection;
@@ -22,8 +23,7 @@ public class YamlFiddKeySerializerTest {
                 .sectionLength(1000)
                 .encryptionAlgorithm("AES-256")
                 .encryptionKeyData(new byte[] { 1,2,3,4,5 })
-                .crcAlgorithm("Adler32")
-                .crc(new byte[] { 6,7,8,9,10 })
+                .crcs(List.of(FiddSignature.of("Adler32", new byte[] { 6,7,8,9,10 })))
                 .build();
 
         List<FiddKey.Section> logicalFiles = List.of(ImmutableSection.builder()
@@ -31,8 +31,7 @@ public class YamlFiddKeySerializerTest {
                 .sectionLength(1000)
                 .encryptionAlgorithm("AES-256")
                 .encryptionKeyData(new byte[] { 1,2,3,4,5 })
-                .crcAlgorithm("Adler32")
-                .crc(new byte[] { 6,7,8,9,10 })
+                .crcs(List.of(FiddSignature.of("Adler32", new byte[] { 6,7,8,9,10 })))
                 .build()
         );
 

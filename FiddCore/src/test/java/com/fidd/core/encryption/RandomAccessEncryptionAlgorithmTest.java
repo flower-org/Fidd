@@ -1,24 +1,29 @@
 package com.fidd.core.encryption;
 
+import com.fidd.core.encryption.unencrypted.NoEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RandomAccessEncryptionAlgorithmTest {
-    private final RandomAccessEncryptionAlgorithm algo = new XorEncryptionAlgorithm();
-
-    @Test
-    void testName() {
-        assertEquals("XOR", algo.name(), "Algorithm name should be XOR");
+    static Stream<Arguments> randomAccessEncryptionAlgorithms() {
+        return Stream.of(
+                Arguments.of(new XorEncryptionAlgorithm()),
+                Arguments.of(new NoEncryptionAlgorithm())
+        );
     }
 
-    @Test
-    void testRandomAccessDecryptByteArray() {
+    @ParameterizedTest
+    @MethodSource("randomAccessEncryptionAlgorithms")
+    void testRandomAccessDecryptByteArray(RandomAccessEncryptionAlgorithm algo) {
         byte[] key = "fixed-test-key-1234567890123456".getBytes(); // 32 bytes
         byte[] plaintext = "HelloRandomAccessDecryptionWorld!".getBytes();
 
@@ -37,8 +42,9 @@ public class RandomAccessEncryptionAlgorithmTest {
                 "Decrypted slice should equal the corresponding plaintext slice");
     }
 
-    @Test
-    void testRandomAccessDecryptStream() {
+    @ParameterizedTest
+    @MethodSource("randomAccessEncryptionAlgorithms")
+    void testRandomAccessDecryptStream(RandomAccessEncryptionAlgorithm algo) {
         byte[] key = "fixed-test-key-1234567890123456".getBytes(); // 32 bytes
         byte[] plaintext = "StreamingRandomAccessDecryptionTest!".getBytes();
 
@@ -64,8 +70,9 @@ public class RandomAccessEncryptionAlgorithmTest {
                 "Stream-based random access decryption should match plaintext slice");
     }
 
-    @Test
-    void testRandomAccessDecryptFullRoundTrip() {
+    @ParameterizedTest
+    @MethodSource("randomAccessEncryptionAlgorithms")
+    void testRandomAccessDecryptFullRoundTrip(RandomAccessEncryptionAlgorithm algo) {
         byte[] key = "another-fixed-test-key-1234567890".getBytes(); // 32 bytes
         byte[] plaintext = "FullRoundTripVerification".getBytes();
 

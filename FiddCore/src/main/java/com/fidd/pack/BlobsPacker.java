@@ -58,7 +58,7 @@ public class BlobsPacker {
 
     public static Pair<Long, List<byte[]>> unpackBlobs(byte[] packedData) throws NotEnoughBytesException {
         if (packedData.length < 4) {
-            throw new IllegalArgumentException("Can't read uint32 BLOB count. packedData.length " + packedData.length);
+            throw new NotEnoughBytesException("Can't read uint32 BLOB count. packedData.length " + packedData.length);
         }
 
         // Create a ByteBuffer to read the packed data, set to big-endian
@@ -87,7 +87,7 @@ public class BlobsPacker {
             totalSize += size;
         }
 
-        if (totalSize < packedData.length)  {
+        if (packedData.length < totalSize)  {
             throw new NotEnoughBytesException("Size mismatch. totalSize: " + totalSize +
                     "; packedData.length " + packedData.length, totalSize);
         }

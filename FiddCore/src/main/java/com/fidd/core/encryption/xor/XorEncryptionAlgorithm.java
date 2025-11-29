@@ -37,11 +37,11 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
 
     @Override
     public long encrypt(byte[] keyData, List<InputStream> plaintexts, OutputStream ciphertext,
-                        @Nullable CrcCallback ciphertextCrcCallback) {
+                        @Nullable List<CrcCallback> ciphertextCrcCallbacks) {
         long bytesWritten = 0;
         for (InputStream plaintext : plaintexts) {
             bytesWritten += processStream(keyData, (int)(bytesWritten % keyData.length), -1, plaintext,
-                    ciphertext, ciphertextCrcCallback);
+                    ciphertext, ciphertextCrcCallbacks);
         }
         return bytesWritten;
     }
@@ -50,6 +50,12 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     public long decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext) {
         // Same operation
         return processStream(keyData, 0, -1, ciphertext, plaintext, null);
+    }
+
+    @Override
+    public InputStream getDecryptedStream(byte[] keyData, InputStream stream) {
+        // keyData is your XOR key
+        return new XorInputStream(stream, keyData);
     }
 
     @Override
@@ -65,6 +71,26 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
         processStream(keyData, (int)(offset % keyData.length), length, ciphertextAtOffset, plaintext, null);
     }
 
+    @Override
+    public Decryptor getRandomAccessDecryptor(byte[] keyData, long offset0) {
+        return new Decryptor() {
+            long myOffset = offset0;
+
+            @Override
+            public byte[] decrypt(byte[] buffer, int bytesRead) {
+                byte[] slice = Arrays.copyOf(buffer, bytesRead);
+                byte[] xord = xorWithKey(slice, keyData, (int)(myOffset % keyData.length));
+                myOffset += bytesRead;
+                return xord;
+            }
+
+            @Override
+            public byte[] doFinal() {
+                return new byte[0];
+            }
+        };
+    }
+
     // --- Helper methods ---
     private byte[] xorWithKey(byte[] data, byte[] key, int keyOffset) {
         byte[] result = new byte[data.length];
@@ -75,21 +101,37 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     }
 
     private long processStream(byte[] keyData, int keyOffset, int length, InputStream in, OutputStream out,
-                               @Nullable CrcCallback ciphertextCrcCallback) {
+                               @Nullable List<CrcCallback> ciphertextCrcCallbacks) {
         try {
-            int b;
-            int i = 0;
-            while ((b = in.read()) != -1) {
-                int byteToWrite = b ^ keyData[(keyOffset + i) % keyData.length];
-                out.write(byteToWrite);
-                if (ciphertextCrcCallback != null) { ciphertextCrcCallback.write(byteToWrite); }
-                i++;
-                if (length != -1 && i >= length) {
+            byte[] buffer = new byte[8192]; // 8 KB buffer
+            long total = 0;
+            int read;
+
+            while ((read = in.read(buffer, 0,
+                    (length != -1) ? Math.min(buffer.length, length - (int) total) : buffer.length)) != -1) {
+
+                // XOR transform in-place
+                for (int j = 0; j < read; j++) {
+                    buffer[j] = (byte) (buffer[j] ^ keyData[(keyOffset + (int) total + j) % keyData.length]);
+                }
+
+                // Write transformed bytes
+                out.write(buffer, 0, read);
+
+                // CRC callback
+                if (ciphertextCrcCallbacks != null) {
+                    // If callback only supports write(byte[]):
+                    byte[] chunk = Arrays.copyOf(buffer, read);
+                    ciphertextCrcCallbacks.forEach(c -> c.write(chunk));
+                }
+
+                total += read;
+                if (length != -1 && total >= length) {
                     break;
                 }
             }
 
-            return i;
+            return total;
         } catch (IOException e) {
             throw new RuntimeException("Stream processing failed", e);
         }

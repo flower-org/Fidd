@@ -1,5 +1,7 @@
 package com.fidd.packer.pack;
 
+import com.fidd.core.NamedEntry;
+import com.fidd.core.common.FiddSignature;
 import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadata;
@@ -12,9 +14,9 @@ import com.fidd.core.fiddkey.ImmutableSection;
 import com.fidd.core.logicalfile.ImmutableLogicalFileMetadata;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
-import com.fidd.core.metadata.ImmutableMetadataSection;
-import com.fidd.core.metadata.MetadataSection;
-import com.fidd.core.metadata.MetadataSectionSerializer;
+import com.fidd.core.metadata.ImmutableMetadataContainer;
+import com.fidd.core.metadata.MetadataContainer;
+import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
 import com.fidd.core.pki.SignerChecker;
 import com.fidd.core.random.RandomGeneratorType;
@@ -46,21 +48,22 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class FiddPackManager {
     public static final String DEFAULT_FIDD_FILE_NAME = "message.fidd";
     public static final String DEFAULT_FIDD_KEY_FILE_NAME = "fidd.key";
-    public static final String DEFAULT_FIDD_FILE_SIGNATURE_FILE_NAME = DEFAULT_FIDD_FILE_NAME + ".sign";
-    public static final String DEFAULT_FIDD_KEY_FILE_SIGNATURE_FILE_NAME = DEFAULT_FIDD_KEY_FILE_NAME + ".sign";
+    public static final String DEFAULT_FIDD_SIGNATURE_EXT = ".sign";
+
+    public static final String DEFAULT_FIDD_FILE_NAME_PREF = DEFAULT_FIDD_FILE_NAME + ".";
+    public static final String DEFAULT_FIDD_KEY_FILE_NAME_PREF = DEFAULT_FIDD_KEY_FILE_NAME + ".";
 
     private static final int IO_BUFFER_SIZE = 8192; // 8 KB buffer size
 
     public static FiddFileMetadata createNewPostFiddFileMetadata(
             long messageNumber,
             String postId,
-            String logicalFileMetadataFormat,
             @Nullable Pair<X509Certificate, PublicKeySerializer> publicKeySerializerAndKey,
-            @Nullable String fiddFileAndFiddKeySignatureFormat
+            @Nullable List<String> fiddFileAndFiddKeySignatureFormats,
+            boolean includeMessageCreationTime
     ) {
         // Build FiddFileMetadata
         ImmutableFiddFileMetadata.Builder fiddFileMetadataBuilder = ImmutableFiddFileMetadata.builder()
-                .logicalFileMetadataFormatVersion(logicalFileMetadataFormat)
                 .messageNumber(messageNumber)
                 .originalMessageNumber(messageNumber)
                 .postId(postId)
@@ -76,10 +79,17 @@ public class FiddPackManager {
                     .authorsPublicKey(publicKeySerializer.serialize(authorsPublicKey));
         }
 
-        if (fiddFileAndFiddKeySignatureFormat != null) {
+        if (fiddFileAndFiddKeySignatureFormats != null) {
             fiddFileMetadataBuilder
-                    .authorsFiddFileSignatureFormat(fiddFileAndFiddKeySignatureFormat)
-                    .authorsFiddKeyFileSignatureFormat(fiddFileAndFiddKeySignatureFormat);
+                    .authorsFiddFileSignatureFormats(fiddFileAndFiddKeySignatureFormats)
+                    .authorsFiddKeyFileSignatureFormats(fiddFileAndFiddKeySignatureFormats);
+        }
+
+        if (includeMessageCreationTime) {
+            long time = System.currentTimeMillis();
+            fiddFileMetadataBuilder
+                    .originalMessageCreationTime(time)
+                    .messageCreationTime(time);
         }
 
         return fiddFileMetadataBuilder.build();
@@ -93,7 +103,7 @@ public class FiddPackManager {
                                 String postId,
 
                                 FiddKeySerializer fiddKeySerializer,
-                                MetadataSectionSerializer metadataSectionSerializer,
+                                MetadataContainerSerializer metadataContainerSerializer,
                                 FiddFileMetadataSerializer fiddFileMetadataSerializer,
                                 LogicalFileMetadataSerializer logicalFileMetadataSerializer,
                                 EncryptionAlgorithm encryptionAlgorithm,
@@ -101,15 +111,19 @@ public class FiddPackManager {
                                 long minGapSize,
                                 long maxGapSize,
 
+                                boolean includeMessageCreationTime,
+
                                 boolean createFileAndKeySignatures,
                                 boolean addFiddFileMetadataSignature,
                                 boolean addLogicalFileSignatures,
                                 boolean addLogicalFileMetadataSignatures,
+
+                                boolean includePublicKey,
                                 PublicKeySerializer publicKeySerializer,
-                                SignerChecker signerChecker,
+                                List<SignerChecker> signerCheckers,
 
                                 boolean addCrcsToFiddKey,
-                                CrcCalculator crcCalculator
+                                List<CrcCalculator> crcCalculators
     ) throws IOException {
         // Fidd Key parts will be populated as we go
         FiddKey.Section fiddFileMetadataSection = null;
@@ -123,20 +137,23 @@ public class FiddPackManager {
         // 1. Check output directory
         File fiddFile = new File(packedContentDirectory, DEFAULT_FIDD_FILE_NAME);
         File fiddKeyFile = new File(packedContentDirectory, DEFAULT_FIDD_KEY_FILE_NAME);
-        File fiddFileSignature = new File(packedContentDirectory, DEFAULT_FIDD_FILE_SIGNATURE_FILE_NAME);
-        File fiddKeyFileSignature = new File(packedContentDirectory, DEFAULT_FIDD_KEY_FILE_SIGNATURE_FILE_NAME);
         if (fiddFile.exists()) {
             throw new IllegalArgumentException("Cannot create file: Fidd File exists: " + fiddFile.getAbsolutePath());
         }
         if (fiddKeyFile.exists()) {
             throw new IllegalArgumentException("Cannot create file: Fidd Key File exists: " + fiddKeyFile.getAbsolutePath());
         }
-        if (createFileAndKeySignatures) {
-            if (fiddFileSignature.exists()) {
-                throw new IllegalArgumentException("Cannot create file: Fidd File Signature exists: " + fiddFileSignature.getAbsolutePath());
-            }
-            if (fiddKeyFileSignature.exists()) {
-                throw new IllegalArgumentException("Cannot create file: Fidd Key File Signature exists: " + fiddKeyFileSignature.getAbsolutePath());
+
+        for (int i = 0; i < signerCheckers.size(); i++) {
+            File fiddFileSignature = new File(packedContentDirectory, DEFAULT_FIDD_FILE_NAME_PREF + i + DEFAULT_FIDD_SIGNATURE_EXT);
+            File fiddKeyFileSignature = new File(packedContentDirectory, DEFAULT_FIDD_KEY_FILE_NAME_PREF + i + DEFAULT_FIDD_SIGNATURE_EXT);
+            if (createFileAndKeySignatures) {
+                if (fiddFileSignature.exists()) {
+                    throw new IllegalArgumentException("Cannot create file: Fidd File Signature exists: " + fiddFileSignature.getAbsolutePath());
+                }
+                if (fiddKeyFileSignature.exists()) {
+                    throw new IllegalArgumentException("Cannot create file: Fidd Key File Signature exists: " + fiddKeyFileSignature.getAbsolutePath());
+                }
             }
         }
 
@@ -144,10 +161,9 @@ public class FiddPackManager {
         FiddFileMetadata fiddFileMetadata = createNewPostFiddFileMetadata(
                 messageNumber,
                 postId,
-                logicalFileMetadataSerializer.name(),
-                (createFileAndKeySignatures || addFiddFileMetadataSignature || addLogicalFileSignatures || addLogicalFileMetadataSignatures)
-                        ? Pair.of(authorsPublicKey, publicKeySerializer) : null,
-                createFileAndKeySignatures ? signerChecker.name() : null
+                includePublicKey ? Pair.of(authorsPublicKey, publicKeySerializer) : null,
+                createFileAndKeySignatures ? signerCheckers.stream().map(NamedEntry::name).toList() : null,
+                includeMessageCreationTime
         );
 
         // 3. Form FiddFile
@@ -173,20 +189,20 @@ public class FiddPackManager {
                     long logicalFileSectionOffset = position;
                     byte[] logicalFileSectionKey = encryptionAlgorithm.generateNewKeyData(randomGenerator);
 
-                    LengthAndCrc logicalFileSectionLengthAndCrc =
+                    LengthAndCrcs logicalFileSectionLengthAndCrc =
                             addLogicalFileWithMetadata(originalDirectory, file.file(),
                                     outputStream, encryptionAlgorithm, logicalFileSectionKey,
-                                    metadataSectionSerializer, logicalFileMetadataSerializer,
+                                    metadataContainerSerializer, logicalFileMetadataSerializer,
                                     addLogicalFileSignatures, addLogicalFileMetadataSignatures,
-                                    signerChecker, authorsPrivateKey,
-                                    addCrcsToFiddKey, crcCalculator);
+                                    signerCheckers, authorsPrivateKey,
+                                    addCrcsToFiddKey, crcCalculators);
                     position += logicalFileSectionLengthAndCrc.length();
 
                     // 3.2.2.2 Form corresponding Section descriptor for FiddKey
                     FiddKey.Section logicalFileSection = createFiddKeySection(logicalFileSectionOffset,
                             position - logicalFileSectionOffset, encryptionAlgorithm,
                             logicalFileSectionKey, addCrcsToFiddKey,
-                            crcCalculator, logicalFileSectionLengthAndCrc.crc());
+                            crcCalculators, logicalFileSectionLengthAndCrc.crcs());
                     logicalFilesSections.add(logicalFileSection);
 
                     // 3.2.1.2 Add gap after LogicalFile Section
@@ -199,18 +215,18 @@ public class FiddPackManager {
                     long fiddFileMetadataSectionOffset = position;
                     byte[] fiddFileMetadataSectionKey = encryptionAlgorithm.generateNewKeyData(randomGenerator);
 
-                    LengthAndCrc fiddFileMetadataSectionLengthAndCrc =
+                    LengthAndCrcs fiddFileMetadataSectionLengthAndCrc =
                             addFiddFileMetadata(outputStream, fiddFileMetadata, fiddFileMetadataSerializer,
-                                    metadataSectionSerializer,
-                                    encryptionAlgorithm, fiddFileMetadataSectionKey, crcCalculator, addCrcsToFiddKey,
-                                    addFiddFileMetadataSignature, authorsPrivateKey, signerChecker);
+                                    metadataContainerSerializer,
+                                    encryptionAlgorithm, fiddFileMetadataSectionKey, crcCalculators, addCrcsToFiddKey,
+                                    addFiddFileMetadataSignature, authorsPrivateKey, signerCheckers);
                     position += fiddFileMetadataSectionLengthAndCrc.length();
 
                     // 3.2.2.2 Form corresponding Section descriptor for FiddKey
                     fiddFileMetadataSection = createFiddKeySection(fiddFileMetadataSectionOffset,
                             position - fiddFileMetadataSectionOffset, encryptionAlgorithm,
                             fiddFileMetadataSectionKey, addCrcsToFiddKey,
-                            crcCalculator, fiddFileMetadataSectionLengthAndCrc.crc());
+                            crcCalculators, fiddFileMetadataSectionLengthAndCrc.crcs());
 
                     // 3.2.2.3 Add gap after FiddFile Metadata Section
                     position += appendGap(outputStream, minGapSize, maxGapSize, randomGenerator.generator());
@@ -232,42 +248,51 @@ public class FiddPackManager {
         // 5. File signatures
         if (createFileAndKeySignatures) {
             // 5.1 Form Fidd file signature
-            try (FileChannel inputChannel = FileChannel.open(fiddFile.toPath(), StandardOpenOption.READ)) {
-                InputStream inputFileStream = Channels.newInputStream(inputChannel);
-                byte[] fiddFileSignatureBytes = signerChecker.signData(inputFileStream, authorsPrivateKey);
-                Files.write(fiddFileSignature.toPath(), fiddFileSignatureBytes);
-            }
+            for (int i = 0; i < signerCheckers.size(); i++) {
+                SignerChecker signerChecker = signerCheckers.get(i);
 
-            // 5.2 Form FiddKey file signature
-            try (FileChannel inputChannel = FileChannel.open(fiddKeyFile.toPath(), StandardOpenOption.READ)) {
-                InputStream inputFileStream = Channels.newInputStream(inputChannel);
-                byte[] fiddKeyFileSignatureBytes = signerChecker.signData(inputFileStream, authorsPrivateKey);
-                Files.write(fiddKeyFileSignature.toPath(), fiddKeyFileSignatureBytes);
+                File fiddFileSignature = new File(packedContentDirectory, DEFAULT_FIDD_FILE_NAME + "." + i + DEFAULT_FIDD_SIGNATURE_EXT);
+                File fiddKeyFileSignature = new File(packedContentDirectory, DEFAULT_FIDD_KEY_FILE_NAME + "." + i + DEFAULT_FIDD_SIGNATURE_EXT);
+
+                try (FileChannel inputChannel = FileChannel.open(fiddFile.toPath(), StandardOpenOption.READ)) {
+                    InputStream inputFileStream = Channels.newInputStream(inputChannel);
+                    byte[] fiddFileSignatureBytes = signerChecker.signData(inputFileStream, authorsPrivateKey);
+                    Files.write(fiddFileSignature.toPath(), fiddFileSignatureBytes);
+                }
+                try (FileChannel inputChannel = FileChannel.open(fiddKeyFile.toPath(), StandardOpenOption.READ)) {
+                    InputStream inputFileStream = Channels.newInputStream(inputChannel);
+                    byte[] fiddKeyFileSignatureBytes = signerChecker.signData(inputFileStream, authorsPrivateKey);
+                    Files.write(fiddKeyFileSignature.toPath(), fiddKeyFileSignatureBytes);
+                }
             }
         }
     }
 
     public static FiddKey.Section createFiddKeySection(long sectionOffset, long sectionLength,
                                                        EncryptionAlgorithm encryptionAlgorithm, byte[] sectionKey,
-                                                       boolean addCrcsToFiddKey, CrcCalculator crcCalculator,
-                                                       @Nullable byte[] crc
+                                                       boolean addCrcsToFiddKey, List<CrcCalculator> crcCalculators,
+                                                       @Nullable List<byte[]> crcs
                                                        ) {
         ImmutableSection.Builder sectionBuilder = ImmutableSection.builder()
                 .sectionOffset(sectionOffset)
                 .sectionLength(sectionLength);
 
-        //TODO: What if there is no encryption - don't add those values? they are @Nullable
-        //TODO: special name - UNENCRYPTED?
-        if (encryptionAlgorithm != null) {
+        // If encryption algorithm is not specified it means the data is unencrypted
+        if (!encryptionAlgorithm.name().equals(EncryptionAlgorithm.UNENCRYPTED)) {
             sectionBuilder
                     .encryptionAlgorithm(encryptionAlgorithm.name())
                     .encryptionKeyData(sectionKey);
         }
 
         if (addCrcsToFiddKey) {
-            sectionBuilder
-                    .crcAlgorithm(crcCalculator.name())
-                    .crc(checkNotNull(crc));
+            List<FiddSignature> crcList = new ArrayList<>();
+            for (int i = 0; i < crcCalculators.size(); i++) {
+                CrcCalculator crcCalculator = crcCalculators.get(i);
+                byte[] crc = checkNotNull(crcs).get(i);
+                crcList.add(FiddSignature.of(crcCalculator.name(), crc));
+            }
+
+            sectionBuilder.crcs(crcList);
         }
 
         return sectionBuilder.build();
@@ -311,16 +336,16 @@ public class FiddPackManager {
         return gapSize;
     }
 
-    private static LengthAndCrc addLogicalFileWithMetadata(File originalDirectory, File inputFile, OutputStream outputFileStream,
-                                                       EncryptionAlgorithm encryptionAlgorithm, byte[] keyData,
-                                                       MetadataSectionSerializer metadataSectionSerializer,
-                                                       LogicalFileMetadataSerializer logicalFileMetadataSerializer,
-                                                       boolean addLogicalFileSignatures,
-                                                       boolean addLogicalFileMetadataSignatures,
-                                                       SignerChecker signerChecker,
-                                                       @Nullable PrivateKey authorsPrivateKey,
-                                                       boolean addCrcsToFiddKey,
-                                                       CrcCalculator crcCalculator
+    private static LengthAndCrcs addLogicalFileWithMetadata(File originalDirectory, File inputFile, OutputStream outputFileStream,
+                                                            EncryptionAlgorithm encryptionAlgorithm, byte[] keyData,
+                                                            MetadataContainerSerializer metadataContainerSerializer,
+                                                            LogicalFileMetadataSerializer logicalFileMetadataSerializer,
+                                                            boolean addLogicalFileSignatures,
+                                                            boolean addLogicalFileMetadataSignatures,
+                                                            List<SignerChecker> signerCheckers,
+                                                            @Nullable PrivateKey authorsPrivateKey,
+                                                            boolean addCrcsToFiddKey,
+                                                            List<CrcCalculator> crcCalculators
                                                    ) throws IOException {
         // 1. Form Logical file metadata
         LogicalFileMetadata logicalFileMetadata;
@@ -342,58 +367,70 @@ public class FiddPackManager {
             }
 
             if (addLogicalFileSignatures) {
-                try (FileChannel inputChannel = FileChannel.open(inputFile.toPath(), StandardOpenOption.READ)) {
-                    InputStream inputFileStream = Channels.newInputStream(inputChannel);
-                    byte[] inputFileSignature = signerChecker.signData(inputFileStream, checkNotNull(authorsPrivateKey));
+                for (SignerChecker signerChecker : signerCheckers) {
+                    List<FiddSignature> signatures = new ArrayList<>();
+                    try (FileChannel inputChannel = FileChannel.open(inputFile.toPath(), StandardOpenOption.READ)) {
+                        InputStream inputFileStream = Channels.newInputStream(inputChannel);
+                        byte[] inputFileSignature = signerChecker.signData(inputFileStream, checkNotNull(authorsPrivateKey));
 
-                    logicalFileMetadataBuilder
-                        .authorsFileSignatureFormat(signerChecker.name())
-                        .authorsFileSignature(inputFileSignature);
+                        signatures.add(FiddSignature.of(signerChecker.name(), inputFileSignature));
+                    }
+
+                    logicalFileMetadataBuilder.authorsFileSignatures(signatures);
                 }
             }
             logicalFileMetadata = logicalFileMetadataBuilder.build();
         }
         byte[] metadataBytes = logicalFileMetadataSerializer.serialize(logicalFileMetadata);
 
-        // 2. Form Metadata Section
-        MetadataSection logicalFileMetadataSection;
+        // 2. Form Metadata Container
+        MetadataContainer logicalFileMetadataContainer;
         {
-            ImmutableMetadataSection.Builder metadataSectionBuilder = ImmutableMetadataSection.builder();
-            metadataSectionBuilder
-                    .metadataFormat(metadataSectionSerializer.name())
-                    .metadata();
+            ImmutableMetadataContainer.Builder metadataContainerBuilder = ImmutableMetadataContainer.builder();
+            metadataContainerBuilder
+                    .metadataFormat(logicalFileMetadataSerializer.name())
+                    .metadata(metadataBytes);
 
             if (addLogicalFileMetadataSignatures) {
-                byte[] logicalFileMetadataSignature = signerChecker.signData(metadataBytes, checkNotNull(authorsPrivateKey));
+                List<FiddSignature> signatures = new ArrayList<>();
+                for (SignerChecker signerChecker : signerCheckers) {
+                    byte[] logicalFileMetadataSignature = signerChecker.signData(metadataBytes, checkNotNull(authorsPrivateKey));
+                    signatures.add(FiddSignature.of(signerChecker.name(), logicalFileMetadataSignature));
+                }
 
-                metadataSectionBuilder
-                        .signatureFormat(signerChecker.name())
-                        .signature(logicalFileMetadataSignature);
+                metadataContainerBuilder.signatures(signatures);
             }
 
-            logicalFileMetadataSection = metadataSectionBuilder.build();
+            logicalFileMetadataContainer = metadataContainerBuilder.build();
         }
-        byte[] metadataSectionBytes = metadataSectionSerializer.serialize(logicalFileMetadataSection);
+        byte[] metadataContainerBytes = metadataContainerSerializer.serialize(logicalFileMetadataContainer);
 
-        // 3. Append MetadataSection and File to Fidd File (output file)
-        EncryptionAlgorithm.CrcCallback crcCallback = null;
+        // 3. Append MetadataContainer and File to Fidd File (output file)
+        List<EncryptionAlgorithm.CrcCallback> crcCallbacks = null;
         if (addCrcsToFiddKey) {
-            crcCallback = crcCalculator.newCrcCallback();
+            crcCallbacks = new ArrayList<>();
+            for (CrcCalculator crcCalculator : crcCalculators) {
+                crcCallbacks.add(crcCalculator.newCrcCallback());
+            }
         }
 
         long length;
         try (FileChannel inputChannel = FileChannel.open(inputFile.toPath(), StandardOpenOption.READ)) {
             InputStream inputFileStream = Channels.newInputStream(inputChannel);
             length = encryptionAlgorithm.encrypt(keyData,
-                    List.of(new ByteArrayInputStream(metadataSectionBytes), inputFileStream), outputFileStream, crcCallback);
+                    List.of(new ByteArrayInputStream(metadataContainerBytes), inputFileStream), outputFileStream, crcCallbacks);
         }
 
-        byte[] crc = null;
+        List<byte[]> crcs = null;
         if (addCrcsToFiddKey) {
-            crc = checkNotNull(crcCallback).getCrc();
+            crcs = new ArrayList<>();
+            for (EncryptionAlgorithm.CrcCallback crcCallback : checkNotNull(crcCallbacks)) {
+                byte[] crc = crcCallback.getCrc();
+                crcs.add(crc);
+            }
         }
 
-        return LengthAndCrc.of(length, crc);
+        return LengthAndCrcs.of(length, crcs);
     }
 
     @Nullable
@@ -413,49 +450,59 @@ public class FiddPackManager {
         return lastModified == 0 ? null : lastModified;
     }
 
-    private static LengthAndCrc addFiddFileMetadata(OutputStream outputStream, FiddFileMetadata fiddFileMetadata,
-                                                       FiddFileMetadataSerializer fiddFileMetadataSerializer,
-                                                       MetadataSectionSerializer metadataSectionSerializer,
-                                                       EncryptionAlgorithm encryptionAlgorithm,
-                                                       byte[] fiddFileMetadataSectionKey,
-                                                       CrcCalculator crcCalculator,
-                                                       boolean addCrcsToFiddKey,
+    private static LengthAndCrcs addFiddFileMetadata(OutputStream outputStream, FiddFileMetadata fiddFileMetadata,
+                                                     FiddFileMetadataSerializer fiddFileMetadataSerializer,
+                                                     MetadataContainerSerializer metadataContainerSerializer,
+                                                     EncryptionAlgorithm encryptionAlgorithm,
+                                                     byte[] fiddFileMetadataSectionKey,
+                                                     List<CrcCalculator> crcCalculators,
+                                                     boolean addCrcsToFiddKey,
 
-                                                       boolean addFiddFileMetadataSignature,
-                                                       @Nullable PrivateKey privateKey,
-                                                       SignerChecker signerChecker
+                                                     boolean addFiddFileMetadataSignature,
+                                                     @Nullable PrivateKey privateKey,
+                                                     List<SignerChecker> signerCheckers
 
                                                        ) throws IOException {
         // 1. Serialize metadata
         byte[] fiddFileMetadataBytes = fiddFileMetadataSerializer.serialize(fiddFileMetadata);
 
-        // 2. Form Metadata Section
-        ImmutableMetadataSection.Builder metadataSectionBuilder = ImmutableMetadataSection.builder();
-        metadataSectionBuilder.metadataFormat(fiddFileMetadataSerializer.name())
+        // 2. Form Metadata Container
+        ImmutableMetadataContainer.Builder metadataContainerBuilder = ImmutableMetadataContainer.builder();
+        metadataContainerBuilder
+                .metadataFormat(fiddFileMetadataSerializer.name())
                 .metadata(fiddFileMetadataBytes);
 
         if (addFiddFileMetadataSignature) {
-            metadataSectionBuilder.signatureFormat(signerChecker.name())
-                .signature(signerChecker.signData(fiddFileMetadataBytes, checkNotNull(privateKey)));
+            List<FiddSignature> signatures = new ArrayList<>();
+            for (SignerChecker signerChecker : signerCheckers) {
+                signatures.add(FiddSignature.of(signerChecker.name(),
+                        signerChecker.signData(fiddFileMetadataBytes, checkNotNull(privateKey))));
+            }
+
+            metadataContainerBuilder.signatures(signatures);
         }
 
-        MetadataSection metadataSection = metadataSectionBuilder.build();
+        MetadataContainer metadataContainer = metadataContainerBuilder.build();
 
-        byte[] fiddFileMetadataSectionBytes = metadataSectionSerializer.serialize(metadataSection);
+        byte[] fiddFileMetadataSectionBytes = metadataContainerSerializer.serialize(metadataContainer);
 
-        // 3. Calculate Metadata Section CRC for FiddKey (if needed)
-        byte[] crc = null;
-        if (addCrcsToFiddKey) {
-            crc = crcCalculator.calculateCrc(fiddFileMetadataSectionBytes);
-        }
-
-        // 4. Encrypt Metadata Section
+        // 3. Encrypt Metadata Section
         byte[] encryptedFiddFileMetadataSectionBytes = encryptionAlgorithm.encrypt(fiddFileMetadataSectionKey,
                 fiddFileMetadataSectionBytes);
+
+        // 4. Calculate Metadata Section CRC for FiddKey (if needed)
+        List<byte[]> crcs = null;
+        if (addCrcsToFiddKey) {
+            crcs = new ArrayList<>();
+            for (CrcCalculator crcCalculator : crcCalculators) {
+                byte[] crc = crcCalculator.calculateCrc(encryptedFiddFileMetadataSectionBytes);
+                crcs.add(crc);
+            }
+        }
 
         // 5. Write Metadata Section to Fidd File
         outputStream.write(encryptedFiddFileMetadataSectionBytes);
 
-        return LengthAndCrc.of(encryptedFiddFileMetadataSectionBytes.length, crc);
+        return LengthAndCrcs.of(encryptedFiddFileMetadataSectionBytes.length, crcs);
     }
 }
