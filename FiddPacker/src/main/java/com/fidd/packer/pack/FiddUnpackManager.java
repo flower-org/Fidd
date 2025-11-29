@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.security.cert.X509Certificate;
@@ -104,8 +106,9 @@ public class FiddUnpackManager {
             } else {
                 validateCrcs(fiddFile, baseRepositories, 0, fiddKey.fiddFileMetadata(),
                     progressCallback, throwOnValidationFailure);
-                for (FiddKey.Section logicalFileSection : fiddKey.logicalFiles()) {
-                    validateCrcs(fiddFile, baseRepositories, 1, logicalFileSection,
+                for (int i = 0; i < fiddKey.logicalFiles().size(); i++) {
+                    FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
+                    validateCrcs(fiddFile, baseRepositories, i+1, logicalFileSection,
                             progressCallback, throwOnValidationFailure);
                 }
             }
@@ -122,6 +125,7 @@ public class FiddUnpackManager {
         MetadataContainer fiddFileMetadataContainer = fiddFileMetadataAndContainer.getRight();
 
         // 4. Try to get Public Key from FiddFileMetadata
+        progressCallback.log("4. Looking for Public Key in FiddFileMetadata");
         X509Certificate messagePublicKey = null;
         if (fiddFileMetadata.authorsPublicKey() == null) {
             progressCallback.warn("FiddFileMetadata doesn't contain author's PublicKey");
@@ -169,8 +173,75 @@ public class FiddUnpackManager {
         }
 
         // 5. Validate FiddFileMetadata Signatures
-        progressCallback.log("Validating FiddFileMetadata signatures");
+        progressCallback.log("5. Validating FiddFileMetadata signatures");
         validateMetadataContainer(baseRepositories, fiddFileMetadataContainer, progressCallback, currentCert, throwOnValidationFailure);
+
+        // 6. Validate Fidd file signature
+        progressCallback.log("6. Validating Fidd file signatures");
+        validateFile(baseRepositories, fiddFile, fiddFileSignatures, fiddFileMetadata.authorsFiddFileSignatureFormats(),
+                progressCallback, currentCert, throwOnValidationFailure);
+
+        // 7. Validate Fidd.Key signature
+        progressCallback.log("7. Validating Fidd.Key file signatures");
+        validateFile(baseRepositories, fiddKeyFile, fiddKeyFileSignatures, fiddFileMetadata.authorsFiddKeyFileSignatureFormats(),
+                progressCallback, currentCert, throwOnValidationFailure);
+
+        // 8. Load LogicalFile Sections
+        validateAndMaterializeLogicalFile();
+    }
+
+    private static void validateAndMaterializeLogicalFile() {
+
+    }
+
+    private static void validateFile(BaseRepositories baseRepositories, File dataFile, List<File> signatureFiles,
+                                     List<String> signatureFormats, ProgressCallback progressCallback,
+                                     @Nullable X509Certificate publicKey, boolean throwOnValidationFailure) throws IOException {
+        // TODO: handle mismatch between number of signatureFiles and number of signatureFormats
+        for (int i = 0; i < signatureFiles.size(); i++) {
+            validateFileSignature(i, dataFile, signatureFiles.get(i),
+                    baseRepositories, signatureFormats.get(i), publicKey,
+                    progressCallback, throwOnValidationFailure);
+        }
+    }
+
+    private static void validateFileSignature(int signatureNumber, File dataFile, File signatureFile,
+                                              BaseRepositories baseRepositories, String signatureFormat,
+                                              @Nullable X509Certificate publicKey,
+                                              ProgressCallback progressCallback, boolean throwOnValidationFailure) throws IOException {
+        progressCallback.log("Validating file signature #" + signatureNumber + ": " + dataFile.getName() + "; signature file: " + signatureFile.getName());
+        progressCallback.log("File signature format: " + signatureFormat);
+        SignerChecker signerChecker = baseRepositories.signatureFormatRepo().get(signatureFormat);
+        if (publicKey == null) {
+            String errorMessage = "File signature #" + signatureNumber + " validation failed - PublicKey not specified. " +
+                    dataFile.getName() + "; signature file: " + signatureFile.getName();
+            if (signerChecker == null) {
+                warnAndMaybeThrow(errorMessage, progressCallback, false);
+            } else {
+                warnAndMaybeThrow(errorMessage, progressCallback, throwOnValidationFailure);
+                return;
+            }
+        }
+
+        if (signerChecker == null) {
+            warnAndMaybeThrow("File signature #" + signatureNumber + " validation failed - signature format " +
+                    signatureFormat + " not supported. " + dataFile.getName() + "; signature file: " + signatureFile.getName(),
+                    progressCallback, throwOnValidationFailure);
+        } else {
+            try (FileInputStream signatureStream = new FileInputStream(signatureFile)) {
+                byte[] signature = signatureStream.readAllBytes();
+                try (FileInputStream dataStream = new FileInputStream(dataFile)) {
+                    boolean validationResult = signerChecker.verifySignature(dataStream, signature, checkNotNull(publicKey).getPublicKey());
+                    if (validationResult) {
+                        progressCallback.log("File signature #" + signatureNumber + " validation success: " + dataFile.getName() +
+                                "; signature file: " + signatureFile.getName());
+                    } else {
+                        warnAndMaybeThrow("File signature #" + signatureNumber + " validation failed: " + dataFile.getName() +
+                                "; signature file: " + signatureFile.getName(), progressCallback, throwOnValidationFailure);
+                    }
+                }
+            }
+        }
     }
 
     private static void validateMetadataContainer(BaseRepositories baseRepositories,
@@ -198,7 +269,7 @@ public class FiddUnpackManager {
                             warnAndMaybeThrow(errorText, progressCallback, throwOnValidationFailure);
                         }
                     } else {
-                        String errorText = "Validation FAILED: PublicKey not present";
+                        String errorText = "Validation FAILED: PublicKey not specified";
                         warnAndMaybeThrow(errorText, progressCallback, throwOnValidationFailure);
                     }
                 }
@@ -228,7 +299,7 @@ public class FiddUnpackManager {
             byte[] metadataContainerBytes = checkNotNull(encryptionAlgorithm).decrypt(fiddFileMetadataSection.encryptionKeyData(), sectionBytes);
             progressCallback.log("FiddFileMetadata Section decrypted successfully");
 
-            progressCallback.log("Loading FiddFileMetadata Container using format: " + metadataContainerSerializer.name());
+            progressCallback.log("Loading FiddFileMetadataContainer using format: " + metadataContainerSerializer.name());
             MetadataContainerSerializer.MetadataContainerAndLength metadataContainer =
                     metadataContainerSerializer.deserialize(metadataContainerBytes);
 
