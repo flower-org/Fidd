@@ -25,8 +25,10 @@ import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -180,6 +182,20 @@ public class FiddUnpackManager {
         progressCallback.log("5. Validating FiddFileMetadata signatures");
         validateMetadataContainer(baseRepositories, fiddFileMetadataContainer, progressCallback, currentCert, throwOnValidationFailure);
 
+        // Create output subfolder
+        File outputFolder = new File(contentFolder, fiddFileMetadata.postId());
+        if (!outputFolder.exists()) {
+            boolean created = outputFolder.mkdirs();
+            if (!created) {
+                warnAndMaybeThrow("Failed to create subfolder: " + outputFolder.getAbsolutePath(),
+                        progressCallback, true);
+            }
+        } else {
+            warnAndMaybeThrow("Output subfolder already exists: " + outputFolder.getAbsolutePath(),
+                    progressCallback, true);
+        }
+
+
         // 6. Validate Fidd file signature
         progressCallback.log("6. Validating Fidd file signatures");
         validateFile(baseRepositories, fiddFile, fiddFileSignatures, fiddFileMetadata.authorsFiddFileSignatureFormats(),
@@ -192,17 +208,18 @@ public class FiddUnpackManager {
 
         // 8. Load LogicalFile Sections
         progressCallback.log("8. Loading and Materializing Logical Files");
+
         for (int i = 0; i < fiddKey.logicalFiles().size(); i++) {
             FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
             validateAndMaterializeLogicalFile(i, baseRepositories, fiddFile, logicalFileSection,
-                    metadataContainerSerializer, contentFolder, progressCallback, currentCert, throwOnValidationFailure);
+                    metadataContainerSerializer, outputFolder, progressCallback, currentCert, throwOnValidationFailure);
         }
     }
 
     private static void validateAndMaterializeLogicalFile(int logicalFileIndex, BaseRepositories baseRepositories,
                                                           File fiddFile, FiddKey.Section logicalFileSection,
                                                           MetadataContainerSerializer metadataContainerSerializer,
-                                                          File contentFolder, ProgressCallback progressCallback,
+                                                          File outputFolder, ProgressCallback progressCallback,
                                                           @Nullable X509Certificate publicKey,
                                                           boolean throwOnValidationFailure) throws IOException {
         progressCallback.log("Processing Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
@@ -216,7 +233,7 @@ public class FiddUnpackManager {
         } else {
             Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength> pair =
                 getLogicalFileMetadata(logicalFileIndex, baseRepositories, encryptionAlgorithm, fiddFile,
-                        logicalFileSection, metadataContainerSerializer, contentFolder, progressCallback, throwOnValidationFailure);
+                        logicalFileSection, metadataContainerSerializer, progressCallback, throwOnValidationFailure);
 
             if (pair != null) {
                 progressCallback.log("Validating LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
@@ -225,19 +242,15 @@ public class FiddUnpackManager {
 
                 LogicalFileMetadata logicalFileMetadata = pair.getLeft();
                 String logicalFileName = logicalFileMetadata.filePath();
-                progressCallback.log("Validating and materializing LogicalFile \"" + logicalFileMetadata.filePath() +
-                        "\" for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
 
+                long logicalFileMetadataLengthBytes = pair.getRight().lengthBytes();
                 {
+                    progressCallback.log("Validating LogicalFile \"" + logicalFileMetadata.filePath() +
+                            "\" for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
+                    //LogicalFile Validation
                     if (logicalFileMetadata.authorsFileSignatures() == null) {
                         progressCallback.log("LogicalFileMetadata for \"" + logicalFileMetadata.filePath() + "\" has no signatures");
                     } else {
-                        long logicalFileMetadataLengthBytes = pair.getRight().lengthBytes();
-                        progressCallback.log("logicalFileSection.sectionLength() " + logicalFileSection.sectionLength() +
-                                "; logicalFileSection.sectionOffset() " + logicalFileSection.sectionOffset() +
-                                "; logicalFileMetadataLengthBytes " + logicalFileMetadataLengthBytes +
-                                "; fileSize " + (logicalFileSection.sectionLength() - logicalFileMetadataLengthBytes));
-
                         for (int i = 0; i < logicalFileMetadata.authorsFileSignatures().size(); i++) {
                             FiddSignature authorsFileSignature = logicalFileMetadata.authorsFileSignatures().get(i);
 
@@ -258,6 +271,33 @@ public class FiddUnpackManager {
                         }
                     }
                 }
+
+                {
+                    progressCallback.log("Materializing LogicalFile \"" + logicalFileMetadata.filePath() +
+                            "\" for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
+
+                    try (InputStream logicalFileStream =
+                                 encryptionAlgorithm.getDecryptedStream(logicalFileSection.encryptionKeyData(),
+                                         new SubFileInputStream(fiddFile, logicalFileSection.sectionOffset(),
+                                                 logicalFileSection.sectionLength()))) {
+                        skipAll(logicalFileStream, logicalFileMetadataLengthBytes);
+
+                        File outputFile = new File(outputFolder, logicalFileMetadata.filePath());
+                        saveToFile(logicalFileStream, outputFile);
+
+                        progressCallback.log("LogicalFile materialized \"" + outputFile.getAbsolutePath() + "\"");
+                    }
+                }
+            }
+        }
+    }
+
+    public static void saveToFile(InputStream logicalFileStream, File targetFile) throws IOException {
+        try (OutputStream out = new FileOutputStream(targetFile)) {
+            byte[] buffer = new byte[8192]; // 8 KB buffer
+            int bytesRead;
+            while ((bytesRead = logicalFileStream.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
             }
         }
     }
@@ -290,7 +330,6 @@ public class FiddUnpackManager {
                                                EncryptionAlgorithm encryptionAlgorithm, File fiddFile,
                                                FiddKey.Section logicalFileSection,
                                                MetadataContainerSerializer metadataContainerSerializer,
-                                               File contentFolder,
                                                ProgressCallback progressCallback,
                                                boolean throwOnValidationFailure) throws IOException {
         progressCallback.log("Getting LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
