@@ -36,11 +36,17 @@ jobs:
       - name: Build JAR file with Gradle
         run: ./gradlew shadowJar
 
-      - name: ls
+      - name: ls-cryptor
         run: ls -al Cryptor/build/libs
 
-      - name: sha256
+      - name: sha256-cryptor
         run: openssl sha256 Cryptor/build/libs/*
+
+      - name: ls-fiddpacker
+        run: ls -al FiddPacker/build/libs
+
+      - name: sha256-fiddpacker
+        run: openssl sha256 FiddPacker/build/libs/*
 
       - name: Create Release
         id: create_release
@@ -59,8 +65,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: Cryptor/build/libs/Cryptor-0.0.12-amd64-all.jar
-          asset_name: Cryptor-0.0.12-amd64-all.jar
+          asset_path: Cryptor/build/libs/Cryptor-0.0.13-amd64-all.jar
+          asset_name: Cryptor-0.0.13-amd64-all.jar
           asset_content_type: application/jar
 
       - name: Upload FiddPacker x64 artifact
@@ -69,6 +75,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: FiddPacker/build/libs/FiddPacker-0.0.12-amd64-all.jar
-          asset_name: FiddPacker-0.0.12-amd64-all.jar
+          asset_path: FiddPacker/build/libs/FiddPacker-0.0.13-amd64-all.jar
+          asset_name: FiddPacker-0.0.13-amd64-all.jar
           asset_content_type: application/jar
