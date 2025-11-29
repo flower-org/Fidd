@@ -8,7 +8,7 @@ plugins {
 }
 
 group 'com.fidd.packer'
-version '0.0.11-amd64'
+version '0.0.12-amd64'
 
 repositories {
     mavenCentral()
