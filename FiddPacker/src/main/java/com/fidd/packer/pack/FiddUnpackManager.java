@@ -13,6 +13,7 @@ import com.fidd.core.metadata.MetadataContainer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.metadata.NotEnoughBytesException;
 import com.fidd.core.pki.PublicKeySerializer;
+import com.fidd.core.pki.SignerChecker;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,28 +119,21 @@ public class FiddUnpackManager {
                     metadataContainerSerializer, progressCallback);
 
         FiddFileMetadata fiddFileMetadata = fiddFileMetadataAndContainer.getLeft();
-        MetadataContainer fiddFileContainer = fiddFileMetadataAndContainer.getRight();
+        MetadataContainer fiddFileMetadataContainer = fiddFileMetadataAndContainer.getRight();
 
         // 4. Try to get Public Key from FiddFileMetadata
+        X509Certificate messagePublicKey = null;
         if (fiddFileMetadata.authorsPublicKey() == null) {
             progressCallback.warn("FiddFileMetadata doesn't contain author's PublicKey");
         } else {
-            X509Certificate publicKey = null;
             String publicKeyFormat = fiddFileMetadata.authorsPublicKeyFormat();
             progressCallback.log("FiddFileMetadata contains author's PublicKey in format: " + publicKeyFormat);
 
             PublicKeySerializer publicKeySerializer = baseRepositories.publicKeyFormatRepo().get(publicKeyFormat);
             if (publicKeySerializer != null) {
                 try {
-                    publicKey = publicKeySerializer.deserialize(fiddFileMetadata.authorsPublicKey());
+                    messagePublicKey = publicKeySerializer.deserialize(fiddFileMetadata.authorsPublicKey());
                     progressCallback.log("PublicKey from FiddFileMetadata successfully deserialized.");
-
-                    if (publicKeySource == PublicKeySource.SUPPLIED_PARAMETER) {
-                        progressCallback.warn("However, UI Certificate will be used for signature validation due to PublicKeySource: `" + publicKeySource + "`");
-                    } else {
-                        currentCert = publicKey;
-                        progressCallback.log("PublicKey from FiddFileMetadata will be used for signature validation due to PublicKeySource: `" + publicKeySource + "`");
-                    }
                 } catch (Exception e) {
                     String errorText = "Failed to deserialize PublicKey: format " + publicKeyFormat;
                     progressCallback.warn(errorText);
@@ -148,6 +142,69 @@ public class FiddUnpackManager {
             } else {
                 progressCallback.warn("Can't deserialize PublicKeyPublicKey format is not supported: " + publicKeyFormat);
             }
+        }
+
+        if (publicKeySource == PublicKeySource.SUPPLIED_PARAMETER) {
+            String messageText = "UI Certificate will be used for signature validation due to PublicKeySource: `" + publicKeySource + "`";
+            if (messagePublicKey != null) {
+                progressCallback.warn("However, " + messageText);
+            } else {
+                progressCallback.log(messageText);
+            }
+        } else if (publicKeySource == PublicKeySource.MESSAGE_EMBEDDED) {
+            currentCert = messagePublicKey;
+            if (messagePublicKey != null) {
+                progressCallback.log("PublicKey from FiddFileMetadata will be used for signature validation due to PublicKeySource: `" + publicKeySource + "`");
+            } else {
+                progressCallback.warn("PublicKey from FiddFileMetadata was not loaded. Signature validation will not be possible due to PublicKeySource: `" + publicKeySource + "`");
+            }
+        } else if (publicKeySource == PublicKeySource.MESSAGE_FALL_BACK_TO_PARAMETER) {
+            if (messagePublicKey != null) {
+                currentCert = messagePublicKey;
+                progressCallback.log("PublicKey from FiddFileMetadata will be used for signature validation due to PublicKeySource: `" + publicKeySource + "`");
+            } else {
+                progressCallback.warn("PublicKey from FiddFileMetadata was not loaded. " +
+                        "Falling back to UI Certificate for signature validation due to PublicKeySource: `" + publicKeySource + "`");
+            }
+        }
+
+        // 5. Validate FiddFileMetadata Signatures
+        progressCallback.log("Validating FiddFileMetadata signatures");
+        validateMetadataContainer(baseRepositories, fiddFileMetadataContainer, progressCallback, currentCert, throwOnValidationFailure);
+    }
+
+    private static void validateMetadataContainer(BaseRepositories baseRepositories,
+                                                  MetadataContainer metadataContainer,
+                                                  ProgressCallback progressCallback,
+                                                  @Nullable X509Certificate publicKey,
+                                                  boolean throwOnValidationFailure) {
+        byte[] metadataBytes = metadataContainer.metadata();
+        if (hasSignatures(metadataContainer)) {
+            for (int i = 0; i < checkNotNull(metadataContainer.signatures()).size(); i++) {
+                FiddSignature fiddSignature = metadataContainer.signatures().get(i);
+                String signatureFormat = fiddSignature.format();
+                progressCallback.log("Validating signature #" + i + " format " + signatureFormat);
+                SignerChecker signerChecker = baseRepositories.signatureFormatRepo().get(signatureFormat);
+                if (signerChecker == null) {
+                    warnAndMaybeThrow("Signature format not supported: " + signatureFormat,
+                            progressCallback, throwOnValidationFailure);
+                } else {
+                    if (publicKey != null) {
+                        boolean result = signerChecker.verifySignature(metadataBytes, fiddSignature.bytes(), publicKey.getPublicKey());
+                        if (result) {
+                            progressCallback.log("Validation success: signature #" + i);
+                        } else {
+                            String errorText = "Validation FAILED: signature #" + i;
+                            warnAndMaybeThrow(errorText, progressCallback, throwOnValidationFailure);
+                        }
+                    } else {
+                        String errorText = "Validation FAILED: PublicKey not present";
+                        warnAndMaybeThrow(errorText, progressCallback, throwOnValidationFailure);
+                    }
+                }
+            }
+        } else {
+            progressCallback.warn("MetadataContainer has no signatures!");
         }
     }
 
@@ -196,6 +253,10 @@ public class FiddUnpackManager {
 
     private static boolean hasCrcs(FiddKey.Section section) {
         return section.crcs() != null && !section.crcs().isEmpty();
+    }
+
+    private static boolean hasSignatures(MetadataContainer container) {
+        return container.signatures() != null && !container.signatures().isEmpty();
     }
 
     private static void validateCrcs(File fiddFile,
