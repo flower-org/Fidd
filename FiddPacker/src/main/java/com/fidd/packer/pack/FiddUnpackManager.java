@@ -361,8 +361,7 @@ public class FiddUnpackManager {
         try (SubFileInputStream sectionInputStream =
                      new SubFileInputStream(fiddFile, logicalFileSection.sectionOffset(), logicalFileSection.sectionLength())) {
             byte[] cumul = new byte[0];
-            // TODO: change bufferSize to something like 4k or 8k
-            int bufferSize = (int)Math.min(8L, logicalFileSection.sectionLength());
+            int bufferSize = (int)Math.min(4096L, logicalFileSection.sectionLength());
             byte[] buffer = new byte[bufferSize];
             int totalRead = 0;
             while (totalRead < logicalFileSection.sectionLength()) {
