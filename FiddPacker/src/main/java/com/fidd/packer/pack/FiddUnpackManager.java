@@ -233,7 +233,7 @@ public class FiddUnpackManager {
                                                           @Nullable X509Certificate publicKey,
                                                           boolean throwOnValidationFailure,
                                                           boolean validateLogicalFileMetadatas, boolean validateLogicalFiles, boolean materializeLogicalFiles) throws IOException {
-        progressCallback.log("Processing Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
+        progressCallback.log("8.1 Processing Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
 
         String encryptionAlgorithmName = logicalFileSection.encryptionAlgorithm();
         progressCallback.log("Section Encryption Algorithm: " + encryptionAlgorithmName);
@@ -242,7 +242,7 @@ public class FiddUnpackManager {
             progressCallback.log("EncryptionAlgorithm " + encryptionAlgorithmName + " not supported - can't process Section #" +
                     (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
         } else {
-            progressCallback.log("8.1 Loading LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
+            progressCallback.log("8.2 Loading LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
 
             Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength> pair =
                 getLogicalFileMetadata(logicalFileIndex, baseRepositories, encryptionAlgorithm, fiddFile,
@@ -250,9 +250,9 @@ public class FiddUnpackManager {
 
             if (pair != null) {
                 if (!validateLogicalFileMetadatas) {
-                    progressCallback.warn("8.2 Validating LogicalFileMetadata signatures not requested, omitting");
+                    progressCallback.warn("8.3 Validating LogicalFileMetadata signatures not requested, omitting");
                 } else {
-                    progressCallback.log("8.2 Validating LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
+                    progressCallback.log("8.3 Validating LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
                     validateMetadataContainer(baseRepositories, pair.getRight().metadataContainer(), progressCallback,
                             publicKey, throwOnValidationFailure);
                 }
@@ -262,9 +262,9 @@ public class FiddUnpackManager {
 
                 long logicalFileMetadataLengthBytes = pair.getRight().lengthBytes();
                 if (!validateLogicalFiles) {
-                    progressCallback.warn("8.3 Validating LogicalFiles not requested, omitting");
+                    progressCallback.warn("8.4 Validating LogicalFiles not requested, omitting");
                 } else {
-                    progressCallback.log("8.3 Validating LogicalFile \"" + logicalFileMetadata.filePath() +
+                    progressCallback.log("8.4 Validating LogicalFile \"" + logicalFileMetadata.filePath() +
                             "\" for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
                     //LogicalFile Validation
                     if (logicalFileMetadata.authorsFileSignatures() == null) {
@@ -292,9 +292,9 @@ public class FiddUnpackManager {
                 }
 
                 if (!materializeLogicalFiles) {
-                    progressCallback.warn("8.3 Materializing LogicalFiles not requested, omitting");
+                    progressCallback.warn("8.5 Materializing LogicalFiles not requested, omitting");
                 } else {
-                    progressCallback.log("8.4 Materializing LogicalFile \"" + logicalFileMetadata.filePath() +
+                    progressCallback.log("8.5 Materializing LogicalFile \"" + logicalFileMetadata.filePath() +
                             "\" for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
 
                     try (InputStream logicalFileStream =
