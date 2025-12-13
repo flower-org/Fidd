@@ -29,4 +29,27 @@ public interface LogicalFileMetadata {
     @Nullable Long updatedAt();
 
     @Nullable List<FiddSignature> authorsFileSignatures();
+
+    // Optional: Alternative locations to download file from
+    @Value.Immutable
+    @JsonSerialize(as = ImmutableAlternativeLink.class)
+    @JsonDeserialize(as = ImmutableAlternativeLink.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    interface AlternativeLink {
+        @Nullable String fullUrl();
+
+        @Value.Immutable
+        @JsonSerialize(as = ImmutableRegion.class)
+        @JsonDeserialize(as = ImmutableRegion.class)
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        interface Region {
+            long offset();
+            long length();
+            String url();
+        }
+
+        @Nullable List<Region> regions();
+    }
+
+    @Nullable List<AlternativeLink> alternativeLinks();
 }

@@ -1,7 +1,9 @@
 package com.fidd.core.logicalfile.yaml;
 
 import com.fidd.core.common.FiddSignature;
+import com.fidd.core.logicalfile.ImmutableAlternativeLink;
 import com.fidd.core.logicalfile.ImmutableLogicalFileMetadata;
+import com.fidd.core.logicalfile.ImmutableRegion;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,17 @@ public class YamlLogicalFileMetadataSerializerTest {
                 .createdAt(1234L)
                 .updatedAt(2345L)
                 .authorsFileSignatures(List.of(FiddSignature.of("FMT", new byte[] {2,3,4,5,6,7})))
+                .alternativeLinks(
+                    List.of(
+                        ImmutableAlternativeLink.builder()
+                                .fullUrl("https://mydl.com/dl1")
+                                .build(),
+                        ImmutableAlternativeLink.builder()
+                                .regions(List.of(ImmutableRegion.builder().offset(123).length(456).url("https://mydl.com/dl1.1").build(),
+                                        ImmutableRegion.builder().offset(789).length(101112).url("https://mydl.com/dl1.2").build()))
+                                .build()
+                    )
+                )
                 .build();
 
         YamlLogicalFileMetadataSerializer serializer = new YamlLogicalFileMetadataSerializer();
