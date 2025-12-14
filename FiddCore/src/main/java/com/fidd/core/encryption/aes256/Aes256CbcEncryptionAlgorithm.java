@@ -96,14 +96,15 @@ public class Aes256CbcEncryptionAlgorithm implements EncryptionAlgorithm {
     }
 
     @Override
-    public long decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext) {
+    public long decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext, boolean allowPartial) {
         Aes256KeyAndIv keyAndIv = Aes256KeyAndIv.deserialize(keyData);
         SecretKeySpec secretKeySpec = new SecretKeySpec(keyAndIv.aes256Key(), AES);
         long totalBytesWritten = 0;
 
         try (ciphertext; plaintext) {
+            Cipher cipher;
             try {
-                Cipher cipher = Cipher.getInstance(AES_CBC_PKCS_5_PADDING);
+                cipher = Cipher.getInstance(AES_CBC_PKCS_5_PADDING);
                 cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(keyAndIv.aes256Iv()));
 
                 byte[] buffer = new byte[1024];
@@ -116,49 +117,26 @@ public class Aes256CbcEncryptionAlgorithm implements EncryptionAlgorithm {
                         totalBytesWritten += output.length;
                     }
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
+            try {
                 byte[] finalOutput = cipher.doFinal();
                 if (finalOutput != null) {
                     plaintext.write(finalOutput);
                     totalBytesWritten += finalOutput.length;
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                if (!allowPartial) {
+                    throw new RuntimeException(e);
+                }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         return totalBytesWritten;
-    }
-
-    @Override
-    public Decryptor getDecryptor(byte[] keyData) {
-        try {
-            Aes256KeyAndIv keyAndIv = Aes256KeyAndIv.deserialize(keyData);
-            SecretKeySpec secretKeySpec = new SecretKeySpec(keyAndIv.aes256Key(), AES);
-
-            final Cipher cipher = Cipher.getInstance(AES_CBC_PKCS_5_PADDING);
-            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(keyAndIv.aes256Iv()));
-
-            return new Decryptor() {
-                @Override
-                public byte[] decrypt(byte[] ciphertext, int bytesRead) {
-                    return cipher.update(ciphertext, 0, bytesRead);
-                }
-
-                @Override
-                public byte[] doFinal() {
-                    try {
-                        return cipher.doFinal();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            };
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override

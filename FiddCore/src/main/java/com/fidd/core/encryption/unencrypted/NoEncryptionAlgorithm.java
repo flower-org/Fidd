@@ -45,7 +45,7 @@ public class NoEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     }
 
     @Override
-    public long decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext) {
+    public long decrypt(byte[] keyData, InputStream ciphertext, OutputStream plaintext, boolean allowPartial) {
         // Same operation
         return processStream(-1, ciphertext, plaintext, null);
     }
@@ -53,21 +53,6 @@ public class NoEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     @Override
     public InputStream getDecryptedStream(byte[] keyData, InputStream stream) {
         return stream;
-    }
-
-    @Override
-    public Decryptor getRandomAccessDecryptor(byte[] keyData, long offset) {
-        return new Decryptor() {
-            @Override
-            public byte[] decrypt(byte[] buffer, int bytesRead) {
-                return Arrays.copyOf(buffer, bytesRead);
-            }
-
-            @Override
-            public byte[] doFinal() {
-                return new byte[0];
-            }
-        };
     }
 
     @Override

@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -338,10 +339,10 @@ public class FiddUnpackManager {
         }
     }
 
-    public static byte[] concat(byte[] buffer1, byte[] buffer2) {
-        byte[] result = new byte[buffer1.length + buffer2.length];
+    public static byte[] concat(byte[] buffer1, byte[] buffer2, int buffer2Len) {
+        byte[] result = new byte[buffer1.length + buffer2Len];
         System.arraycopy(buffer1, 0, result, 0, buffer1.length);
-        System.arraycopy(buffer2, 0, result, buffer1.length, buffer2.length);
+        System.arraycopy(buffer2, 0, result, buffer1.length, buffer2Len);
         return result;
     }
 
@@ -354,8 +355,6 @@ public class FiddUnpackManager {
                                                ProgressCallback progressCallback,
                                                boolean throwOnValidationFailure) throws IOException {
         progressCallback.log("Getting LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
-
-        EncryptionAlgorithm.Decryptor decryptor = encryptionAlgorithm.getDecryptor(logicalFileSection.encryptionKeyData());
 
         MetadataContainerSerializer.MetadataContainerAndLength metadataContainerAndLength = null;
         try (SubFileInputStream sectionInputStream =
@@ -371,11 +370,14 @@ public class FiddUnpackManager {
                     return null;
                 }
                 totalRead += bytesRead;
-                byte[] portion = decryptor.decrypt(buffer, bytesRead);
-                cumul = concat(cumul, portion);
+                cumul = concat(cumul, buffer, totalRead);
 
                 try {
-                    metadataContainerAndLength = metadataContainerSerializer.deserialize(cumul);
+                    InputStream ciphertextStream = new ByteArrayInputStream(cumul);
+                    ByteArrayOutputStream plaintextStream = new ByteArrayOutputStream();
+                    encryptionAlgorithm.decrypt(logicalFileSection.encryptionKeyData(), ciphertextStream, plaintextStream, true);
+                    byte[] metadataContainerBytes = plaintextStream.toByteArray();
+                    metadataContainerAndLength = metadataContainerSerializer.deserialize(metadataContainerBytes);
                     break;
                 } catch (NotEnoughBytesException ne) {
                     // Load more bytes then
