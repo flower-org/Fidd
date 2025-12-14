@@ -1,10 +1,11 @@
 package com.fidd.core.logicalfile.yaml;
 
 import com.fidd.core.common.FiddSignature;
-import com.fidd.core.logicalfile.ImmutableAlternativeLink;
+import com.fidd.core.logicalfile.ImmutableExternalResource;
 import com.fidd.core.logicalfile.ImmutableLogicalFileMetadata;
-import com.fidd.core.logicalfile.ImmutableRegion;
+import com.fidd.core.logicalfile.ImmutableFileRegion;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
+import com.fidd.core.logicalfile.ResourceDescriptorType;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 
@@ -26,14 +27,36 @@ public class YamlLogicalFileMetadataSerializerTest {
                 .updatedAt(2345L)
                 .authorsFileSignatures(List.of(FiddSignature.of("FMT", new byte[] {2,3,4,5,6,7})))
                 .progressiveCrcs(List.of(FiddSignature.of("CRC32", new byte[] {2,3,4,5,6,7,2,3,4,5,6,7,2,3,4,5,6,7,2,3,4,5,6,7})))
-                .alternativeLinks(
+                .externalLinks(
                     List.of(
-                        ImmutableAlternativeLink.builder()
-                                .fullUrl("https://mydl.com/dl1")
+                        ImmutableExternalResource.builder()
+                                .fileRegions(List.of(
+                                        ImmutableFileRegion.builder()
+                                            .offset(0L)
+                                            .length(1000000L)
+                                            .regionFileName("a7ed428b-deb2-442c-83d2-8b7dc7fce5b0")
+                                            .resourceDescriptorType(ResourceDescriptorType.URL)
+                                            .resourceDescriptor("https://mydl.com/dl1".getBytes(StandardCharsets.UTF_8))
+                                            .build()
+                                ))
                                 .build(),
-                        ImmutableAlternativeLink.builder()
-                                .regions(List.of(ImmutableRegion.builder().offset(123).length(456).url("https://mydl.com/dl1.1").build(),
-                                        ImmutableRegion.builder().offset(789).length(101112).url("https://mydl.com/dl1.2").build()))
+                        ImmutableExternalResource.builder()
+                                .fileRegions(List.of(
+                                        ImmutableFileRegion.builder()
+                                                .offset(0L)
+                                                .length(500000L)
+                                                .regionFileName("6436c8df-42cf-4ba1-a691-ad5e906b62bd")
+                                                .resourceDescriptorType(ResourceDescriptorType.URL)
+                                                .resourceDescriptor("https://mydl.com/dl1.1".getBytes(StandardCharsets.UTF_8))
+                                                .build(),
+                                        ImmutableFileRegion.builder()
+                                                .offset(500000L)
+                                                .length(1000000L)
+                                                .regionFileName("9dc24d4c-77a3-4314-b6ed-c59d0f7f7e66")
+                                                .resourceDescriptorType(ResourceDescriptorType.URL)
+                                                .resourceDescriptor("https://mydl.com/dl1.2".getBytes(StandardCharsets.UTF_8))
+                                                .build()
+                                ))
                                 .build()
                     )
                 )

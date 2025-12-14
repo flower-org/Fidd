@@ -33,24 +33,25 @@ public interface LogicalFileMetadata {
 
     // Optional: Alternative locations to download file from
     @Value.Immutable
-    @JsonSerialize(as = ImmutableAlternativeLink.class)
-    @JsonDeserialize(as = ImmutableAlternativeLink.class)
+    @JsonSerialize(as = ImmutableExternalResource.class)
+    @JsonDeserialize(as = ImmutableExternalResource.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    interface AlternativeLink {
-        @Nullable String fullUrl();
-
+    interface ExternalResource {
         @Value.Immutable
-        @JsonSerialize(as = ImmutableRegion.class)
-        @JsonDeserialize(as = ImmutableRegion.class)
+        @JsonSerialize(as = ImmutableFileRegion.class)
+        @JsonDeserialize(as = ImmutableFileRegion.class)
         @JsonInclude(JsonInclude.Include.NON_NULL)
-        interface Region {
+        interface FileRegion {
             long offset();
             long length();
-            String url();
+            String regionFileName();
+
+            ResourceDescriptorType resourceDescriptorType();
+            byte[] resourceDescriptor();
         }
 
-        @Nullable List<Region> regions();
+        List<FileRegion> fileRegions();
     }
 
-    @Nullable List<AlternativeLink> alternativeLinks();
+    @Nullable List<ExternalResource> externalLinks();
 }
