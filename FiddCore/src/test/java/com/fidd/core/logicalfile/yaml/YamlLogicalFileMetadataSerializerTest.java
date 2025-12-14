@@ -25,6 +25,7 @@ public class YamlLogicalFileMetadataSerializerTest {
                 .createdAt(1234L)
                 .updatedAt(2345L)
                 .authorsFileSignatures(List.of(FiddSignature.of("FMT", new byte[] {2,3,4,5,6,7})))
+                .progressiveCrcs(List.of(FiddSignature.of("CRC32", new byte[] {2,3,4,5,6,7,2,3,4,5,6,7,2,3,4,5,6,7,2,3,4,5,6,7})))
                 .alternativeLinks(
                     List.of(
                         ImmutableAlternativeLink.builder()

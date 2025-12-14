@@ -29,6 +29,7 @@ public interface LogicalFileMetadata {
     @Nullable Long updatedAt();
 
     @Nullable List<FiddSignature> authorsFileSignatures();
+    @Nullable List<FiddSignature> progressiveCrcs();
 
     // Optional: Alternative locations to download file from
     @Value.Immutable
