@@ -109,7 +109,7 @@ public class MainForm {
     final static String PUBLIC_KEY_OPTION_UI = "Use Public Key from UI";
     final static String PUBLIC_KEY_OPTION_MESSAGE_FALL_BACK_TO_UI = "Use from Message, fall back to UI";
 
-    final static long ONE_MIBIBYTE = 1024L*1024L;
+    final static long ONE_MEBIBYTE = 1024L*1024L;
 
     @Nullable Stage mainStage;
 
@@ -573,7 +573,7 @@ public class MainForm {
             CrcCalculator progressiveCrcCalculator = null;
             if (addProgressiveCrcs) {
                 minProgressiveCrcFileSize = Long.parseLong(checkNotNull(progressiveCrcMinFileSizeTextField).textProperty().get());
-                minProgressiveCrcFileSize *= ONE_MIBIBYTE;
+                minProgressiveCrcFileSize *= ONE_MEBIBYTE;
                 progressiveCrcCalculator = getComboBoxSelectionFromRepo(baseRepositories.crcCalculatorsRepo(), progressiveCrcCalculatorComboBox);
             }
 
@@ -661,7 +661,7 @@ public class MainForm {
 
                     addProgressiveCrcs,
                     minProgressiveCrcFileSize,
-                    ONE_MIBIBYTE,
+                    ONE_MEBIBYTE,
                     progressiveCrcCalculator == null ? null : List.of(progressiveCrcCalculator)
             );
 
