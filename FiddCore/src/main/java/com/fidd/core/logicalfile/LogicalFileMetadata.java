@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fidd.core.common.FiddSignature;
+import com.fidd.core.common.ProgressiveCrc;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
@@ -29,7 +30,7 @@ public interface LogicalFileMetadata {
     @Nullable Long updatedAt();
 
     @Nullable List<FiddSignature> authorsFileSignatures();
-    @Nullable List<FiddSignature> progressiveCrcs();
+    @Nullable List<ProgressiveCrc> progressiveCrcs();
 
     // Optional: Alternative locations to download file from
     @Value.Immutable

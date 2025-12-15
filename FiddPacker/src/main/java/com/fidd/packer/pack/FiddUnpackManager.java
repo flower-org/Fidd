@@ -3,7 +3,9 @@ package com.fidd.packer.pack;
 import com.fidd.base.BaseRepositories;
 import com.fidd.base.Repository;
 import com.fidd.core.common.FiddSignature;
+import com.fidd.core.common.ProgressiveCrc;
 import com.fidd.core.crc.CrcCalculator;
+import com.fidd.core.crc.ProgressiveCrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
@@ -290,6 +292,28 @@ public class FiddUnpackManager {
                             }
                         }
                     }
+
+                    if (logicalFileMetadata.progressiveCrcs() == null) {
+                        progressCallback.log("LogicalFileMetadata for \"" + logicalFileMetadata.filePath() + "\" has no progressiveCrcs");
+                    } else {
+                        for (int i = 0; i < logicalFileMetadata.progressiveCrcs().size(); i++) {
+                            ProgressiveCrc progressiveCrc = logicalFileMetadata.progressiveCrcs().get(i);
+
+                            try (InputStream logicalFileStream =
+                                         encryptionAlgorithm.getDecryptedStream(logicalFileSection.encryptionKeyData(),
+                                                 new SubFileInputStream(fiddFile, logicalFileSection.sectionOffset(),
+                                                         logicalFileSection.sectionLength()))) {
+                                skipAll(logicalFileStream, logicalFileMetadataLengthBytes);
+
+                                try (InputStream progressiveCrcStream = new ByteArrayInputStream(progressiveCrc.bytes())) {
+                                    validateFileProgressiveCrc(i, logicalFileName,
+                                            logicalFileStream, progressiveCrcStream, progressiveCrc.progressiveCrcChunkSize(),
+                                            baseRepositories, progressiveCrc.format(),
+                                            progressCallback, throwOnValidationFailure);
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (!materializeLogicalFiles) {
@@ -455,6 +479,32 @@ public class FiddUnpackManager {
                 progressCallback.log("File signature #" + signatureNumber + " validation success: " + dataFileName + signatureFileStr);
             } else {
                 warnAndMaybeThrow("File signature #" + signatureNumber + " validation failed: " + dataFileName + signatureFileStr,
+                        progressCallback, throwOnValidationFailure);
+            }
+        }
+    }
+
+    private static void validateFileProgressiveCrc(int progressiveCrcNumber,
+                                              String dataFileName,
+                                              InputStream dataStream, InputStream progressiveCrcStream, long progressiveCrcChunkSize,
+                                              BaseRepositories baseRepositories, String progressiveCrcFormat,
+                                              ProgressCallback progressCallback, boolean throwOnValidationFailure) throws IOException {
+        progressCallback.log("Validating file progressive CRC #" + progressiveCrcNumber + ": " + dataFileName);
+        progressCallback.log("File progressive CRC format: " + progressiveCrcFormat);
+        CrcCalculator crcCalculator = baseRepositories.crcCalculatorsRepo().get(progressiveCrcFormat);
+        if (crcCalculator == null) {
+            warnAndMaybeThrow("File progressive CRC #" + progressiveCrcNumber + " validation failed - CRC format " +
+                            progressiveCrcFormat + " not supported. " + dataFileName,
+                    progressCallback, throwOnValidationFailure);
+        } else {
+            byte[] progressiveCrc = progressiveCrcStream.readAllBytes();
+            byte[] calcCrc = ProgressiveCrcCalculator.calculateProgressiveCrc(dataStream, progressiveCrcChunkSize, crcCalculator);
+
+            boolean validationResult = Arrays.equals(progressiveCrc, calcCrc);
+            if (validationResult) {
+                progressCallback.log("File progressive CRC #" + progressiveCrcNumber + " validation success: " + dataFileName);
+            } else {
+                warnAndMaybeThrow("File progressive CRC #" + progressiveCrcNumber + " validation failed: " + dataFileName,
                         progressCallback, throwOnValidationFailure);
             }
         }

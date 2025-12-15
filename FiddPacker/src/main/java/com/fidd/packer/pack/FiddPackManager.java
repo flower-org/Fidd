@@ -2,7 +2,9 @@ package com.fidd.packer.pack;
 
 import com.fidd.core.NamedEntry;
 import com.fidd.core.common.FiddSignature;
+import com.fidd.core.common.ProgressiveCrc;
 import com.fidd.core.crc.CrcCalculator;
+import com.fidd.core.crc.ProgressiveCrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
@@ -123,7 +125,12 @@ public class FiddPackManager {
                                 List<SignerChecker> signerCheckers,
 
                                 boolean addCrcsToFiddKey,
-                                List<CrcCalculator> crcCalculators
+                                List<CrcCalculator> crcCalculators,
+
+                                boolean addProgressiveCrcs,
+                                long minProgressiveCrcFileSize,
+                                long progressiveCrcChunkSize,
+                                @Nullable List<CrcCalculator> progressiveCrcCalculators
     ) throws IOException {
         // Fidd Key parts will be populated as we go
         FiddKey.Section fiddFileMetadataSection = null;
@@ -195,7 +202,8 @@ public class FiddPackManager {
                                     metadataContainerSerializer, logicalFileMetadataSerializer,
                                     addLogicalFileSignatures, addLogicalFileMetadataSignatures,
                                     signerCheckers, authorsPrivateKey,
-                                    addCrcsToFiddKey, crcCalculators);
+                                    addCrcsToFiddKey, crcCalculators,
+                                    addProgressiveCrcs, minProgressiveCrcFileSize, progressiveCrcChunkSize, progressiveCrcCalculators);
                     position += logicalFileSectionLengthAndCrc.length();
 
                     // 3.2.2.2 Form corresponding Section descriptor for FiddKey
@@ -345,7 +353,12 @@ public class FiddPackManager {
                                                             List<SignerChecker> signerCheckers,
                                                             @Nullable PrivateKey authorsPrivateKey,
                                                             boolean addCrcsToFiddKey,
-                                                            List<CrcCalculator> crcCalculators
+                                                            List<CrcCalculator> crcCalculators,
+
+                                                            boolean addProgressiveCrcs,
+                                                            long minProgressiveCrcFileSize,
+                                                            long progressiveCrcChunkSize,
+                                                            @Nullable List<CrcCalculator> progressiveCrcCalculators
                                                    ) throws IOException {
         // 1. Form Logical file metadata
         LogicalFileMetadata logicalFileMetadata;
@@ -379,6 +392,21 @@ public class FiddPackManager {
                     logicalFileMetadataBuilder.authorsFileSignatures(signatures);
                 }
             }
+
+            if (addProgressiveCrcs && inputFile.length() >= minProgressiveCrcFileSize) {
+                List<ProgressiveCrc> progressiveCrcs = new ArrayList<>();
+                for (CrcCalculator progressiveCrcCalculator : checkNotNull(progressiveCrcCalculators)) {
+                    try (FileChannel inputChannel = FileChannel.open(inputFile.toPath(), StandardOpenOption.READ)) {
+                        InputStream inputFileStream = Channels.newInputStream(inputChannel);
+                        byte[] progressiveCrc = ProgressiveCrcCalculator.calculateProgressiveCrc(inputFileStream, progressiveCrcChunkSize, progressiveCrcCalculator);
+
+                        progressiveCrcs.add(ProgressiveCrc.of(progressiveCrcCalculator.name(), progressiveCrc, progressiveCrcChunkSize));
+                    }
+
+                    logicalFileMetadataBuilder.progressiveCrcs(progressiveCrcs);
+                }
+            }
+
             logicalFileMetadata = logicalFileMetadataBuilder.build();
         }
         byte[] metadataBytes = logicalFileMetadataSerializer.serialize(logicalFileMetadata);

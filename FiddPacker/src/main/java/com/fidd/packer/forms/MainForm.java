@@ -109,6 +109,8 @@ public class MainForm {
     final static String PUBLIC_KEY_OPTION_UI = "Use Public Key from UI";
     final static String PUBLIC_KEY_OPTION_MESSAGE_FALL_BACK_TO_UI = "Use from Message, fall back to UI";
 
+    final static long ONE_MIBIBYTE = 1024L*1024L;
+
     @Nullable Stage mainStage;
 
     @FXML @Nullable AnchorPane topPane;
@@ -566,6 +568,15 @@ public class MainForm {
             boolean addCrcsToFiddKey = checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().get();
             CrcCalculator crcCalculator = getComboBoxSelectionFromRepo(baseRepositories.crcCalculatorsRepo(), crcCalculatorComboBox);
 
+            boolean addProgressiveCrcs = checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().get();
+            long minProgressiveCrcFileSize = 0L;
+            CrcCalculator progressiveCrcCalculator = null;
+            if (addProgressiveCrcs) {
+                minProgressiveCrcFileSize = Long.parseLong(checkNotNull(progressiveCrcMinFileSizeTextField).textProperty().get());
+                minProgressiveCrcFileSize *= ONE_MIBIBYTE;
+                progressiveCrcCalculator = getComboBoxSelectionFromRepo(baseRepositories.crcCalculatorsRepo(), progressiveCrcCalculatorComboBox);
+            }
+
             long messageNumber;
             String messageNumberStr = checkNotNull(messageNumberTextField).textProperty().get();
             try { messageNumber = Long.parseLong(messageNumberStr);
@@ -646,7 +657,12 @@ public class MainForm {
                     List.of(signerChecker),
 
                     addCrcsToFiddKey,
-                    List.of(crcCalculator)
+                    List.of(crcCalculator),
+
+                    addProgressiveCrcs,
+                    minProgressiveCrcFileSize,
+                    ONE_MIBIBYTE,
+                    progressiveCrcCalculator == null ? null : List.of(progressiveCrcCalculator)
             );
 
             JavaFxUtils.showMessage("Fidd Pack Complete!");

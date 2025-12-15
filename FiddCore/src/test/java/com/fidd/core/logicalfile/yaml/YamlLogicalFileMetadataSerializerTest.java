@@ -1,6 +1,7 @@
 package com.fidd.core.logicalfile.yaml;
 
 import com.fidd.core.common.FiddSignature;
+import com.fidd.core.common.ProgressiveCrc;
 import com.fidd.core.logicalfile.ImmutableExternalResource;
 import com.fidd.core.logicalfile.ImmutableLogicalFileMetadata;
 import com.fidd.core.logicalfile.ImmutableFileRegion;
@@ -26,7 +27,7 @@ public class YamlLogicalFileMetadataSerializerTest {
                 .createdAt(1234L)
                 .updatedAt(2345L)
                 .authorsFileSignatures(List.of(FiddSignature.of("FMT", new byte[] {2,3,4,5,6,7})))
-                .progressiveCrcs(List.of(FiddSignature.of("CRC32", new byte[] {2,3,4,5,6,7,2,3,4,5,6,7,2,3,4,5,6,7,2,3,4,5,6,7})))
+                .progressiveCrcs(List.of(ProgressiveCrc.of("CRC32", new byte[] {2,3,4,5,6,7,2,3,4,5,6,7,2,3,4,5,6,7,2,3,4,5,6,7}, 10241024L)))
                 .externalLinks(
                     List.of(
                         ImmutableExternalResource.builder()
