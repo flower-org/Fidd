@@ -130,7 +130,7 @@ public class FiddPackManager {
                                 boolean addProgressiveCrcs,
                                 long minProgressiveCrcFileSize,
                                 long progressiveCrcChunkSize,
-                                @Nullable List<CrcCalculator> progressiveCrcCalculators
+                                List<CrcCalculator> progressiveCrcCalculators
     ) throws IOException {
         // Fidd Key parts will be populated as we go
         FiddKey.Section fiddFileMetadataSection = null;
@@ -358,7 +358,7 @@ public class FiddPackManager {
                                                             boolean addProgressiveCrcs,
                                                             long minProgressiveCrcFileSize,
                                                             long progressiveCrcChunkSize,
-                                                            @Nullable List<CrcCalculator> progressiveCrcCalculators
+                                                            List<CrcCalculator> progressiveCrcCalculators
                                                    ) throws IOException {
         // 1. Form Logical file metadata
         LogicalFileMetadata logicalFileMetadata;

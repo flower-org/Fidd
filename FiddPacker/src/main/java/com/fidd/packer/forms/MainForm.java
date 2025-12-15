@@ -570,11 +570,10 @@ public class MainForm {
 
             boolean addProgressiveCrcs = checkNotNull(addCrcsToFiddKeyCheckBox).selectedProperty().get();
             long minProgressiveCrcFileSize = 0L;
-            CrcCalculator progressiveCrcCalculator = null;
+            CrcCalculator progressiveCrcCalculator = getComboBoxSelectionFromRepo(baseRepositories.crcCalculatorsRepo(), progressiveCrcCalculatorComboBox);
             if (addProgressiveCrcs) {
                 minProgressiveCrcFileSize = Long.parseLong(checkNotNull(progressiveCrcMinFileSizeTextField).textProperty().get());
                 minProgressiveCrcFileSize *= ONE_MEBIBYTE;
-                progressiveCrcCalculator = getComboBoxSelectionFromRepo(baseRepositories.crcCalculatorsRepo(), progressiveCrcCalculatorComboBox);
             }
 
             long messageNumber;
@@ -662,7 +661,7 @@ public class MainForm {
                     addProgressiveCrcs,
                     minProgressiveCrcFileSize,
                     ONE_MEBIBYTE,
-                    progressiveCrcCalculator == null ? null : List.of(progressiveCrcCalculator)
+                    List.of(progressiveCrcCalculator)
             );
 
             JavaFxUtils.showMessage("Fidd Pack Complete!");
