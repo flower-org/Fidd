@@ -8,7 +8,7 @@ plugins {
 }
 
 group 'com.fidd.cryptor'
-version '0.0.16-amd64'
+version '0.0.17-amd64'
 
 repositories {
     mavenCentral()
