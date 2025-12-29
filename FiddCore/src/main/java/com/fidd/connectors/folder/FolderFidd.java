@@ -161,12 +161,25 @@ public class FolderFidd implements Fidd {
     }
 
     @Override
-    public byte[] getKeyFile(long messageNumber, byte[] subscriberId) {
+    public @Nullable byte[] getKeyFile(long messageNumber, byte[] subscriberId) {
         try {
             String keyFileName = new String(subscriberId, StandardCharsets.UTF_8);
             Path file = keyFolderPath(messageNumber).resolve(keyFileName);
             if (!Files.exists(file) || !Files.isRegularFile(file)) {
-                throw new FileNotFoundException("Key file not found: " + file);
+                return null;
+            }
+            return Files.readAllBytes(file);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public @Nullable byte[] getUnencryptedKeyFile(long messageNumber) {
+        try {
+            Path file = messageFolderPath(messageNumber).resolve(KEY_FILE_NAME);
+            if (!Files.exists(file) || !Files.isRegularFile(file)) {
+                return null;
             }
             return Files.readAllBytes(file);
         } catch (IOException e) {

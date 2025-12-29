@@ -1,5 +1,6 @@
 package com.fidd.connectors;
 
+import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.util.List;
 
@@ -12,7 +13,10 @@ public interface Fidd {
     List<Long> getMessageNumbersBetween(long latestMessage, boolean inclusiveLatest,
                                         long earliestMessage, boolean inclusiveEarliest);
 
-    byte[] getKeyFile(long messageNumber, byte[] subscriberId);
+    /** Returns null if subscriber has no access or if Fidd Key is stored unencrypted */
+    @Nullable byte[] getKeyFile(long messageNumber, byte[] subscriberId);
+    /** Returns null if Fidd Keys are encrypted */
+    @Nullable byte[] getUnencryptedKeyFile(long messageNumber);
 
     InputStream getMessageFile(long messageNumber);
     InputStream getMessageFileChunk(long messageNumber, long offset, long length);

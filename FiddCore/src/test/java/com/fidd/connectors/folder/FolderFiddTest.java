@@ -12,7 +12,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FolderFiddTest {
 
@@ -27,6 +26,10 @@ public class FolderFiddTest {
 
     private void write(Path p, String content) throws IOException {
         Files.write(p, content.getBytes(), StandardOpenOption.CREATE);
+    }
+
+    private void delete(Path p) throws IOException {
+        Files.delete(p);
     }
 
     // ------------------------------------------------------------
@@ -228,8 +231,27 @@ public class FolderFiddTest {
     @Test
     void testGetKeyFileMissing() {
         FolderFidd fidd = new FolderFidd(temp.toString());
-        assertThrows(RuntimeException.class,
-                () -> fidd.getKeyFile(1, "missing".getBytes()));
+        assertNull(fidd.getKeyFile(1, "missing".getBytes()));
+    }
+
+    @Test
+    void testGetUnencryptedKeyFile() throws IOException {
+        Path msg = createMessageFolder(1);
+        Path keyFile = msg.resolve(FolderFidd.KEY_FILE_NAME);
+        write(keyFile, "hello");
+
+        FolderFidd fidd = new FolderFidd(temp.toString());
+        byte[] data = fidd.getUnencryptedKeyFile(1);
+
+        assertEquals("hello", new String(data));
+
+        delete(keyFile);
+    }
+
+    @Test
+    void testGetUnencryptedKeyFileMissing() {
+        FolderFidd fidd = new FolderFidd(temp.toString());
+        assertNull(fidd.getUnencryptedKeyFile(1));
     }
 
     // ------------------------------------------------------------
