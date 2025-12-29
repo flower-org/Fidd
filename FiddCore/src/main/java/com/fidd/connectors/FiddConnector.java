@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.util.List;
 
-public interface Fidd {
+public interface FiddConnector {
     /** Descending order */
     List<Long> getMessageNumbersTail(int count);
     /** Descending order */

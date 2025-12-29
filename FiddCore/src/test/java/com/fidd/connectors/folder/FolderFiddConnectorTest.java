@@ -13,7 +13,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class FolderFiddTest {
+public class FolderFiddConnectorTest {
 
     @TempDir
     Path temp;
@@ -37,8 +37,8 @@ public class FolderFiddTest {
     // ------------------------------------------------------------
     @Test
     void testSignatureMatch() {
-        assertEquals(5, FolderFidd.signatureMatch(FolderFidd.FIDD_KEY_SIGNATURE_PATTERN, "fidd.key.5.sign"));
-        assertNull(FolderFidd.signatureMatch(FolderFidd.FIDD_KEY_SIGNATURE_PATTERN, "not-a-match"));
+        assertEquals(5, FolderFiddConnector.signatureMatch(FolderFiddConnector.FIDD_KEY_SIGNATURE_PATTERN, "fidd.key.5.sign"));
+        assertNull(FolderFiddConnector.signatureMatch(FolderFiddConnector.FIDD_KEY_SIGNATURE_PATTERN, "not-a-match"));
     }
 
     // ------------------------------------------------------------
@@ -52,7 +52,7 @@ public class FolderFiddTest {
         write(msg.resolve("fidd.key.1.sign"), "b");
         write(msg.resolve("fidd.key.3.sign"), "c");
 
-        int count = FolderFidd.getSignatureCount(msg, FolderFidd.FIDD_KEY_SIGNATURE_PATTERN, 1);
+        int count = FolderFiddConnector.getSignatureCount(msg, FolderFiddConnector.FIDD_KEY_SIGNATURE_PATTERN, 1);
 
         assertEquals(4, count); // max index = 3 → count = 4
     }
@@ -66,7 +66,7 @@ public class FolderFiddTest {
         createMessageFolder(11);
         createMessageFolder(12);
 
-        List<Long> tail = FolderFidd.getMessagesTail(temp, null, 2, true);
+        List<Long> tail = FolderFiddConnector.getMessagesTail(temp, null, 2, true);
         assertEquals(List.of(12L, 11L), tail);
     }
 
@@ -79,7 +79,7 @@ public class FolderFiddTest {
         createMessageFolder(2);
         createMessageFolder(3);
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
         assertEquals(List.of(3L, 2L), fidd.getMessageNumbersTail(2));
     }
 
@@ -92,7 +92,7 @@ public class FolderFiddTest {
         createMessageFolder(6);
         createMessageFolder(7);
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
         assertEquals(List.of(6L, 5L), fidd.getMessageNumbersBefore(7, 2, false));
     }
 
@@ -108,7 +108,7 @@ public class FolderFiddTest {
         createMessageFolder(70);
         createMessageFolder(60);
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // latest=100 (exclusive), earliest=70 (exclusive)
         List<Long> result = fidd.getMessageNumbersBetween(100, false, 70, false);
@@ -124,7 +124,7 @@ public class FolderFiddTest {
         createMessageFolder(80);
         createMessageFolder(70);
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // latest=90 (inclusive), earliest=70 (exclusive)
         List<Long> result = fidd.getMessageNumbersBetween(90, true, 70, false);
@@ -139,7 +139,7 @@ public class FolderFiddTest {
         createMessageFolder(80);
         createMessageFolder(70);
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // latest=100 (exclusive), earliest=80 (inclusive)
         List<Long> result = fidd.getMessageNumbersBetween(100, false, 80, true);
@@ -154,7 +154,7 @@ public class FolderFiddTest {
         createMessageFolder(80);
         createMessageFolder(70);
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // latest=90 (inclusive), earliest=80 (inclusive)
         List<Long> result = fidd.getMessageNumbersBetween(90, true, 80, true);
@@ -170,7 +170,7 @@ public class FolderFiddTest {
         createMessageFolder(70);
         createMessageFolder(60); // should not be reached
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         List<Long> result = fidd.getMessageNumbersBetween(100, true, 70, true);
 
@@ -186,7 +186,7 @@ public class FolderFiddTest {
         createMessageFolder(70);
         createMessageFolder(60); // should not be reached
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         List<Long> result = fidd.getMessageNumbersBetween(105, false, 65, false);
 
@@ -203,7 +203,7 @@ public class FolderFiddTest {
         // Non-numeric folder
         Files.createDirectories(temp.resolve("not-a-number"));
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         List<Long> result = fidd.getMessageNumbersBetween(100, true, 80, true);
 
@@ -222,7 +222,7 @@ public class FolderFiddTest {
         Path keyFile = keys.resolve("abc");
         write(keyFile, "hello");
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
         byte[] data = fidd.getKeyFile(1, "abc".getBytes());
 
         assertEquals("hello", new String(data));
@@ -230,17 +230,17 @@ public class FolderFiddTest {
 
     @Test
     void testGetKeyFileMissing() {
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
         assertNull(fidd.getKeyFile(1, "missing".getBytes()));
     }
 
     @Test
     void testGetUnencryptedKeyFile() throws IOException {
         Path msg = createMessageFolder(1);
-        Path keyFile = msg.resolve(FolderFidd.KEY_FILE_NAME);
+        Path keyFile = msg.resolve(FolderFiddConnector.KEY_FILE_NAME);
         write(keyFile, "hello");
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
         byte[] data = fidd.getUnencryptedKeyFile(1);
 
         assertEquals("hello", new String(data));
@@ -250,7 +250,7 @@ public class FolderFiddTest {
 
     @Test
     void testGetUnencryptedKeyFileMissing() {
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
         assertNull(fidd.getUnencryptedKeyFile(1));
     }
 
@@ -263,7 +263,7 @@ public class FolderFiddTest {
         Path file = msg.resolve("fidd.message");
         write(file, "xyz");
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
         try (InputStream in = fidd.getMessageFile(1)) {
             assertEquals("xyz", new String(in.readAllBytes()));
         }
@@ -278,7 +278,7 @@ public class FolderFiddTest {
         Path file = msg.resolve("fidd.message");
         write(file, "abcdef");
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
         try (InputStream in = fidd.getMessageFileChunk(1, 2, 3)) {
             assertEquals("cde", new String(in.readAllBytes()));
         }
@@ -301,7 +301,7 @@ public class FolderFiddTest {
         write(msg.resolve("fidd.key.10.sig"), "bad");
         write(msg.resolve("not-a-signature"), "bad");
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // max index = 5 → count = 6
         assertEquals(6, fidd.getKeyFileSignatureCount(1));
@@ -312,7 +312,7 @@ public class FolderFiddTest {
         Path msg = createMessageFolder(1);
         write(msg.resolve("fidd.key.0.sign"), "sig0");
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
         assertEquals("sig0", new String(fidd.getKeyFileSignature(1, 0)));
     }
 
@@ -329,7 +329,7 @@ public class FolderFiddTest {
         write(msg.resolve("fidd.message.3.sig"), "bad");
         write(msg.resolve("random-file"), "bad");
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // max index = 4 → count = 5
         assertEquals(5, fidd.getMessageFileSignatureCount(2));
@@ -340,7 +340,7 @@ public class FolderFiddTest {
         Path msg = createMessageFolder(1);
         write(msg.resolve("fidd.message.1.sign"), "sig1");
 
-        FolderFidd fidd = new FolderFidd(temp.toString());
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
         assertEquals("sig1", new String(fidd.getMessageFileSignature(1, 1)));
     }
 }

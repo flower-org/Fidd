@@ -1,6 +1,6 @@
 package com.fidd.connectors.folder;
 
-import com.fidd.connectors.Fidd;
+import com.fidd.connectors.FiddConnector;
 import com.fidd.core.common.SubFileInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +24,8 @@ import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class FolderFidd implements Fidd {
-    public final static Logger LOGGER = LoggerFactory.getLogger(FolderFidd.class);
+public class FolderFiddConnector implements FiddConnector {
+    public final static Logger LOGGER = LoggerFactory.getLogger(FolderFiddConnector.class);
 
     public final static String KEY_SUBFOLDER = "keys";
     public final static String KEY_FILE_NAME = "fidd.key";
@@ -135,7 +135,7 @@ public class FolderFidd implements Fidd {
     protected final String fiddFolderPath;
     protected final Path fiddFolder;
 
-    public FolderFidd(String fiddFolderPath) {
+    public FolderFiddConnector(String fiddFolderPath) {
         this.fiddFolderPath = fiddFolderPath;
         this.fiddFolder = Paths.get(fiddFolderPath);
     }
