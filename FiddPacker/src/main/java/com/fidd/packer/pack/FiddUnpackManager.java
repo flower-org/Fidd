@@ -4,6 +4,7 @@ import com.fidd.base.BaseRepositories;
 import com.fidd.base.Repository;
 import com.fidd.core.common.FiddSignature;
 import com.fidd.core.common.ProgressiveCrc;
+import com.fidd.core.common.SubFileInputStream;
 import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.crc.ProgressiveCrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;

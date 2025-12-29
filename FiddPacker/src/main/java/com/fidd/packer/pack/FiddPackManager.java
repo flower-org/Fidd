@@ -48,7 +48,7 @@ import static com.fidd.packer.pack.DirectoryReader.getDirectoryContents;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class FiddPackManager {
-    public static final String DEFAULT_FIDD_FILE_NAME = "message.fidd";
+    public static final String DEFAULT_FIDD_FILE_NAME = "fidd.message";
     public static final String DEFAULT_FIDD_KEY_FILE_NAME = "fidd.key";
     public static final String DEFAULT_FIDD_SIGNATURE_EXT = ".sign";
 

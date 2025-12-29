@@ -1,4 +1,4 @@
-package com.fidd.packer.pack;
+package com.fidd.core.common;
 
 import java.io.*;
 
