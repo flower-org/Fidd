@@ -13,9 +13,10 @@ public interface FiddConnector {
     List<Long> getMessageNumbersBetween(long latestMessage, boolean inclusiveLatest,
                                         long earliestMessage, boolean inclusiveEarliest);
 
-    /** Returns null if subscriber has no access or if Fidd Key is stored unencrypted */
-    @Nullable byte[] getKeyFile(long messageNumber, byte[] subscriberId);
-    /** Returns null if Fidd Keys are encrypted */
+    /** Returns empty list if subscriber has no key candidates, which can also happen in case
+     * when Fidd Key is stored unencrypted */
+    List<byte[]> getCandidateKeyFiles(long messageNumber, byte[] subscriberId);
+    /** Returns null if Fidd Keys are stored encrypted */
     @Nullable byte[] getUnencryptedKeyFile(long messageNumber);
 
     InputStream getMessageFile(long messageNumber);

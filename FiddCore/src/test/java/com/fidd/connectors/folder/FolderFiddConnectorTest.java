@@ -5,13 +5,16 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FolderFiddConnectorTest {
 
@@ -30,6 +33,36 @@ public class FolderFiddConnectorTest {
 
     private void delete(Path p) throws IOException {
         Files.delete(p);
+    }
+
+    @Test
+    void testKeyFileStartsWith_exactMatch() {
+        assertTrue(FolderFiddConnector.keyFileStartsWith("abc123", "abc123"));
+    }
+
+    @Test
+    void testKeyFileStartsWith_prefixMatch() {
+        assertTrue(FolderFiddConnector.keyFileStartsWith("abc123", "abc"));
+    }
+
+    @Test
+    void testKeyFileStartsWith_prefixWithExtension() {
+        assertTrue(FolderFiddConnector.keyFileStartsWith("abc123", "abc.txt"));
+    }
+
+    @Test
+    void testKeyFileStartsWith_noMatch() {
+        assertFalse(FolderFiddConnector.keyFileStartsWith("xyz123", "abc"));
+    }
+
+    @Test
+    void testKeyFileStartsWith_extensionOnly() {
+        assertTrue(FolderFiddConnector.keyFileStartsWith("abc123", ".txt"));
+    }
+
+    @Test
+    void testKeyFileStartsWith_fileNameWithoutDot() {
+        assertTrue(FolderFiddConnector.keyFileStartsWith("helloWorld", "hello"));
     }
 
     // ------------------------------------------------------------
@@ -214,24 +247,83 @@ public class FolderFiddConnectorTest {
     // getKeyFile
     // ------------------------------------------------------------
     @Test
-    void testGetKeyFile() throws IOException {
-        Path msg = createMessageFolder(1);
-        Path keys = msg.resolve("keys");
+    void testGetKeyFile_readsMatchingFiles() throws IOException {
+        long messageNumber = 42L;
+        Path msg = createMessageFolder(messageNumber);
+        Path keys = msg.resolve(FolderFiddConnector.KEY_SUBFOLDER);
         Files.createDirectories(keys);
 
-        Path keyFile = keys.resolve("abc");
-        write(keyFile, "hello");
-
+        // Mock keyFolderPath(messageNumber)
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
-        byte[] data = fidd.getKeyFile(1, "abc".getBytes());
 
-        assertEquals("hello", new String(data));
+        // Create files
+        Path f1 = keys.resolve("sub1.key");
+        Path f2 = keys.resolve("su.key");
+        Path f3 = keys.resolve("sub2.key"); // should NOT match
+
+        Files.write(f1, "AAA".getBytes());
+        Files.write(f2, "BBB".getBytes());
+        Files.write(f3, "CCC".getBytes());
+
+        byte[] subscriberId = "sub1".getBytes(StandardCharsets.UTF_8);
+
+        List<byte[]> result = fidd.getCandidateKeyFiles(messageNumber, subscriberId);
+
+        assertEquals(2, result.size());
+        assertEquals("AAA", new String(result.get(0)));
+        assertEquals("BBB", new String(result.get(1)));
     }
 
     @Test
-    void testGetKeyFileMissing() {
+    void testGetKeyFile_returnsEmptyListWhenNoMatches() {
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
-        assertNull(fidd.getKeyFile(1, "missing".getBytes()));
+
+        byte[] subscriberId = "nomatch".getBytes(StandardCharsets.UTF_8);
+
+        List<byte[]> result = fidd.getCandidateKeyFiles(1L, subscriberId);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetKeyFile_returnsNullIfFileDisappears() throws IOException {
+        long messageNumber = 43L;
+        Path msg = createMessageFolder(messageNumber);
+        Path keys = msg.resolve(FolderFiddConnector.KEY_SUBFOLDER);
+        Files.createDirectories(keys);
+
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
+
+        Path f1 = keys.resolve("sub.key");
+        Files.write(f1, "AAA".getBytes());
+
+        // Delete file after creation to trigger the null return
+        Files.delete(f1);
+
+        byte[] subscriberId = "sub".getBytes(StandardCharsets.UTF_8);
+
+        List<byte[]> result = fidd.getCandidateKeyFiles(messageNumber, subscriberId);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetKeyFile_ignoresDirectories() throws IOException {
+        long messageNumber = 44L;
+        Path msg = createMessageFolder(messageNumber);
+        Path keys = msg.resolve(FolderFiddConnector.KEY_SUBFOLDER);
+        Files.createDirectories(keys);
+
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
+
+        // Directory with matching prefix — should be ignored
+        Files.createDirectory(keys.resolve("sub1"));
+
+        byte[] subscriberId = "sub1".getBytes(StandardCharsets.UTF_8);
+
+        List<byte[]> result = fidd.getCandidateKeyFiles(messageNumber, subscriberId);
+
+        assertTrue(result.isEmpty());
     }
 
     @Test

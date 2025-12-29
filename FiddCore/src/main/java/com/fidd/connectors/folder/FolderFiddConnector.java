@@ -36,6 +36,15 @@ public class FolderFiddConnector implements FiddConnector {
     // Regex: fidd.message.<digits>.sign
     public final static Pattern FIDD_MESSAGE_SIGNATURE_PATTERN = Pattern.compile("fidd\\.message\\.(\\d+)\\.sign");
 
+    protected static String getFileNameNoExtensions(String fileName) {
+        int dot = fileName.indexOf('.');
+        return (dot == -1) ? fileName : fileName.substring(0, dot);
+    }
+
+    protected static boolean keyFileStartsWith(String full, String fileName) {
+        return full.startsWith(getFileNameNoExtensions(fileName));
+    }
+
     protected static @Nullable Integer signatureMatch(Pattern pattern, String filename) {
         Matcher matcher = pattern.matcher(filename);
         if (matcher.matches()) {
@@ -161,17 +170,34 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     @Override
-    public @Nullable byte[] getKeyFile(long messageNumber, byte[] subscriberId) {
-        try {
-            String keyFileName = new String(subscriberId, StandardCharsets.UTF_8);
-            Path file = keyFolderPath(messageNumber).resolve(keyFileName);
-            if (!Files.exists(file) || !Files.isRegularFile(file)) {
-                return null;
+    public List<byte[]> getCandidateKeyFiles(long messageNumber, byte[] subscriberId) {
+        List<byte[]> result = new ArrayList<>();
+        String prefix = new String(subscriberId, StandardCharsets.UTF_8);
+        Path keyFolder = keyFolderPath(messageNumber);
+        if (!keyFolder.toFile().exists()) {
+            return result;
+        }
+
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(keyFolder,
+                directoryEntry -> Files.isRegularFile(directoryEntry)
+                        && (keyFileStartsWith(prefix, directoryEntry.getFileName().toString())))) {
+            List<Path> sortedFiles = new ArrayList<>();
+            for (Path p : directoryStream) {
+                sortedFiles.add(p);
             }
-            return Files.readAllBytes(file);
+            // Longest prefix first
+            sortedFiles.sort((o1, o2) -> {
+                String fileName1 = getFileNameNoExtensions(o1.getFileName().toString());
+                String fileName2 = getFileNameNoExtensions(o2.getFileName().toString());
+                return Integer.compare(fileName2.length(), fileName1.length());
+            });
+            for (Path file : sortedFiles) {
+                result.add(Files.readAllBytes(file));
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        return result;
     }
 
     @Override
