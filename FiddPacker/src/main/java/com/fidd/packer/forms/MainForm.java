@@ -12,6 +12,7 @@ import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
 import com.fidd.core.pki.SignerChecker;
 import com.fidd.core.random.RandomGeneratorType;
+import com.fidd.core.subscription.SubscriberList;
 import com.fidd.packer.pack.FiddPackManager;
 import com.fidd.packer.pack.FiddUnpackManager;
 import com.flower.crypt.PkiUtil;
@@ -23,6 +24,8 @@ import com.flower.crypt.keys.forms.RsaPkcs11KeyProvider;
 import com.flower.crypt.keys.forms.RsaRawKeyProvider;
 import com.flower.crypt.keys.forms.TabKeyProvider;
 import com.flower.fxutils.JavaFxUtils;
+import com.flower.fxutils.ModalWindow;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -32,6 +35,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
@@ -169,7 +173,11 @@ public class MainForm {
     @FXML @Nullable CheckBox addProgressiveCrcCheckBox;
     @FXML @Nullable TextField progressiveCrcMinFileSizeTextField;
 
+    @FXML @Nullable TextField packedContentFolderForPublishTextField;
+    @FXML @Nullable TableView<SubscriberList.Subscriber> subscribersTableView;
+
     BaseRepositories baseRepositories;
+    @Nullable ObservableList<SubscriberList.Subscriber> subscribers;
 
     final FiddUnpackManager.ProgressCallback mainFormProgressCallback = new FiddUnpackManager.ProgressCallback() {
         private static final DateTimeFormatter FORMATTER =
@@ -227,6 +235,9 @@ public class MainForm {
         AnchorPane.setBottomAnchor(keyProviderForm, 0.0);
         AnchorPane.setLeftAnchor(keyProviderForm, 0.0);
         AnchorPane.setRightAnchor(keyProviderForm, 0.0);
+
+        subscribers = FXCollections.observableArrayList();
+        checkNotNull(subscribersTableView).itemsProperty().set(subscribers);
 
         keyProvider.initPreferences();
 
@@ -994,6 +1005,68 @@ public class MainForm {
         } catch (Exception e) {
             LOGGER.error("Unpacking error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
+            alert.showAndWait();
+        }
+    }
+
+    public void openPackedContentFolderForPublish() {
+        File packedContentFolder;
+        packedContentFolder = new File(checkNotNull(packedContentFolderForPublishTextField).textProperty().get());
+        File directory = chooseDirectory(packedContentFolder);
+        if (directory != null) {
+            checkNotNull(packedContentFolderForPublishTextField).textProperty().set(directory.getPath());
+        }
+    }
+
+    public void publishFolder() {
+        // TODO: implement
+    }
+
+    void addSubscriber(SubscriberList.Subscriber subscriber) {
+        Platform.runLater(() -> {
+            checkNotNull(subscribers).add(subscriber);
+            checkNotNull(subscribersTableView).refresh();
+        });
+    }
+
+    public void addSubscriber() {
+        try {
+            SubscriberAddDialog subscriberAddDialog = new SubscriberAddDialog();
+            Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainStage),
+                stage -> { subscriberAddDialog.setStage(stage); return subscriberAddDialog; },
+                "Add subscriber");
+
+            workspaceStage.setOnHidden(
+                    ev -> {
+                        try {
+                            SubscriberList.Subscriber returnSubscriber = subscriberAddDialog.getReturnSubscriber();
+                            if (returnSubscriber != null) {
+                                addSubscriber(returnSubscriber);
+                            }
+                        } catch (Exception e) {
+                            Alert alert = new Alert(Alert.AlertType.ERROR, "Error adding subscriber: " + e, ButtonType.OK);
+                            LOGGER.error("Error adding subscriber: ", e);
+                            alert.showAndWait();
+                        }
+                    }
+            );
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error adding subscriber: " + e, ButtonType.OK);
+            LOGGER.error("Error adding subscriber: ", e);
+            alert.showAndWait();
+        }
+    }
+
+    public void removeSubscriber() {
+        try {
+            SubscriberList.Subscriber subscriber = checkNotNull(subscribersTableView).getSelectionModel().getSelectedItem();
+            if (subscriber != null) {
+                checkNotNull(subscribers).remove(subscriber);
+                checkNotNull(subscribersTableView).refresh();
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error removing subscriber: " + e, ButtonType.OK);
+            LOGGER.error("Error removing subscriber: ", e);
             alert.showAndWait();
         }
     }

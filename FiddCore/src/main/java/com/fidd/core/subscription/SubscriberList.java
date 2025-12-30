@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fidd.core.common.Base36;
+import com.google.common.base.Splitter;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -22,14 +23,17 @@ public interface SubscriberList {
         String publicKeyFormat();
         byte[] publicKeyBytes();
 
-        @JsonIgnore
-        default String getPublicKeyFormat() {
-            return publicKeyFormat();
+        static String compactLines(String text) {
+            List<String> parts = Splitter.onPattern("\\R")
+                    .limit(3)
+                    .splitToList(text);
+            return parts.size() <= 2 ? text : parts.get(0) + "\n" + parts.get(1) + "...";
         }
+
         @JsonIgnore
-        default String getPublicKeyBase36() {
-            return Base36.toBase36(publicKeyBytes());
-        }
+        default String getPublicKeyFormat() { return publicKeyFormat(); }
+        @JsonIgnore
+        default String getPublicKey() { return compactLines(new String(publicKeyBytes())); }
 
         static Subscriber of(String publicKeyFormat, byte[] publicKeyBytes) {
             return ImmutableSubscriber.builder()
