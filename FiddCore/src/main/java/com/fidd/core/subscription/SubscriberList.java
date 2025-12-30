@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fidd.core.common.Base36;
 import com.google.common.base.Splitter;
 import org.immutables.value.Value;
 
@@ -30,10 +29,10 @@ public interface SubscriberList {
             return parts.size() <= 2 ? text : parts.get(0) + "\n" + parts.get(1) + "...";
         }
 
-        @JsonIgnore
-        default String getPublicKeyFormat() { return publicKeyFormat(); }
-        @JsonIgnore
-        default String getPublicKey() { return compactLines(new String(publicKeyBytes())); }
+        /** JavaFX needs "get" methods for PropertyValueFactory */
+        @JsonIgnore default String getPublicKeyFormat() { return publicKeyFormat(); }
+        /** JavaFX needs "get" methods for PropertyValueFactory */
+        @JsonIgnore default String getPublicKey() { return compactLines(new String(publicKeyBytes())); }
 
         static Subscriber of(String publicKeyFormat, byte[] publicKeyBytes) {
             return ImmutableSubscriber.builder()

@@ -103,9 +103,12 @@ public class SubscriberAddDialog extends VBox {
                 alert.showAndWait();
             } else {
                 PublicKeySerializer publicKeySerializer = PUBLIC_KEY_FORMAT_REPO.get(certType);
-                if (publicKeySerializer == null) {
+                if (publicKeySerializer != null) {
                     try {
                         publicKeySerializer.deserialize(certContent.getBytes(StandardCharsets.UTF_8));
+
+                        returnSubscriber = SubscriberList.Subscriber.of(certType, certContent.getBytes(StandardCharsets.UTF_8));
+                        checkNotNull(stage).close();
                     } catch (Exception e) {
                         String errorStr = String.format("Certificate can't be deserialized as %s", certType);
                         Alert alert = new Alert(Alert.AlertType.ERROR, errorStr + ": " + e, ButtonType.OK);
@@ -113,11 +116,8 @@ public class SubscriberAddDialog extends VBox {
                         alert.showAndWait();
                     }
                 } else {
-
+                    throw new IllegalArgumentException("PublicKeySerializer not found: " + certType);
                 }
-
-                returnSubscriber = SubscriberList.Subscriber.of(certType, certContent.getBytes(StandardCharsets.UTF_8));
-                checkNotNull(stage).close();
             }
        } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "SubscriberAddDialog close Error: " + e, ButtonType.OK);
