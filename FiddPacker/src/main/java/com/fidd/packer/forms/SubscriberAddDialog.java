@@ -33,6 +33,7 @@ public class SubscriberAddDialog extends VBox {
     final static Logger LOGGER = LoggerFactory.getLogger(SubscriberAddDialog.class);
     final static Repository<PublicKeySerializer> PUBLIC_KEY_FORMAT_REPO = new DefaultBaseRepositories().publicKeyFormatRepo();
 
+    @FXML @Nullable TextField subscriberIdTextField;
     @FXML @Nullable ComboBox<String> certTypeComboBox;
     @FXML @Nullable TextField certTextField;
     @FXML @Nullable TextArea certTextArea;
@@ -93,6 +94,7 @@ public class SubscriberAddDialog extends VBox {
 
     public void okClose() {
         try {
+            String subscriberId = checkNotNull(subscriberIdTextField).getText();
             String certContent = checkNotNull(certTextArea).getText();
             String certType = checkNotNull(certTypeComboBox).getSelectionModel().getSelectedItem();
             if (StringUtils.isBlank(certType)) {
@@ -105,9 +107,10 @@ public class SubscriberAddDialog extends VBox {
                 PublicKeySerializer publicKeySerializer = PUBLIC_KEY_FORMAT_REPO.get(certType);
                 if (publicKeySerializer != null) {
                     try {
+                        // Validating that cert is deserializable and not some random bytes
                         publicKeySerializer.deserialize(certContent.getBytes(StandardCharsets.UTF_8));
 
-                        returnSubscriber = SubscriberList.Subscriber.of(certType, certContent.getBytes(StandardCharsets.UTF_8));
+                        returnSubscriber = SubscriberList.Subscriber.of(subscriberId, certType, certContent.getBytes(StandardCharsets.UTF_8));
                         checkNotNull(stage).close();
                     } catch (Exception e) {
                         String errorStr = String.format("Certificate can't be deserialized as %s", certType);
@@ -123,12 +126,6 @@ public class SubscriberAddDialog extends VBox {
             Alert alert = new Alert(Alert.AlertType.ERROR, "SubscriberAddDialog close Error: " + e, ButtonType.OK);
             LOGGER.error("SubscriberAddDialog close Error:", e);
             alert.showAndWait();
-        }
-    }
-
-    public void textFieldKeyRelease(KeyEvent event) {
-        if (event.getCode() == KeyCode.ENTER){
-            okClose();
         }
     }
 

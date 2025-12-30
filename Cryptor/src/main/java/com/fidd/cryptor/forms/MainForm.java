@@ -59,7 +59,7 @@ import java.util.List;
 import static com.fidd.cryptor.transform.RsaTransformerProvider.MAX_RSA_2048_PLAINTEXT_SIZE;
 import static com.fidd.cryptor.transform.RsaTransformerProvider.MAX_RSA_2048_CIPHERTEXT_SIZE;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.fidd.cryptor.transform.RsaTransformerProvider.Mode;
+import static com.flower.crypt.HybridAesEncryptor.Mode;
 
 public class MainForm {
     final static Logger LOGGER = LoggerFactory.getLogger(MainForm.class);

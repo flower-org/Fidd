@@ -14,12 +14,12 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<?import javafx.scene.control.cell.PropertyValueFactory?>
 <SplitPane dividerPositions="0.0" orientation="VERTICAL" prefHeight="829.0" prefWidth="895.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.fidd.packer.forms.MainForm">
         <items>
         <AnchorPane fx:id="topPane" minHeight="250.0" prefHeight="250.0" prefWidth="893.0" />
@@ -519,16 +519,12 @@
                                                       <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                                    </rowConstraints>
                                                    <children>
-                                                      <TextField GridPane.columnIndex="1">
+                                                      <TextField fx:id="subscribersFileTextField" GridPane.columnIndex="1">
                                                          <GridPane.margin>
                                                             <Insets right="10.0" />
                                                          </GridPane.margin>
                                                       </TextField>
-                                                      <Label text="Subscribers File:">
-                                                         <GridPane.margin>
-                                                            <Insets left="10.0" />
-                                                         </GridPane.margin>
-                                                      </Label>
+                                                      <Button mnemonicParsing="false" onAction="#openSubscribersFile" text="Subscribers File" />
                                                    </children>
                                                 </GridPane>
                                                 <GridPane GridPane.columnIndex="1" GridPane.rowIndex="1">
@@ -541,12 +537,12 @@
                                                       <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                                    </rowConstraints>
                                                    <children>
-                                                      <Button mnemonicParsing="false" text="Open" />
-                                                      <Button mnemonicParsing="false" text="Save" GridPane.columnIndex="1" />
-                                                      <CheckBox mnemonicParsing="false" text="Encrypt / Decrypt" GridPane.columnIndex="2" />
+                                                      <Button mnemonicParsing="false" onAction="#loadSubscribersFile" text="Load" />
+                                                      <Button mnemonicParsing="false" onAction="#saveSubscribersFile" text="Save" GridPane.columnIndex="1" />
+                                                      <CheckBox fx:id="encryptDecryptSubscribersFileCheckBox" mnemonicParsing="false" onAction="#updateSubscribersFileExtension" selected="true" text="Encrypt / Decrypt" GridPane.columnIndex="2" />
                                                    </children>
                                                 </GridPane>
-                                                <Button mnemonicParsing="false" onAction="#publishFolder" style="-fx-font-size: 15;" text="-&gt; Encrypt Fidd Key for subscribers -&gt;" GridPane.columnIndex="1" GridPane.halignment="LEFT">
+                                                <Button mnemonicParsing="false" onAction="#publishFolder" style="-fx-font-size: 15;" text="-&gt; Encrypt Fidd Keys for subscribers -&gt;" GridPane.columnIndex="1" GridPane.halignment="LEFT">
                                                    <GridPane.margin>
                                                       <Insets right="10.0" />
                                                    </GridPane.margin>
@@ -569,6 +565,11 @@
                                                    <children>
                                                       <TableView fx:id="subscribersTableView" layoutX="94.0" layoutY="68.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                                           <columns>
+                                                              <TableColumn minWidth="150.0" prefWidth="150.0" text="SubscriberId">
+                                                                  <cellValueFactory>
+                                                                      <PropertyValueFactory property="subscriberId" />
+                                                                  </cellValueFactory>
+                                                              </TableColumn>
                                                               <TableColumn minWidth="200.0" prefWidth="200.0" text="PublicKeyFormat">
                                                                   <cellValueFactory>
                                                                       <PropertyValueFactory property="publicKeyFormat" />

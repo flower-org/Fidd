@@ -5,8 +5,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Splitter;
+import org.apache.commons.lang3.StringUtils;
 import org.immutables.value.Value;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 @Value.Immutable
@@ -19,6 +21,7 @@ public interface SubscriberList {
     @JsonDeserialize(as = ImmutableSubscriber.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     interface Subscriber {
+        @Nullable String subscriberId();
         String publicKeyFormat();
         byte[] publicKeyBytes();
 
@@ -30,13 +33,16 @@ public interface SubscriberList {
         }
 
         /** JavaFX needs "get" methods for PropertyValueFactory */
+        @JsonIgnore default String getSubscriberId() { return StringUtils.defaultIfBlank(subscriberId(), ""); }
+        /** JavaFX needs "get" methods for PropertyValueFactory */
         @JsonIgnore default String getPublicKeyFormat() { return publicKeyFormat(); }
         /** JavaFX needs "get" methods for PropertyValueFactory */
         @JsonIgnore default String getPublicKey() { return compactLines(new String(publicKeyBytes())); }
 
-        static Subscriber of(String publicKeyFormat, byte[] publicKeyBytes) {
-            return ImmutableSubscriber.builder()
-                    .publicKeyFormat(publicKeyFormat)
+        static Subscriber of(@Nullable String subscriberId, String publicKeyFormat, byte[] publicKeyBytes) {
+            ImmutableSubscriber.Builder builder = ImmutableSubscriber.builder();
+            if (!StringUtils.isBlank(subscriberId)) { builder.subscriberId(subscriberId); }
+            return builder.publicKeyFormat(publicKeyFormat)
                     .publicKeyBytes(publicKeyBytes)
                     .build();
         }

@@ -41,8 +41,8 @@ public class YamlSubscriberListSerializerTest {
 
     @Test
     void testRoundTripSerialization() {
-        SubscriberList.Subscriber subscriber1 = SubscriberList.Subscriber.of("X509", new byte[] {1,2,3,4,5,6});
-        SubscriberList.Subscriber subscriber2 = SubscriberList.Subscriber.of("PEM", new byte[] {7,8,9,10,11,12});
+        SubscriberList.Subscriber subscriber1 = SubscriberList.Subscriber.of("Sub1", "X509", new byte[] {1,2,3,4,5,6});
+        SubscriberList.Subscriber subscriber2 = SubscriberList.Subscriber.of("Sub2", "PEM", new byte[] {7,8,9,10,11,12});
         SubscriberList original = SubscriberList.of(subscriber1, subscriber2);
 
         byte[] serialized = serializer.serialize(original);

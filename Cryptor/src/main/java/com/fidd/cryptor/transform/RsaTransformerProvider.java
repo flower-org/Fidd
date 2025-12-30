@@ -1,6 +1,7 @@
 package com.fidd.cryptor.transform;
 
 import com.flower.crypt.Cryptor;
+import com.flower.crypt.HybridAesEncryptor;
 import com.flower.crypt.PkiUtil;
 
 import javax.annotation.Nullable;
@@ -24,19 +25,17 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.cert.X509Certificate;
 
+import static com.flower.crypt.HybridAesEncryptor.concatenateArrays;
 import static com.flower.crypt.PkiUtil.AES;
 import static com.flower.crypt.PkiUtil.AES_CBC;
+
+import static com.flower.crypt.HybridAesEncryptor.Mode;
 
 public class RsaTransformerProvider implements TransformerProvider {
     private static final String ALGORITHM = AES;
     private static final String TRANSFORMATION = AES_CBC;
     public static final int MAX_RSA_2048_PLAINTEXT_SIZE = 245;
     public static final int MAX_RSA_2048_CIPHERTEXT_SIZE = 256;
-
-    public enum Mode {
-        PUBLIC_KEY_ENCRYPT,
-        PRIVATE_KEY_ENCRYPT
-    }
 
     public enum EncryptionFormat {
         RSA,
@@ -123,13 +122,6 @@ public class RsaTransformerProvider implements TransformerProvider {
         // Copy the other array into the result array after the key
         System.arraycopy(data, 0, result, 4 + key.length, data.length);
 
-        return result;
-    }
-
-    static byte[] concatenateArrays(byte[] array1, byte[] array2) {
-        byte[] result = new byte[array1.length + array2.length];
-        System.arraycopy(array1, 0, result, 0, array1.length);
-        System.arraycopy(array2, 0, result, array1.length, array2.length);
         return result;
     }
 
@@ -237,45 +229,11 @@ public class RsaTransformerProvider implements TransformerProvider {
                 }
             } else if (encryptionFormat == EncryptionFormat.RSA_AES_256_HYBRID) {
                 try {
-                    byte[] key = Cryptor.generateAESKeyRaw();
-                    byte[] iv = Cryptor.generateAESIV();
-                    byte[] keyAndIv = concatenateArrays(key, iv);
-
-                    byte[] encryptedKeyIv;
-                    if (mode == Mode.PUBLIC_KEY_ENCRYPT) {
-                        encryptedKeyIv = PkiUtil.encrypt(keyAndIv, publicKey);
-                    } else if (mode == Mode.PRIVATE_KEY_ENCRYPT) {
-                        encryptedKeyIv = PkiUtil.encrypt(keyAndIv, privateKey);
-                    } else {
-                        throw new RuntimeException("Unsupported mode " + mode);
-                    }
-
-                    byte[] encryptedKeyIvWithLength = new byte[4 + encryptedKeyIv.length];
-
-                    // Prepend the length of the key (4 bytes) - BigEndian order to match ByteBuffer.putInt(keyLength)
-                    int encryptedKeyIvLength = encryptedKeyIv.length;
-                    encryptedKeyIvWithLength[0] = (byte) (encryptedKeyIvLength >> 24);
-                    encryptedKeyIvWithLength[1] = (byte) (encryptedKeyIvLength >> 16);
-                    encryptedKeyIvWithLength[2] = (byte) (encryptedKeyIvLength >> 8);
-                    encryptedKeyIvWithLength[3] = (byte) (encryptedKeyIvLength);
-
-                    // Copy the key into the result array
-                    System.arraycopy(encryptedKeyIv, 0, encryptedKeyIvWithLength, 4,
-                            encryptedKeyIv.length);
-
-                    SecretKeySpec aesKey = new SecretKeySpec(key, ALGORITHM);
-                    IvParameterSpec aesIv = new IvParameterSpec(iv);
-                    Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-                    cipher.init(Cipher.ENCRYPT_MODE, aesKey, aesIv);
-
                     try (FileInputStream fis = new FileInputStream(inputFile);
                          FileOutputStream fos = new FileOutputStream(outputFile)) {
-                        fos.write(encryptedKeyIvWithLength);
-                        PkiUtil.encryptFile(aesKey, aesIv, fis, fos, (int)inputFile.length());
+                        HybridAesEncryptor.encrypt(fis, fos, mode, privateKey, publicKey, (int)inputFile.length());
                     }
-                } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
-                         InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException |
-                         IOException e) {
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             } else {
@@ -308,37 +266,10 @@ public class RsaTransformerProvider implements TransformerProvider {
             } else if (encryptionFormat == EncryptionFormat.RSA_AES_256_HYBRID) {
                 try {
                     try (FileInputStream fis = new FileInputStream(inputFile);
-                         FileOutputStream fos = new FileOutputStream(outputFile);
-                         DataInputStream dis = new DataInputStream(fis)) {
-                        int keyIvLength = dis.readInt();
-                        byte[] encryptedKeyIv = new byte[keyIvLength];
-                        int keyIvBytesRead = fis.read(encryptedKeyIv);
-
-                        byte[] keyIv;
-                        if (mode == Mode.PUBLIC_KEY_ENCRYPT) {
-                            keyIv = PkiUtil.decrypt(encryptedKeyIv, privateKey);
-                        } else if (mode == Mode.PRIVATE_KEY_ENCRYPT) {
-                            keyIv = PkiUtil.decrypt(encryptedKeyIv, publicKey);
-                        } else {
-                            throw new RuntimeException("Unsupported mode " + mode);
-                        }
-
-                        // Separate the key and IV
-                        byte[] key = new byte[32];
-                        byte[] iv = new byte[16];
-
-                        System.arraycopy(keyIv, 0, key, 0, 32);
-                        System.arraycopy(keyIv, 32, iv, 0, 16);
-
-                        SecretKeySpec aesKey = new SecretKeySpec(key, ALGORITHM);
-                        IvParameterSpec aesIv = new IvParameterSpec(iv);
-
-                        int dataLength = (int) (inputFile.length() - (encryptedKeyIv.length + 4));
-                        PkiUtil.decryptFile(aesKey, aesIv, fis, fos, dataLength);
+                         FileOutputStream fos = new FileOutputStream(outputFile)) {
+                        HybridAesEncryptor.decrypt(fis, fos, mode, privateKey, publicKey, (int)inputFile.length());
                     }
-                } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
-                         InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException |
-                         IOException e) {
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             } else {

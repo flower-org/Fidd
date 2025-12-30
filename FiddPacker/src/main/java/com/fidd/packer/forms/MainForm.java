@@ -13,8 +13,10 @@ import com.fidd.core.pki.PublicKeySerializer;
 import com.fidd.core.pki.SignerChecker;
 import com.fidd.core.random.RandomGeneratorType;
 import com.fidd.core.subscription.SubscriberList;
+import com.fidd.core.subscription.yaml.YamlSubscriberListSerializer;
 import com.fidd.packer.pack.FiddPackManager;
 import com.fidd.packer.pack.FiddUnpackManager;
+import com.flower.crypt.HybridAesEncryptor;
 import com.flower.crypt.PkiUtil;
 import com.flower.crypt.keys.KeyContext;
 import com.flower.crypt.keys.RsaKeyContext;
@@ -40,6 +42,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -48,7 +51,14 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.security.auth.x500.X500Principal;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -73,6 +83,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MainForm {
     final static Logger LOGGER = LoggerFactory.getLogger(MainForm.class);
+
+    final static FileChooser.ExtensionFilter SUBSCRIBER_LIST_EXTENSION_FILTER =
+        new FileChooser.ExtensionFilter("Subscriber List (*.subs)", "*.subs");
+    final static FileChooser.ExtensionFilter ENCRYPTED_SUBSCRIBER_LIST_EXTENSION_FILTER =
+            new FileChooser.ExtensionFilter("Subscriber List (*.subs.crypt)", "*.subs.crypt");
 
     final static String ENCRYPTION_ALGORITHM = "ENCRYPTION_ALGORITHM";
     final static String FIDD_KEY = "FIDD_KEY";
@@ -175,6 +190,9 @@ public class MainForm {
 
     @FXML @Nullable TextField packedContentFolderForPublishTextField;
     @FXML @Nullable TableView<SubscriberList.Subscriber> subscribersTableView;
+
+    @FXML @Nullable TextField subscribersFileTextField;
+    @FXML @Nullable CheckBox encryptDecryptSubscribersFileCheckBox;
 
     BaseRepositories baseRepositories;
     @Nullable ObservableList<SubscriberList.Subscriber> subscribers;
@@ -1068,6 +1086,172 @@ public class MainForm {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error removing subscriber: " + e, ButtonType.OK);
             LOGGER.error("Error removing subscriber: ", e);
             alert.showAndWait();
+        }
+    }
+
+    public void openSubscribersFile() {
+        try {
+            boolean decrypt = checkNotNull(encryptDecryptSubscribersFileCheckBox).isSelected();
+            if (decrypt) {
+                Pair<X509Certificate, PrivateKey> pair = getCurrentCertificate();
+                if (pair == null) {
+                    JavaFxUtils.showMessage("Certificate load error",
+                        "Certificate load error. If you do not plan to use a certificate, uncheck \"Decrypt / Encrypt\" checkbox.");
+                    return;
+                }
+            }
+
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().addAll(
+                    decrypt ? ENCRYPTED_SUBSCRIBER_LIST_EXTENSION_FILTER : SUBSCRIBER_LIST_EXTENSION_FILTER);
+            fileChooser.setTitle("Open Subscribers File");
+
+            File subscriberListFile = fileChooser.showOpenDialog(checkNotNull(mainStage));
+            if (subscriberListFile != null) {
+                checkNotNull(subscribersFileTextField).textProperty().set(subscriberListFile.getPath());
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error opening subscribers file: " + e, ButtonType.OK);
+            LOGGER.error("Error opening subscribers file: ", e);
+            alert.showAndWait();
+        }
+    }
+
+    public void loadSubscribersFile() {
+        if (!checkNotNull(subscribers).isEmpty()) {
+            if (JavaFxUtils.YesNo.NO ==
+                    JavaFxUtils.showYesNoDialog("Load Subscribers File",
+                            "Current subscribers will be lost. Continue?")) {
+                return;
+            }
+        }
+
+        try {
+            String subscriberListFilePath = checkNotNull(subscribersFileTextField).textProperty().get();
+            File subscriberListFile = new File(subscriberListFilePath);
+            if (!subscriberListFile.exists()) {
+                Alert alert = new Alert(Alert.AlertType.ERROR,
+                        "Error loading subscribers file - file doesn't exist: " + subscriberListFilePath, ButtonType.OK);
+                LOGGER.warn("Error loading subscribers file - file doesn't exist: {}", subscriberListFilePath);
+                alert.showAndWait();
+            } else {
+                boolean decrypt = checkNotNull(encryptDecryptSubscribersFileCheckBox).isSelected();
+                byte[] subscriberListBytes;
+                if (decrypt) {
+                    Pair<X509Certificate, PrivateKey> pair = getCurrentCertificate();
+                    if (pair == null) {
+                        JavaFxUtils.showMessage("Certificate load error",
+                                "Certificate load error. If you do not plan to use a certificate, uncheck \"Decrypt / Encrypt\" checkbox.");
+                        return;
+                    }
+
+                    // Decrypt file
+                    ByteArrayOutputStream subscriberListOutputStream = new ByteArrayOutputStream();
+                    try (FileInputStream fis = new FileInputStream(subscriberListFile);
+                         DataInputStream dis = new DataInputStream(fis)) {
+                        PrivateKey privateKey = checkNotNull(pair).getRight();
+                        HybridAesEncryptor.decrypt(fis, subscriberListOutputStream, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
+                                privateKey, null, null);
+                    }
+
+                    subscriberListBytes = subscriberListOutputStream.toByteArray();
+                } else {
+                    subscriberListBytes = Files.readAllBytes(subscriberListFile.toPath());
+                }
+
+                // Deserialize SubscriberList
+                SubscriberList subscriberList = new YamlSubscriberListSerializer().deserialize(subscriberListBytes);
+
+                // Apply loaded SubscriberList to subscribers table
+                checkNotNull(subscribers).clear();
+                checkNotNull(subscribers).addAll(subscriberList.subscriberList());
+                checkNotNull(subscribersTableView).refresh();
+
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Subscribers file loaded successfully " + subscriberListFilePath, ButtonType.OK);
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error loading subscribers file: " + e, ButtonType.OK);
+            LOGGER.error("Error loading subscribers file: ", e);
+            alert.showAndWait();
+        }
+    }
+
+    protected void writeBytesToFile(byte[] data, File file) throws IOException {
+        // Ensure parent directory exists
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs(); // create directories if needed
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(data);
+        }
+    }
+
+    public void saveSubscribersFile() {
+        try {
+            boolean encrypt = checkNotNull(encryptDecryptSubscribersFileCheckBox).isSelected();
+            Pair<X509Certificate, PrivateKey> pair = null;
+            if (encrypt) {
+                pair = getCurrentCertificate();
+                if (pair == null) {
+                    JavaFxUtils.showMessage("Certificate load error",
+                            "Certificate load error. If you do not plan to use a certificate, uncheck \"Decrypt / Encrypt\" checkbox.");
+                    return;
+                }
+            }
+
+            String subscriberListFilePath = checkNotNull(subscribersFileTextField).textProperty().get();
+            File subscriberListFile = new File(subscriberListFilePath);
+            if (subscriberListFile.exists()) {
+                if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Save Subscribers File",
+                                "Save will overwrite Subscribers file. Continue?")) {
+                    return;
+                }
+                subscriberListFile.delete();
+            }
+
+            // serialize subscribers
+            SubscriberList subscriberList = SubscriberList.of(checkNotNull(subscribers).toArray(new SubscriberList.Subscriber[0]));
+            byte[] subscriberListBytes = new YamlSubscriberListSerializer().serialize(subscriberList);
+
+            // encrypt if needed
+            if (encrypt) {
+                ByteArrayInputStream bis = new ByteArrayInputStream(subscriberListBytes);
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                HybridAesEncryptor.encrypt(bis, bos, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
+                        null, checkNotNull(pair).getLeft().getPublicKey(), null);
+                subscriberListBytes = bos.toByteArray();
+            }
+
+            // save bytes to File
+            writeBytesToFile(subscriberListBytes, subscriberListFile);
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Subscribers file saved successfully " + subscriberListFilePath, ButtonType.OK);
+            alert.showAndWait();
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error opening subscribers file: " + e, ButtonType.OK);
+            LOGGER.error("Error opening subscribers file: ", e);
+            alert.showAndWait();
+        }
+    }
+
+    public void updateSubscribersFileExtension() {
+        String subscribersFilePath = checkNotNull(subscribersFileTextField).textProperty().get();
+        if (!StringUtils.isBlank(subscribersFilePath)) {
+            boolean selected = checkNotNull(encryptDecryptSubscribersFileCheckBox).selectedProperty().get();
+            if (selected) {
+                if (!subscribersFilePath.endsWith(".crypt")) {
+                    subscribersFilePath += ".crypt";
+                    checkNotNull(subscribersFileTextField).textProperty().set(subscribersFilePath);
+                }
+            } else {
+                if (subscribersFilePath.endsWith(".crypt")) {
+                    subscribersFilePath = subscribersFilePath.substring(0, subscribersFilePath.length() - 6);
+                    checkNotNull(subscribersFileTextField).textProperty().set(subscribersFilePath);
+                }
+            }
         }
     }
 }
