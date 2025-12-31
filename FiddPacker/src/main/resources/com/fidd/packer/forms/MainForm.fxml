@@ -555,6 +555,8 @@
                                       <items>
                                         <Button mnemonicParsing="false" onAction="#addSubscriber" text="Add Subscriber" />
                                           <Button mnemonicParsing="false" onAction="#removeSubscriber" text="Remove Subscriber" />
+                                          <CheckBox fx:id="selfSubscribeCheckBox" mnemonicParsing="false" selected="true" text="Self-Subscribe" />
+                                          <CheckBox fx:id="highAmbiguityCheckBox" mnemonicParsing="false" selected="true" text="High Ambiguity" />
                                       </items>
                                     </ToolBar>
                                     <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">

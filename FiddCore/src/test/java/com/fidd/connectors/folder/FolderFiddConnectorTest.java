@@ -11,6 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 
+import static com.fidd.connectors.folder.FolderFiddConstants.KEY_FILE_NAME;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_KEY_SUBFOLDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -250,7 +252,7 @@ public class FolderFiddConnectorTest {
     void testGetKeyFile_readsMatchingFiles() throws IOException {
         long messageNumber = 42L;
         Path msg = createMessageFolder(messageNumber);
-        Path keys = msg.resolve(FolderFiddConnector.KEY_SUBFOLDER);
+        Path keys = msg.resolve(ENCRYPTED_KEY_SUBFOLDER);
         Files.createDirectories(keys);
 
         // Mock keyFolderPath(messageNumber)
@@ -289,7 +291,7 @@ public class FolderFiddConnectorTest {
     void testGetKeyFile_returnsNullIfFileDisappears() throws IOException {
         long messageNumber = 43L;
         Path msg = createMessageFolder(messageNumber);
-        Path keys = msg.resolve(FolderFiddConnector.KEY_SUBFOLDER);
+        Path keys = msg.resolve(ENCRYPTED_KEY_SUBFOLDER);
         Files.createDirectories(keys);
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
@@ -311,7 +313,7 @@ public class FolderFiddConnectorTest {
     void testGetKeyFile_ignoresDirectories() throws IOException {
         long messageNumber = 44L;
         Path msg = createMessageFolder(messageNumber);
-        Path keys = msg.resolve(FolderFiddConnector.KEY_SUBFOLDER);
+        Path keys = msg.resolve(ENCRYPTED_KEY_SUBFOLDER);
         Files.createDirectories(keys);
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
@@ -329,7 +331,7 @@ public class FolderFiddConnectorTest {
     @Test
     void testGetUnencryptedKeyFile() throws IOException {
         Path msg = createMessageFolder(1);
-        Path keyFile = msg.resolve(FolderFiddConnector.KEY_FILE_NAME);
+        Path keyFile = msg.resolve(KEY_FILE_NAME);
         write(keyFile, "hello");
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());

@@ -22,14 +22,13 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.fidd.connectors.folder.FolderFiddConstants.KEY_FILE_NAME;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_KEY_SUBFOLDER;
+import static com.fidd.connectors.folder.FolderFiddConstants.MESSAGE_FILE_NAME;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class FolderFiddConnector implements FiddConnector {
     public final static Logger LOGGER = LoggerFactory.getLogger(FolderFiddConnector.class);
-
-    public final static String KEY_SUBFOLDER = "keys";
-    public final static String KEY_FILE_NAME = "fidd.key";
-    public final static String MESSAGE_FILE_NAME = "fidd.message";
 
     // Regex: fidd.key.<digits>.sign
     public final static Pattern FIDD_KEY_SIGNATURE_PATTERN = Pattern.compile("fidd\\.key\\.(\\d+)\\.sign");
@@ -150,7 +149,7 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     protected Path messageFolderPath(long messageNumber) { return fiddFolder.resolve(Long.toString(messageNumber)); }
-    protected Path keyFolderPath(long messageNumber) { return messageFolderPath(messageNumber).resolve(KEY_SUBFOLDER); }
+    protected Path keyFolderPath(long messageNumber) { return messageFolderPath(messageNumber).resolve(ENCRYPTED_KEY_SUBFOLDER); }
     protected Path messageFilePath(long messageNumber) { return messageFolderPath(messageNumber).resolve(MESSAGE_FILE_NAME); }
 
     @Override

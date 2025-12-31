@@ -3,6 +3,7 @@ package com.fidd.packer.forms;
 import com.fidd.base.BaseRepositories;
 import com.fidd.base.DefaultBaseRepositories;
 import com.fidd.base.Repository;
+import com.fidd.core.common.FiddKeyLookup;
 import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
@@ -28,7 +29,6 @@ import com.flower.crypt.keys.forms.TabKeyProvider;
 import com.flower.fxutils.JavaFxUtils;
 import com.flower.fxutils.ModalWindow;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -69,11 +69,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.prefs.Preferences;
 
-import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_FILE_NAME;
-import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_FILE_NAME_PREF;
-import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_KEY_FILE_NAME;
-import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_KEY_FILE_NAME_PREF;
-import static com.fidd.packer.pack.FiddPackManager.DEFAULT_FIDD_SIGNATURE_EXT;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_EXT;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_KEY_FILE_EXT;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_KEY_SUBFOLDER;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_FILE_NAME_PREFIX;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_KEY_FILE_NAME_PREFIX;
+import static com.fidd.connectors.folder.FolderFiddConstants.DEFAULT_FIDD_SIGNATURE_EXT;
+import static com.fidd.connectors.folder.FolderFiddConstants.KEY_FILE_NAME;
+import static com.fidd.connectors.folder.FolderFiddConstants.MESSAGE_FILE_NAME;
 import static com.fidd.packer.pack.FiddUnpackManager.PublicKeySource.MESSAGE_EMBEDDED;
 import static com.fidd.packer.pack.FiddUnpackManager.PublicKeySource.MESSAGE_FALL_BACK_TO_PARAMETER;
 import static com.fidd.packer.pack.FiddUnpackManager.PublicKeySource.SUPPLIED_PARAMETER;
@@ -83,6 +86,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MainForm {
     final static Logger LOGGER = LoggerFactory.getLogger(MainForm.class);
+
+    final static Repository<PublicKeySerializer> PUBLIC_KEY_FORMAT_REPO = new DefaultBaseRepositories().publicKeyFormatRepo();
 
     final static FileChooser.ExtensionFilter SUBSCRIBER_LIST_EXTENSION_FILTER =
         new FileChooser.ExtensionFilter("Subscriber List (*.subs)", "*.subs");
@@ -193,6 +198,8 @@ public class MainForm {
 
     @FXML @Nullable TextField subscribersFileTextField;
     @FXML @Nullable CheckBox encryptDecryptSubscribersFileCheckBox;
+    @FXML @Nullable CheckBox selfSubscribeCheckBox;
+    @FXML @Nullable CheckBox highAmbiguityCheckBox;
 
     BaseRepositories baseRepositories;
     @Nullable ObservableList<SubscriberList.Subscriber> subscribers;
@@ -259,12 +266,8 @@ public class MainForm {
 
         keyProvider.initPreferences();
 
-        checkNotNull(packedContentFolderForUnpackTextField).textProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observableValue, String _old, String _new) {
-                findFiddFiles(_new);
-            }
-        });
+        checkNotNull(packedContentFolderForUnpackTextField).textProperty().addListener(
+                (observableValue, _old, _new) -> findFiddFiles(_new));
 
         loadFiddPackerChooserPreferences();
         setFiddPackerPreferencesHandlers();
@@ -815,17 +818,17 @@ public class MainForm {
                 List<Long> fiddKeyFileSignatures = new ArrayList<>();
                 for (File subFile : subFiles) {
                     String filename = subFile.getName();
-                    if (filename.equals(DEFAULT_FIDD_FILE_NAME)) {
+                    if (filename.equals(MESSAGE_FILE_NAME)) {
                         checkNotNull(fiddFileTextField).textProperty().set(filename);
-                    } else if (filename.equals(DEFAULT_FIDD_KEY_FILE_NAME)) {
+                    } else if (filename.equals(KEY_FILE_NAME)) {
                         checkNotNull(fiddKeyFileTextField).textProperty().set(filename);
-                    } else if (filename.startsWith(DEFAULT_FIDD_FILE_NAME_PREF) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
-                        Long signatureNum = getSignatureNum(filename, DEFAULT_FIDD_FILE_NAME_PREF, DEFAULT_FIDD_SIGNATURE_EXT);
+                    } else if (filename.startsWith(FIDD_FILE_NAME_PREFIX) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
+                        Long signatureNum = getSignatureNum(filename, FIDD_FILE_NAME_PREFIX, DEFAULT_FIDD_SIGNATURE_EXT);
                         if (signatureNum != null) {
                             fiddFileSignatures.add(signatureNum);
                         }
-                    } else if (filename.startsWith(DEFAULT_FIDD_KEY_FILE_NAME_PREF) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
-                        Long keySignatureNum = getSignatureNum(filename, DEFAULT_FIDD_KEY_FILE_NAME_PREF, DEFAULT_FIDD_SIGNATURE_EXT);
+                    } else if (filename.startsWith(FIDD_KEY_FILE_NAME_PREFIX) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
+                        Long keySignatureNum = getSignatureNum(filename, FIDD_KEY_FILE_NAME_PREFIX, DEFAULT_FIDD_SIGNATURE_EXT);
                         if (keySignatureNum != null) {
                             fiddKeyFileSignatures.add(keySignatureNum);
                         }
@@ -836,9 +839,9 @@ public class MainForm {
                 Collections.sort(fiddKeyFileSignatures);
 
                 checkNotNull(fiddFileSignaturesTextField).textProperty().set(String.join(SIGNATURE_FILES_DELIMITER,
-                        fiddFileSignatures.stream().map(n -> DEFAULT_FIDD_FILE_NAME_PREF + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
+                        fiddFileSignatures.stream().map(n -> FIDD_FILE_NAME_PREFIX + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
                 checkNotNull(fiddKeyFileSignaturesTextField).textProperty().set(String.join(SIGNATURE_FILES_DELIMITER,
-                        fiddKeyFileSignatures.stream().map(n -> DEFAULT_FIDD_KEY_FILE_NAME_PREF + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
+                        fiddKeyFileSignatures.stream().map(n -> FIDD_KEY_FILE_NAME_PREFIX + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
             }
         } catch (Exception ignored) {}
     }
@@ -1036,10 +1039,6 @@ public class MainForm {
         }
     }
 
-    public void publishFolder() {
-        // TODO: implement
-    }
-
     void addSubscriber(SubscriberList.Subscriber subscriber) {
         Platform.runLater(() -> {
             checkNotNull(subscribers).add(subscriber);
@@ -1090,6 +1089,7 @@ public class MainForm {
     }
 
     public void openSubscribersFile() {
+        File subscriberListFile = null;
         try {
             boolean decrypt = checkNotNull(encryptDecryptSubscribersFileCheckBox).isSelected();
             if (decrypt) {
@@ -1106,7 +1106,7 @@ public class MainForm {
                     decrypt ? ENCRYPTED_SUBSCRIBER_LIST_EXTENSION_FILTER : SUBSCRIBER_LIST_EXTENSION_FILTER);
             fileChooser.setTitle("Open Subscribers File");
 
-            File subscriberListFile = fileChooser.showOpenDialog(checkNotNull(mainStage));
+            subscriberListFile = fileChooser.showOpenDialog(checkNotNull(mainStage));
             if (subscriberListFile != null) {
                 checkNotNull(subscribersFileTextField).textProperty().set(subscriberListFile.getPath());
             }
@@ -1114,6 +1114,13 @@ public class MainForm {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error opening subscribers file: " + e, ButtonType.OK);
             LOGGER.error("Error opening subscribers file: ", e);
             alert.showAndWait();
+        }
+
+        if (subscriberListFile != null && subscriberListFile.exists()) {
+            if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Load Subscribers File",
+                    "Load the subscribers file now?")) {
+                loadSubscribersFile();
+            }
         }
     }
 
@@ -1242,16 +1249,166 @@ public class MainForm {
         if (!StringUtils.isBlank(subscribersFilePath)) {
             boolean selected = checkNotNull(encryptDecryptSubscribersFileCheckBox).selectedProperty().get();
             if (selected) {
-                if (!subscribersFilePath.endsWith(".crypt")) {
-                    subscribersFilePath += ".crypt";
+                if (!subscribersFilePath.endsWith(ENCRYPTED_EXT)) {
+                    subscribersFilePath += ENCRYPTED_EXT;
                     checkNotNull(subscribersFileTextField).textProperty().set(subscribersFilePath);
                 }
             } else {
-                if (subscribersFilePath.endsWith(".crypt")) {
+                if (subscribersFilePath.endsWith(ENCRYPTED_EXT)) {
                     subscribersFilePath = subscribersFilePath.substring(0, subscribersFilePath.length() - 6);
                     checkNotNull(subscribersFileTextField).textProperty().set(subscribersFilePath);
                 }
             }
+        }
+    }
+
+    public void publishFolder() {
+        try {
+            // 1. Make sure we can see fidd.key file in the message folder
+            String packedContentFolderPath = checkNotNull(packedContentFolderForPublishTextField).textProperty().get();
+            File packedContentFolder = new File(packedContentFolderPath);
+            if (!packedContentFolder.exists()) {
+                JavaFxUtils.showMessage("Packed Content Folder doesn't exist", packedContentFolder.getAbsolutePath());
+                return;
+            }
+            if (!packedContentFolder.isDirectory()) {
+                JavaFxUtils.showMessage("Packed Content Folder is not a Directory", packedContentFolder.getAbsolutePath());
+                return;
+            }
+
+            File unencryptedFiddKey = new File(packedContentFolderPath, KEY_FILE_NAME);
+            if (!unencryptedFiddKey.exists()) {
+                // TODO: try to recover from self-subscribe data
+                JavaFxUtils.showMessage("Fidd Key File doesn't exist in Packed Content Folder", unencryptedFiddKey.getAbsolutePath());
+                return;
+            }
+            if (!unencryptedFiddKey.isFile()) {
+                JavaFxUtils.showMessage("Fidd Key File in Packed Content Folder is a Directory, not a file", unencryptedFiddKey.getAbsolutePath());
+                return;
+            }
+
+            File fiddMessage = new File(packedContentFolderPath, MESSAGE_FILE_NAME);
+            if (!fiddMessage.exists()) {
+                JavaFxUtils.showMessage("Fidd Message File doesn't exist in Packed Content Folder", fiddMessage.getAbsolutePath());
+                return;
+            }
+            if (!fiddMessage.isFile()) {
+                JavaFxUtils.showMessage("Fidd Message File in Packed Content Folder is a Directory, not a file", fiddMessage.getAbsolutePath());
+                return;
+            }
+
+            // 2. Make sure there are subscribers
+            if (subscribers == null || subscribers.isEmpty()) {
+                JavaFxUtils.showMessage("No Subscribers", "Please add at least one subscriber before publishing.");
+                return;
+            }
+
+            boolean selfSubscribe = checkNotNull(selfSubscribeCheckBox).selectedProperty().get();
+            X509Certificate selfCert = null;
+            if (selfSubscribe) {
+                Pair<X509Certificate, PrivateKey> pair = getCurrentCertificate();
+                if (pair == null) {
+                    JavaFxUtils.showMessage("Certificate load error",
+                            "Can't self-subscribe: Certificate load error. If you do not plan to self-subscribe, uncheck \"Self-Subscribe\".");
+                    return;
+                }
+                selfCert = pair.getLeft();
+            }
+
+            ArrayList<X509Certificate> subscriberCerts = new ArrayList<>();
+            for (SubscriberList.Subscriber subscriber : this.subscribers) {
+                String subscriberCertFormat = subscriber.publicKeyFormat();
+                byte[] subscriberCertBytes = subscriber.publicKeyBytes();
+
+                PublicKeySerializer deserializer = PUBLIC_KEY_FORMAT_REPO.get(subscriberCertFormat);
+                if (deserializer == null) {
+                    if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Unknown Subscriber Certificate Format. Continue?",
+                            "Unknown Subscriber Certificate Format: " + subscriberCertFormat +
+                                    " for subscriberId: " + subscriber.subscriberId() + ". Continue?")) {
+                        return;
+                    }
+                } else {
+                    X509Certificate subscriberCert = deserializer.deserialize(subscriberCertBytes);
+                    subscriberCerts.add(subscriberCert);
+                }
+            }
+
+            if (selfSubscribe) {
+                boolean alreadySubscribed = false;
+                for (X509Certificate cert : subscriberCerts) {
+                    if (cert.getPublicKey().equals(checkNotNull(selfCert).getPublicKey())) {
+                        alreadySubscribed = true;
+                        break;
+                    }
+                }
+                if (!alreadySubscribed) {
+                    subscriberCerts.add(selfCert);
+                }
+            }
+
+            // 3. Make sure keys folder is empty or doesn't exist
+            File keysFolder = new File(packedContentFolderPath, ENCRYPTED_KEY_SUBFOLDER);
+            if (keysFolder.exists()) {
+                if (keysFolder.isDirectory()) {
+                    File[] existingFiles = keysFolder.listFiles();
+                    if (existingFiles != null && existingFiles.length > 0) {
+                        if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Keys Folder Not Empty",
+                                "Keys Folder Not Empty. Delete existing files in the subfolder?")) {
+                            // delete existing files
+                            for (File existingFile : existingFiles) {
+                                if (!existingFile.delete()) {
+                                    JavaFxUtils.showMessage("Failed to delete existing file in Keys Folder", existingFile.getAbsolutePath());
+                                    return;
+                                }
+                            }
+                        } else {
+                            return;
+                        }
+                    }
+                } else {
+                    if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Keys Folder Is a File",
+                            "Keys Folder is a File. Delete?")) {
+                        return;
+                    }
+                }
+                // delete keysFolder
+                if (!keysFolder.delete()) {
+                    JavaFxUtils.showMessage("Failed to delete existing file in Keys Folder", keysFolder.getAbsolutePath());
+                    return;
+                }
+            }
+            keysFolder.mkdir();
+
+            // 4. For each subscriber, encrypt fidd.key and save to keys folder
+            boolean isHighAmbiguity = checkNotNull(highAmbiguityCheckBox).selectedProperty().get();
+
+            long messageNumber = Long.parseLong(packedContentFolder.getName());
+            long messageLength = fiddMessage.length();
+            List<String> footprints = FiddKeyLookup.createLookupFootprints(subscriberCerts, messageNumber, messageLength);
+            List<String> encryptedKeyFileNames;
+            if (isHighAmbiguity) {
+                encryptedKeyFileNames = FiddKeyLookup.buildHighAmbiguityPrefixList(footprints);
+            } else {
+                encryptedKeyFileNames = FiddKeyLookup.buildLowAmbiguityPrefixList(footprints);
+            }
+
+            for (int i = 0; i < subscriberCerts.size(); i++) {
+                X509Certificate subscriberCert = subscriberCerts.get(i);
+                String encryptedKeyFileName = encryptedKeyFileNames.get(i);
+
+                File encryptedKeyFile = new File(keysFolder, encryptedKeyFileName + ENCRYPTED_KEY_FILE_EXT);
+                try (FileInputStream fis = new FileInputStream(unencryptedFiddKey);
+                     FileOutputStream fos = new FileOutputStream(encryptedKeyFile)) {
+                    HybridAesEncryptor.encrypt(fis, fos, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
+                            null, subscriberCert.getPublicKey(), null);
+                }
+            }
+
+            // TODO: ask to delete unencrypted fidd key (recommended)
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error opening subscribers file: " + e, ButtonType.OK);
+            LOGGER.error("Error opening subscribers file: ", e);
+            alert.showAndWait();
         }
     }
 }
