@@ -19,6 +19,7 @@ public interface FiddConnector {
     /** Returns null if Fidd Keys are stored encrypted */
     @Nullable byte[] getUnencryptedKeyFile(long messageNumber);
 
+    long getMessageFileSize(long messageNumber);
     InputStream getMessageFile(long messageNumber);
     InputStream getMessageFileChunk(long messageNumber, long offset, long length);
 

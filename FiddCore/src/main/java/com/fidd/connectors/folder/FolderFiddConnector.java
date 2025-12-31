@@ -214,6 +214,19 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     @Override
+    public long getMessageFileSize(long messageNumber) {
+        try {
+            Path messageFilePath = messageFilePath(messageNumber);
+            if (!Files.exists(messageFilePath) || !Files.isRegularFile(messageFilePath)) {
+                throw new FileNotFoundException("Message file not found: " + messageNumber);
+            }
+            return Files.size(messageFilePath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public InputStream getMessageFile(long messageNumber) {
         try {
             Path messageFilePath = messageFilePath(messageNumber);

@@ -347,6 +347,20 @@ public class FolderFiddConnectorTest {
     }
 
     // ------------------------------------------------------------
+    // getMessageFileSize
+    // ------------------------------------------------------------
+    @Test
+    void testGetMessageFileSize() throws IOException {
+        Path msg = createMessageFolder(1);
+        Path file = msg.resolve("fidd.message");
+        write(file, "xyz");
+
+        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
+        long size = fidd.getMessageFileSize(1);
+        assertEquals(3, size);
+    }
+
+    // ------------------------------------------------------------
     // getMessageFile
     // ------------------------------------------------------------
     @Test
