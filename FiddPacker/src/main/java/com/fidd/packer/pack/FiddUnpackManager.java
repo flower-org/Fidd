@@ -57,7 +57,8 @@ public class FiddUnpackManager {
     public static void fiddUnpackPost(BaseRepositories baseRepositories,
 
                                       File fiddFile,
-                                      File fiddKeyFile,
+                                      String fiddKeyFileName,
+                                      byte[] fiddKeyBytes,
                                       List<File> fiddFileSignatures,
                                       List<File> fiddKeyFileSignatures,
 
@@ -81,8 +82,7 @@ public class FiddUnpackManager {
         progressCallback.log("Unpacking " + fiddFile.getAbsolutePath());
 
         // 1. Load Fidd.Key file (format detection)
-        progressCallback.log("1. Loading FiddKey " + fiddKeyFile.getAbsolutePath());
-        byte[] fiddKeyBytes = Files.readAllBytes(fiddKeyFile.toPath());
+        progressCallback.log("1. Loading FiddKey " + fiddKeyFileName);
 
         FiddKey fiddKey = null;
         Repository<FiddKeySerializer> fiddKeyFormatRepo = baseRepositories.fiddKeyFormatRepo();
@@ -215,7 +215,7 @@ public class FiddUnpackManager {
 
             // 7. Validate Fidd.Key signature
             progressCallback.log("7. Validating Fidd.Key file signatures");
-            validateFile(baseRepositories, fiddKeyFile, fiddKeyFileSignatures, fiddFileMetadata.authorsFiddKeyFileSignatureFormats(),
+            validateFile(baseRepositories, fiddKeyFileName, fiddKeyBytes, fiddKeyFileSignatures, fiddFileMetadata.authorsFiddKeyFileSignatureFormats(),
                     progressCallback, currentCert, throwOnValidationFailure);
         }
 
@@ -435,6 +435,17 @@ public class FiddUnpackManager {
         }
     }
 
+    private static void validateFile(BaseRepositories baseRepositories, String dataFileName, byte[] dataBytes, List<File> signatureFiles,
+                                     List<String> signatureFormats, ProgressCallback progressCallback,
+                                     @Nullable X509Certificate publicKey, boolean throwOnValidationFailure) throws IOException {
+        // TODO: handle mismatch between number of signatureFiles and number of signatureFormats
+        for (int i = 0; i < signatureFiles.size(); i++) {
+            validateFileSignature(i, dataFileName, dataBytes, signatureFiles.get(i),
+                    baseRepositories, signatureFormats.get(i), publicKey,
+                    progressCallback, throwOnValidationFailure);
+        }
+    }
+
     private static void validateFileSignature(int signatureNumber, File dataFile, File signatureFile,
                                               BaseRepositories baseRepositories, String signatureFormat,
                                               @Nullable X509Certificate publicKey,
@@ -442,6 +453,19 @@ public class FiddUnpackManager {
         try (FileInputStream signatureStream = new FileInputStream(signatureFile)) {
             try (FileInputStream dataStream = new FileInputStream(dataFile)) {
                 validateFileSignature(signatureNumber, dataFile.getName(), signatureFile.getName(),
+                        dataStream, signatureStream,
+                        baseRepositories, signatureFormat, publicKey, progressCallback, throwOnValidationFailure);
+            }
+        }
+    }
+
+    private static void validateFileSignature(int signatureNumber, String dataFileName, byte[] dataBytes, File signatureFile,
+                                              BaseRepositories baseRepositories, String signatureFormat,
+                                              @Nullable X509Certificate publicKey,
+                                              ProgressCallback progressCallback, boolean throwOnValidationFailure) throws IOException {
+        try (FileInputStream signatureStream = new FileInputStream(signatureFile)) {
+            try (ByteArrayInputStream dataStream = new ByteArrayInputStream(dataBytes)) {
+                validateFileSignature(signatureNumber, dataFileName, signatureFile.getName(),
                         dataStream, signatureStream,
                         baseRepositories, signatureFormat, publicKey, progressCallback, throwOnValidationFailure);
             }

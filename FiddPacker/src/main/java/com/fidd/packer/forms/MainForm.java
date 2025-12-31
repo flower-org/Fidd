@@ -922,15 +922,37 @@ public class MainForm {
                 return;
             }
 
+            File fiddKeyFile_ = null;
             String fiddKeyFileName = checkNotNull(fiddKeyFileTextField).textProperty().get();
-            if (StringUtils.isBlank(fiddKeyFileName)) {
-                JavaFxUtils.showMessage("Fidd Key File not found");
-                return;
+            if (!StringUtils.isBlank(fiddKeyFileName)) {
+                fiddKeyFile_ = new File(packedContentFolder, fiddKeyFileName);
             }
-            File fiddKeyFile = new File(packedContentFolder, fiddKeyFileName);
-            if (!fiddKeyFile.exists()) {
-                JavaFxUtils.showMessage("Fidd Key File doesn't exist", fiddKeyFile.getAbsolutePath());
-                return;
+
+            byte[] fiddKeyBytes;
+            if (fiddKeyFile_ != null && fiddKeyFile_.exists()) {
+                fiddKeyBytes = Files.readAllBytes(fiddKeyFile_.toPath());
+            } else {
+                File keysFolder = new File(packedContentFolder, ENCRYPTED_FIDD_KEY_SUBFOLDER);
+                if (!keysFolder.exists()) {
+                    JavaFxUtils.showMessage("Keys Folder doesn't exist", keysFolder.getAbsolutePath());
+                    return;
+                } else {
+                    if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Fidd Key File not found. Recover?",
+                            "Fidd Key File doesn't exist in Packed Content Folder. Try to recover from self-subscription?")) {
+                        fiddKeyBytes = recoverFiddFileFromSelfSubscription(packedContentFolder);
+                        if (fiddKeyBytes == null) {
+                            JavaFxUtils.showMessage("Failed to recover Fidd Key File from self-subscription.");
+                            return;
+                        } else {
+                            if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Save recovered Fidd Key File? (NOT RECOMMENDED)",
+                                    "Successfully recovered Fidd Key File from self-subscription. Save unencrypted file on disk?")) {
+                                Files.write(new File(packedContentFolder, FIDD_KEY_FILE_NAME).toPath(), fiddKeyBytes);
+                            }
+                        }
+                    } else {
+                        return;
+                    }
+                }
             }
 
             List<File> fiddFileSignatures = new ArrayList<>();
@@ -1004,12 +1026,13 @@ public class MainForm {
                 }
             }
 
-            // TODO: Progress Bar modal window
+            // TODO: Progress Bar modal window ??
 
             boolean throwOnValidationFailures = !ignoreValidationFailures;
             FiddUnpackManager.fiddUnpackPost(baseRepositories,
                     fiddFile,
-                    fiddKeyFile,
+                    fiddKeyFileName,
+                    fiddKeyBytes,
                     fiddFileSignatures,
                     fiddKeyFileSignatures,
                     contentFolder,
@@ -1265,6 +1288,38 @@ public class MainForm {
         }
     }
 
+    public @Nullable byte[] recoverFiddFileFromSelfSubscription(File packedContentFolder) throws Exception {
+        Pair<X509Certificate, PrivateKey> pair = getCurrentCertificate();
+        if (pair == null) {
+            throw new RuntimeException("Can't check self-subscription: Certificate load error.");
+        }
+        X509Certificate selfCert = pair.getLeft();
+        PrivateKey selfPrivateKey = pair.getRight();
+
+        FolderFiddConnector connector = new FolderFiddConnector(packedContentFolder.toPath().getParent());
+        long messageNumber = Long.parseLong(packedContentFolder.toPath().getFileName().toString());
+        File fiddMessage = new File(packedContentFolder, FIDD_MESSAGE_FILE_NAME);
+        long messageLength = fiddMessage.length();
+
+        String footprint = FiddKeyLookup.createLookupFootprint(selfCert, messageNumber, messageLength);
+        List<byte[]> candidates = connector.getFiddKeyCandidates(messageNumber, footprint.getBytes(StandardCharsets.UTF_8));
+        for (byte[] candidate : candidates) {
+            try {
+                byte[] encryptedKey = connector.getFiddKey(messageNumber, candidate);
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(encryptedKey);
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+                HybridAesEncryptor.decrypt(inputStream, outputStream, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
+                        selfPrivateKey, null, null);
+
+                return outputStream.toByteArray();
+            } catch (Exception e) {
+                LOGGER.debug("Failed to decrypt candidate " + new String(candidate));
+            }
+        }
+        return null;
+    }
+
     public void publishFolder() {
         try {
             // 1. Make sure we can see fidd.key file in the message folder
@@ -1280,45 +1335,16 @@ public class MainForm {
             }
 
             File unencryptedFiddKeyFile = new File(packedContentFolderPath, FIDD_KEY_FILE_NAME);
-            byte[] unencryptedFiddKey = null;
+            byte[] unencryptedFiddKey;
             if (!unencryptedFiddKeyFile.exists()) {
                 File keysFolder = new File(packedContentFolderPath, ENCRYPTED_FIDD_KEY_SUBFOLDER);
                 if (!keysFolder.exists()) {
-                    JavaFxUtils.showMessage("Fidd Key File doesn't exist in Packed Content Folder", unencryptedFiddKeyFile.getAbsolutePath());
+                    JavaFxUtils.showMessage("Keys Folder doesn't exist", keysFolder.getAbsolutePath());
                     return;
                 } else {
                     if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Fidd Key File not found. Recover?",
                             "Fidd Key File doesn't exist in Packed Content Folder. Try to recover from self-subscription?")) {
-                        Pair<X509Certificate, PrivateKey> pair = getCurrentCertificate();
-                        if (pair == null) {
-                            JavaFxUtils.showMessage("Certificate load error", "Can't check self-subscribtion: Certificate load error.");
-                            return;
-                        }
-                        X509Certificate selfCert = pair.getLeft();
-                        PrivateKey selfPrivateKey = pair.getRight();
-
-                        FolderFiddConnector connector = new FolderFiddConnector(packedContentFolder.toPath().getParent());
-                        long messageNumber = Long.parseLong(packedContentFolder.toPath().getFileName().toString());
-                        File fiddMessage = new File(packedContentFolderPath, FIDD_MESSAGE_FILE_NAME);
-                        long messageLength = fiddMessage.length();
-
-                        String footprint = FiddKeyLookup.createLookupFootprint(selfCert, messageNumber, messageLength);
-                        List<byte[]> candidates = connector.getFiddKeyCandidates(messageNumber, footprint.getBytes(StandardCharsets.UTF_8));
-                        for (byte[] candidate : candidates) {
-                            try {
-                                byte[] encryptedKey = connector.getFiddKey(messageNumber, candidate);
-                                ByteArrayInputStream inputStream = new ByteArrayInputStream(encryptedKey);
-                                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-                                HybridAesEncryptor.decrypt(inputStream, outputStream, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
-                                        selfPrivateKey, null, null);
-
-                                unencryptedFiddKey = outputStream.toByteArray();
-                                break;
-                            } catch (Exception e) {
-                                LOGGER.debug("Failed to decrypt candidate " + new String(candidate));
-                            }
-                        }
+                        unencryptedFiddKey = recoverFiddFileFromSelfSubscription(packedContentFolder);
                         if (unencryptedFiddKey == null) {
                             JavaFxUtils.showMessage("Failed to recover Fidd Key File from self-subscription.");
                             return;
