@@ -70,13 +70,13 @@ import java.util.List;
 import java.util.prefs.Preferences;
 
 import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_EXT;
-import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_KEY_FILE_EXT;
-import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_KEY_SUBFOLDER;
-import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_FILE_NAME_PREFIX;
-import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_KEY_FILE_NAME_PREFIX;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_FILE_EXT;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_SUBFOLDER;
 import static com.fidd.connectors.folder.FolderFiddConstants.DEFAULT_FIDD_SIGNATURE_EXT;
-import static com.fidd.connectors.folder.FolderFiddConstants.KEY_FILE_NAME;
-import static com.fidd.connectors.folder.FolderFiddConstants.MESSAGE_FILE_NAME;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_KEY_FILE_NAME;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_MESSAGE_FILE_NAME;
+import static com.fidd.packer.pack.FiddPackManager.FIDD_KEY_SIGNATURE_FILE_NAME_PREFIX;
+import static com.fidd.packer.pack.FiddPackManager.FIDD_MESSAGE_SIGNATURE_FILE_NAME_PREFIX;
 import static com.fidd.packer.pack.FiddUnpackManager.PublicKeySource.MESSAGE_EMBEDDED;
 import static com.fidd.packer.pack.FiddUnpackManager.PublicKeySource.MESSAGE_FALL_BACK_TO_PARAMETER;
 import static com.fidd.packer.pack.FiddUnpackManager.PublicKeySource.SUPPLIED_PARAMETER;
@@ -93,6 +93,7 @@ public class MainForm {
         new FileChooser.ExtensionFilter("Subscriber List (*.subs)", "*.subs");
     final static FileChooser.ExtensionFilter ENCRYPTED_SUBSCRIBER_LIST_EXTENSION_FILTER =
             new FileChooser.ExtensionFilter("Subscriber List (*.subs.crypt)", "*.subs.crypt");
+
 
     final static String ENCRYPTION_ALGORITHM = "ENCRYPTION_ALGORITHM";
     final static String FIDD_KEY = "FIDD_KEY";
@@ -818,17 +819,17 @@ public class MainForm {
                 List<Long> fiddKeyFileSignatures = new ArrayList<>();
                 for (File subFile : subFiles) {
                     String filename = subFile.getName();
-                    if (filename.equals(MESSAGE_FILE_NAME)) {
+                    if (filename.equals(FIDD_MESSAGE_FILE_NAME)) {
                         checkNotNull(fiddFileTextField).textProperty().set(filename);
-                    } else if (filename.equals(KEY_FILE_NAME)) {
+                    } else if (filename.equals(FIDD_KEY_FILE_NAME)) {
                         checkNotNull(fiddKeyFileTextField).textProperty().set(filename);
-                    } else if (filename.startsWith(FIDD_FILE_NAME_PREFIX) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
-                        Long signatureNum = getSignatureNum(filename, FIDD_FILE_NAME_PREFIX, DEFAULT_FIDD_SIGNATURE_EXT);
+                    } else if (filename.startsWith(FIDD_MESSAGE_SIGNATURE_FILE_NAME_PREFIX) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
+                        Long signatureNum = getSignatureNum(filename, FIDD_MESSAGE_SIGNATURE_FILE_NAME_PREFIX, DEFAULT_FIDD_SIGNATURE_EXT);
                         if (signatureNum != null) {
                             fiddFileSignatures.add(signatureNum);
                         }
-                    } else if (filename.startsWith(FIDD_KEY_FILE_NAME_PREFIX) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
-                        Long keySignatureNum = getSignatureNum(filename, FIDD_KEY_FILE_NAME_PREFIX, DEFAULT_FIDD_SIGNATURE_EXT);
+                    } else if (filename.startsWith(FIDD_KEY_SIGNATURE_FILE_NAME_PREFIX) && filename.endsWith(DEFAULT_FIDD_SIGNATURE_EXT)) {
+                        Long keySignatureNum = getSignatureNum(filename, FIDD_KEY_SIGNATURE_FILE_NAME_PREFIX, DEFAULT_FIDD_SIGNATURE_EXT);
                         if (keySignatureNum != null) {
                             fiddKeyFileSignatures.add(keySignatureNum);
                         }
@@ -839,9 +840,9 @@ public class MainForm {
                 Collections.sort(fiddKeyFileSignatures);
 
                 checkNotNull(fiddFileSignaturesTextField).textProperty().set(String.join(SIGNATURE_FILES_DELIMITER,
-                        fiddFileSignatures.stream().map(n -> FIDD_FILE_NAME_PREFIX + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
+                        fiddFileSignatures.stream().map(n -> FIDD_MESSAGE_SIGNATURE_FILE_NAME_PREFIX + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
                 checkNotNull(fiddKeyFileSignaturesTextField).textProperty().set(String.join(SIGNATURE_FILES_DELIMITER,
-                        fiddKeyFileSignatures.stream().map(n -> FIDD_KEY_FILE_NAME_PREFIX + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
+                        fiddKeyFileSignatures.stream().map(n -> FIDD_KEY_SIGNATURE_FILE_NAME_PREFIX + n + DEFAULT_FIDD_SIGNATURE_EXT).toList()));
             }
         } catch (Exception ignored) {}
     }
@@ -1276,7 +1277,7 @@ public class MainForm {
                 return;
             }
 
-            File unencryptedFiddKey = new File(packedContentFolderPath, KEY_FILE_NAME);
+            File unencryptedFiddKey = new File(packedContentFolderPath, FIDD_KEY_FILE_NAME);
             if (!unencryptedFiddKey.exists()) {
                 // TODO: try to recover from self-subscribe data
                 JavaFxUtils.showMessage("Fidd Key File doesn't exist in Packed Content Folder", unencryptedFiddKey.getAbsolutePath());
@@ -1287,7 +1288,7 @@ public class MainForm {
                 return;
             }
 
-            File fiddMessage = new File(packedContentFolderPath, MESSAGE_FILE_NAME);
+            File fiddMessage = new File(packedContentFolderPath, FIDD_MESSAGE_FILE_NAME);
             if (!fiddMessage.exists()) {
                 JavaFxUtils.showMessage("Fidd Message File doesn't exist in Packed Content Folder", fiddMessage.getAbsolutePath());
                 return;
@@ -1347,7 +1348,7 @@ public class MainForm {
             }
 
             // 3. Make sure keys folder is empty or doesn't exist
-            File keysFolder = new File(packedContentFolderPath, ENCRYPTED_KEY_SUBFOLDER);
+            File keysFolder = new File(packedContentFolderPath, ENCRYPTED_FIDD_KEY_SUBFOLDER);
             if (keysFolder.exists()) {
                 if (keysFolder.isDirectory()) {
                     File[] existingFiles = keysFolder.listFiles();
@@ -1396,7 +1397,7 @@ public class MainForm {
                 X509Certificate subscriberCert = subscriberCerts.get(i);
                 String encryptedKeyFileName = encryptedKeyFileNames.get(i);
 
-                File encryptedKeyFile = new File(keysFolder, encryptedKeyFileName + ENCRYPTED_KEY_FILE_EXT);
+                File encryptedKeyFile = new File(keysFolder, encryptedKeyFileName + ENCRYPTED_FIDD_KEY_FILE_EXT);
                 try (FileInputStream fis = new FileInputStream(unencryptedFiddKey);
                      FileOutputStream fos = new FileOutputStream(encryptedKeyFile)) {
                     HybridAesEncryptor.encrypt(fis, fos, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,

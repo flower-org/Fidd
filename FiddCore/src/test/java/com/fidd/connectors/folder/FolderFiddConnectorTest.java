@@ -11,8 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 
-import static com.fidd.connectors.folder.FolderFiddConstants.KEY_FILE_NAME;
-import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_KEY_SUBFOLDER;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_KEY_FILE_NAME;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_SUBFOLDER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -37,6 +37,44 @@ public class FolderFiddConnectorTest {
         Files.delete(p);
     }
 
+    // ------------------------------------------------------------
+    // footprintStartsWith
+    // ------------------------------------------------------------
+
+    @Test
+    void testFootprintStartsWith_exactMatch() {
+        assertTrue(FolderFiddConnector.footprintStartsWith("abc123", "abc123"));
+    }
+
+    @Test
+    void testFootprintStartsWith_prefixMatch() {
+        assertTrue(FolderFiddConnector.footprintStartsWith("abc123", "abc"));
+    }
+
+    @Test
+    void testFootprintStartsWith_prefixWithExtension() {
+        assertTrue(FolderFiddConnector.footprintStartsWith("abc123", "abc.txt"));
+    }
+
+    @Test
+    void testFootprintStartsWith_noMatch() {
+        assertFalse(FolderFiddConnector.footprintStartsWith("xyz123", "abc"));
+    }
+
+    @Test
+    void testFootprintStartsWith_extensionOnly() {
+        assertTrue(FolderFiddConnector.footprintStartsWith("abc123", ".txt"));
+    }
+
+    @Test
+    void testFootprintNameWithoutDot() {
+        assertTrue(FolderFiddConnector.footprintStartsWith("helloWorld", "hello"));
+    }
+
+    // ------------------------------------------------------------
+    // keyFileStartsWith
+    // ------------------------------------------------------------
+
     @Test
     void testKeyFileStartsWith_exactMatch() {
         assertTrue(FolderFiddConnector.keyFileStartsWith("abc123", "abc123"));
@@ -49,7 +87,7 @@ public class FolderFiddConnectorTest {
 
     @Test
     void testKeyFileStartsWith_prefixWithExtension() {
-        assertTrue(FolderFiddConnector.keyFileStartsWith("abc123", "abc.txt"));
+        assertTrue(FolderFiddConnector.keyFileStartsWith("abc123.txt", "abc"));
     }
 
     @Test
@@ -59,11 +97,11 @@ public class FolderFiddConnectorTest {
 
     @Test
     void testKeyFileStartsWith_extensionOnly() {
-        assertTrue(FolderFiddConnector.keyFileStartsWith("abc123", ".txt"));
+        assertTrue(FolderFiddConnector.keyFileStartsWith("abc123", ""));
     }
 
     @Test
-    void testKeyFileStartsWith_fileNameWithoutDot() {
+    void testKeyfileNameWithoutDot() {
         assertTrue(FolderFiddConnector.keyFileStartsWith("helloWorld", "hello"));
     }
 
@@ -96,7 +134,7 @@ public class FolderFiddConnectorTest {
     // getMessagesTail
     // ------------------------------------------------------------
     @Test
-    void testGetMessagesTail() throws IOException {
+    void testGetFiddMessagesTail() throws IOException {
         createMessageFolder(10);
         createMessageFolder(11);
         createMessageFolder(12);
@@ -109,7 +147,7 @@ public class FolderFiddConnectorTest {
     // getMessageNumbersTail
     // ------------------------------------------------------------
     @Test
-    void testGetMessageNumbersTail() throws IOException {
+    void testGetFiddMessageNumbersTail() throws IOException {
         createMessageFolder(1);
         createMessageFolder(2);
         createMessageFolder(3);
@@ -122,7 +160,7 @@ public class FolderFiddConnectorTest {
     // getMessageNumbersBeforeExclusive
     // ------------------------------------------------------------
     @Test
-    void testGetMessageNumbersBeforeExclusive() throws IOException {
+    void testGetFiddMessageNumbersBeforeExclusive() throws IOException {
         createMessageFolder(5);
         createMessageFolder(6);
         createMessageFolder(7);
@@ -135,7 +173,7 @@ public class FolderFiddConnectorTest {
     // getMessageNumbersBetween
     // ------------------------------------------------------------
     @Test
-    void testGetMessageNumbersBetween_exclusiveBoth() throws IOException {
+    void testGetFiddMessageNumbersBetween_exclusiveBoth() throws IOException {
         // Messages: 100, 90, 80, 70, 60
         createMessageFolder(100);
         createMessageFolder(90);
@@ -153,7 +191,7 @@ public class FolderFiddConnectorTest {
     }
 
     @Test
-    void testGetMessageNumbersBetween_inclusiveLatest_exclusiveEarliest() throws IOException {
+    void testGetFiddMessageNumbersBetween_inclusiveLatest_exclusiveEarliest() throws IOException {
         createMessageFolder(100);
         createMessageFolder(90);
         createMessageFolder(80);
@@ -168,7 +206,7 @@ public class FolderFiddConnectorTest {
     }
 
     @Test
-    void testGetMessageNumbersBetween_exclusiveLatest_inclusiveEarliest() throws IOException {
+    void testGetFiddMessageNumbersBetween_exclusiveLatest_inclusiveEarliest() throws IOException {
         createMessageFolder(100);
         createMessageFolder(90);
         createMessageFolder(80);
@@ -183,7 +221,7 @@ public class FolderFiddConnectorTest {
     }
 
     @Test
-    void testGetMessageNumbersBetween_inclusiveBoth() throws IOException {
+    void testGetFiddMessageNumbersBetween_inclusiveBoth() throws IOException {
         createMessageFolder(100);
         createMessageFolder(90);
         createMessageFolder(80);
@@ -198,7 +236,7 @@ public class FolderFiddConnectorTest {
     }
 
     @Test
-    void testGetMessageNumbersBetween_stopsWhenBelowEarliest() throws IOException {
+    void testGetFiddMessageNumbersBetween_stopsWhenBelowEarliest() throws IOException {
         createMessageFolder(100);
         createMessageFolder(90);
         createMessageFolder(80);
@@ -214,7 +252,7 @@ public class FolderFiddConnectorTest {
     }
 
     @Test
-    void testGetMessageNumbersBetween_unmatchingNumbers() throws IOException {
+    void testGetFiddMessageNumbersBetween_unmatchingNumbers() throws IOException {
         createMessageFolder(100);
         createMessageFolder(90);
         createMessageFolder(80);
@@ -230,7 +268,7 @@ public class FolderFiddConnectorTest {
     }
 
     @Test
-    void testGetMessageNumbersBetween_ignoresNonNumericFolders() throws IOException {
+    void testGetFiddMessageNumbersBetween_ignoresNonNumericFolders() throws IOException {
         createMessageFolder(100);
         createMessageFolder(90);
         createMessageFolder(80);
@@ -252,28 +290,34 @@ public class FolderFiddConnectorTest {
     void testGetKeyFile_readsMatchingFiles() throws IOException {
         long messageNumber = 42L;
         Path msg = createMessageFolder(messageNumber);
-        Path keys = msg.resolve(ENCRYPTED_KEY_SUBFOLDER);
+        Path keys = msg.resolve(ENCRYPTED_FIDD_KEY_SUBFOLDER);
         Files.createDirectories(keys);
 
         // Mock keyFolderPath(messageNumber)
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // Create files
-        Path f1 = keys.resolve("sub1.key");
-        Path f2 = keys.resolve("su.key");
-        Path f3 = keys.resolve("sub2.key"); // should NOT match
+        Path f1 = keys.resolve("sub1.fidd.key.crypt");
+        Path f2 = keys.resolve("su.fidd.key.crypt");
+        Path f3 = keys.resolve("sub2.fidd.key.crypt"); // should NOT match
+        Path f4 = keys.resolve("sub1QWERTY.fidd.key.crypt");
 
         Files.write(f1, "AAA".getBytes());
         Files.write(f2, "BBB".getBytes());
         Files.write(f3, "CCC".getBytes());
+        Files.write(f4, "DDD".getBytes());
 
         byte[] subscriberId = "sub1".getBytes(StandardCharsets.UTF_8);
 
-        List<byte[]> result = fidd.getCandidateKeyFiles(messageNumber, subscriberId);
+        List<byte[]> candidates = fidd.getFiddKeyCandidates(messageNumber, subscriberId);
+        List<byte[]> result = candidates.stream().map(
+                key -> fidd.getFiddKey(messageNumber, key)
+        ).toList();
 
-        assertEquals(2, result.size());
-        assertEquals("AAA", new String(result.get(0)));
-        assertEquals("BBB", new String(result.get(1)));
+        assertEquals(3, result.size());
+        assertEquals("DDD", new String(result.get(0)));
+        assertEquals("AAA", new String(result.get(1)));
+        assertEquals("BBB", new String(result.get(2)));
     }
 
     @Test
@@ -282,7 +326,7 @@ public class FolderFiddConnectorTest {
 
         byte[] subscriberId = "nomatch".getBytes(StandardCharsets.UTF_8);
 
-        List<byte[]> result = fidd.getCandidateKeyFiles(1L, subscriberId);
+        List<byte[]> result = fidd.getFiddKeyCandidates(1L, subscriberId);
 
         assertTrue(result.isEmpty());
     }
@@ -291,7 +335,7 @@ public class FolderFiddConnectorTest {
     void testGetKeyFile_returnsNullIfFileDisappears() throws IOException {
         long messageNumber = 43L;
         Path msg = createMessageFolder(messageNumber);
-        Path keys = msg.resolve(ENCRYPTED_KEY_SUBFOLDER);
+        Path keys = msg.resolve(ENCRYPTED_FIDD_KEY_SUBFOLDER);
         Files.createDirectories(keys);
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
@@ -304,7 +348,7 @@ public class FolderFiddConnectorTest {
 
         byte[] subscriberId = "sub".getBytes(StandardCharsets.UTF_8);
 
-        List<byte[]> result = fidd.getCandidateKeyFiles(messageNumber, subscriberId);
+        List<byte[]> result = fidd.getFiddKeyCandidates(messageNumber, subscriberId);
 
         assertTrue(result.isEmpty());
     }
@@ -313,7 +357,7 @@ public class FolderFiddConnectorTest {
     void testGetKeyFile_ignoresDirectories() throws IOException {
         long messageNumber = 44L;
         Path msg = createMessageFolder(messageNumber);
-        Path keys = msg.resolve(ENCRYPTED_KEY_SUBFOLDER);
+        Path keys = msg.resolve(ENCRYPTED_FIDD_KEY_SUBFOLDER);
         Files.createDirectories(keys);
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
@@ -323,19 +367,19 @@ public class FolderFiddConnectorTest {
 
         byte[] subscriberId = "sub1".getBytes(StandardCharsets.UTF_8);
 
-        List<byte[]> result = fidd.getCandidateKeyFiles(messageNumber, subscriberId);
+        List<byte[]> result = fidd.getFiddKeyCandidates(messageNumber, subscriberId);
 
         assertTrue(result.isEmpty());
     }
 
     @Test
-    void testGetUnencryptedKeyFile() throws IOException {
+    void testGetUnencryptedFiddKey() throws IOException {
         Path msg = createMessageFolder(1);
-        Path keyFile = msg.resolve(KEY_FILE_NAME);
+        Path keyFile = msg.resolve(FIDD_KEY_FILE_NAME);
         write(keyFile, "hello");
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
-        byte[] data = fidd.getUnencryptedKeyFile(1);
+        byte[] data = fidd.getUnencryptedFiddKey(1);
 
         assertEquals("hello", new String(data));
 
@@ -343,22 +387,22 @@ public class FolderFiddConnectorTest {
     }
 
     @Test
-    void testGetUnencryptedKeyFileMissing() {
+    void testGetUnencryptedFiddKeyMissing() {
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
-        assertNull(fidd.getUnencryptedKeyFile(1));
+        assertNull(fidd.getUnencryptedFiddKey(1));
     }
 
     // ------------------------------------------------------------
     // getMessageFileSize
     // ------------------------------------------------------------
     @Test
-    void testGetMessageFileSize() throws IOException {
+    void testGetFiddMessageSize() throws IOException {
         Path msg = createMessageFolder(1);
         Path file = msg.resolve("fidd.message");
         write(file, "xyz");
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
-        long size = fidd.getMessageFileSize(1);
+        long size = fidd.getFiddMessageSize(1);
         assertEquals(3, size);
     }
 
@@ -366,13 +410,13 @@ public class FolderFiddConnectorTest {
     // getMessageFile
     // ------------------------------------------------------------
     @Test
-    void testGetMessageFile() throws IOException {
+    void testGetFiddMessage() throws IOException {
         Path msg = createMessageFolder(1);
         Path file = msg.resolve("fidd.message");
         write(file, "xyz");
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
-        try (InputStream in = fidd.getMessageFile(1)) {
+        try (InputStream in = fidd.getFiddMessage(1)) {
             assertEquals("xyz", new String(in.readAllBytes()));
         }
     }
@@ -381,13 +425,13 @@ public class FolderFiddConnectorTest {
     // getMessageFileChunk
     // ------------------------------------------------------------
     @Test
-    void testGetMessageFileChunk() throws IOException {
+    void testGetFiddMessageChunk() throws IOException {
         Path msg = createMessageFolder(1);
         Path file = msg.resolve("fidd.message");
         write(file, "abcdef");
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
-        try (InputStream in = fidd.getMessageFileChunk(1, 2, 3)) {
+        try (InputStream in = fidd.getFiddMessageChunk(1, 2, 3)) {
             assertEquals("cde", new String(in.readAllBytes()));
         }
     }
@@ -396,7 +440,7 @@ public class FolderFiddConnectorTest {
     // Signature file retrieval
     // ------------------------------------------------------------
     @Test
-    void testGetKeyFileSignatureCount() throws IOException {
+    void testGetFiddKeySignatureCount() throws IOException {
         Path msg = createMessageFolder(1);
 
         // Valid signature files
@@ -412,20 +456,20 @@ public class FolderFiddConnectorTest {
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // max index = 5 → count = 6
-        assertEquals(6, fidd.getKeyFileSignatureCount(1));
+        assertEquals(6, fidd.getFiddKeySignatureCount(1));
     }
 
     @Test
-    void testGetKeyFileSignature() throws IOException {
+    void testGetFiddKeySignature() throws IOException {
         Path msg = createMessageFolder(1);
         write(msg.resolve("fidd.key.0.sign"), "sig0");
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
-        assertEquals("sig0", new String(fidd.getKeyFileSignature(1, 0)));
+        assertEquals("sig0", new String(fidd.getFiddKeySignature(1, 0)));
     }
 
     @Test
-    void testGetMessageFileSignatureCount() throws IOException {
+    void testGetFiddMessageSignatureCount() throws IOException {
         Path msg = createMessageFolder(2);
 
         // Valid signature files
@@ -440,15 +484,15 @@ public class FolderFiddConnectorTest {
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // max index = 4 → count = 5
-        assertEquals(5, fidd.getMessageFileSignatureCount(2));
+        assertEquals(5, fidd.getFiddMessageSignatureCount(2));
     }
 
     @Test
-    void testGetMessageFileSignature() throws IOException {
+    void testGetFiddMessageSignature() throws IOException {
         Path msg = createMessageFolder(1);
         write(msg.resolve("fidd.message.1.sign"), "sig1");
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
-        assertEquals("sig1", new String(fidd.getMessageFileSignature(1, 1)));
+        assertEquals("sig1", new String(fidd.getFiddMessageSignature(1, 1)));
     }
 }

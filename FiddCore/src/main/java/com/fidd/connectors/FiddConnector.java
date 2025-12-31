@@ -15,17 +15,19 @@ public interface FiddConnector {
 
     /** Returns empty list if subscriber has no key candidates, which can also happen in case
      * when Fidd Key is stored unencrypted */
-    List<byte[]> getCandidateKeyFiles(long messageNumber, byte[] subscriberId);
+    List<byte[]> getFiddKeyCandidates(long messageNumber, byte[] footprint);
+    /** Returns null if the supplied key doesn't exist */
+    @Nullable byte[] getFiddKey(long messageNumber, byte[] key);
     /** Returns null if Fidd Keys are stored encrypted */
-    @Nullable byte[] getUnencryptedKeyFile(long messageNumber);
+    @Nullable byte[] getUnencryptedFiddKey(long messageNumber);
 
-    long getMessageFileSize(long messageNumber);
-    InputStream getMessageFile(long messageNumber);
-    InputStream getMessageFileChunk(long messageNumber, long offset, long length);
+    long getFiddMessageSize(long messageNumber);
+    InputStream getFiddMessage(long messageNumber);
+    InputStream getFiddMessageChunk(long messageNumber, long offset, long length);
 
-    int getKeyFileSignatureCount(long messageNumber);
-    byte[] getKeyFileSignature(long messageNumber, int index);
+    int getFiddKeySignatureCount(long messageNumber);
+    byte[] getFiddKeySignature(long messageNumber, int index);
 
-    int getMessageFileSignatureCount(long messageNumber);
-    byte[] getMessageFileSignature(long messageNumber, int index);
+    int getFiddMessageSignatureCount(long messageNumber);
+    byte[] getFiddMessageSignature(long messageNumber, int index);
 }

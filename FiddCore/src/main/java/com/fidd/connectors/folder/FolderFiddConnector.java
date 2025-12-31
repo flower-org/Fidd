@@ -22,9 +22,10 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.fidd.connectors.folder.FolderFiddConstants.KEY_FILE_NAME;
-import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_KEY_SUBFOLDER;
-import static com.fidd.connectors.folder.FolderFiddConstants.MESSAGE_FILE_NAME;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_FILE_EXT;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_KEY_FILE_NAME;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_SUBFOLDER;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_MESSAGE_FILE_NAME;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class FolderFiddConnector implements FiddConnector {
@@ -40,8 +41,12 @@ public class FolderFiddConnector implements FiddConnector {
         return (dot == -1) ? fileName : fileName.substring(0, dot);
     }
 
-    protected static boolean keyFileStartsWith(String full, String fileName) {
-        return full.startsWith(getFileNameNoExtensions(fileName));
+    protected static boolean footprintStartsWith(String footprint, String fileName) {
+        return footprint.startsWith(getFileNameNoExtensions(fileName));
+    }
+
+    protected static boolean keyFileStartsWith(String fileName, String footprint) {
+        return getFileNameNoExtensions(fileName).startsWith(footprint);
     }
 
     protected static @Nullable Integer signatureMatch(Pattern pattern, String filename) {
@@ -149,8 +154,8 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     protected Path messageFolderPath(long messageNumber) { return fiddFolder.resolve(Long.toString(messageNumber)); }
-    protected Path keyFolderPath(long messageNumber) { return messageFolderPath(messageNumber).resolve(ENCRYPTED_KEY_SUBFOLDER); }
-    protected Path messageFilePath(long messageNumber) { return messageFolderPath(messageNumber).resolve(MESSAGE_FILE_NAME); }
+    protected Path keyFolderPath(long messageNumber) { return messageFolderPath(messageNumber).resolve(ENCRYPTED_FIDD_KEY_SUBFOLDER); }
+    protected Path messageFilePath(long messageNumber) { return messageFolderPath(messageNumber).resolve(FIDD_MESSAGE_FILE_NAME); }
 
     @Override
     public List<Long> getMessageNumbersTail(int count) {
@@ -169,9 +174,9 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     @Override
-    public List<byte[]> getCandidateKeyFiles(long messageNumber, byte[] subscriberId) {
+    public List<byte[]> getFiddKeyCandidates(long messageNumber, byte[] footprintBytes) {
         List<byte[]> result = new ArrayList<>();
-        String prefix = new String(subscriberId, StandardCharsets.UTF_8);
+        String footprint = new String(footprintBytes, StandardCharsets.UTF_8);
         Path keyFolder = keyFolderPath(messageNumber);
         if (!keyFolder.toFile().exists()) {
             return result;
@@ -179,7 +184,12 @@ public class FolderFiddConnector implements FiddConnector {
 
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(keyFolder,
                 directoryEntry -> Files.isRegularFile(directoryEntry)
-                        && (keyFileStartsWith(prefix, directoryEntry.getFileName().toString())))) {
+                        && (
+                            (footprintStartsWith(footprint, directoryEntry.getFileName().toString()))
+                            ||
+                            (keyFileStartsWith(directoryEntry.getFileName().toString(), footprint))
+                        )
+        )) {
             List<Path> sortedFiles = new ArrayList<>();
             for (Path p : directoryStream) {
                 sortedFiles.add(p);
@@ -191,7 +201,7 @@ public class FolderFiddConnector implements FiddConnector {
                 return Integer.compare(fileName2.length(), fileName1.length());
             });
             for (Path file : sortedFiles) {
-                result.add(Files.readAllBytes(file));
+                result.add(getFileNameNoExtensions(file.getFileName().toString()).getBytes(StandardCharsets.UTF_8));
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -200,9 +210,26 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     @Override
-    public @Nullable byte[] getUnencryptedKeyFile(long messageNumber) {
+    public @Nullable byte[] getFiddKey(long messageNumber, byte[] key) {
         try {
-            Path file = messageFolderPath(messageNumber).resolve(KEY_FILE_NAME);
+            Path keyFolder = keyFolderPath(messageNumber);
+            if (!keyFolder.toFile().exists()) {
+                return null;
+            }
+
+            String keyFileName = new String(key, StandardCharsets.UTF_8);
+            Path keyFile = keyFolder.resolve(keyFileName + ENCRYPTED_FIDD_KEY_FILE_EXT);
+
+            return Files.readAllBytes(keyFile);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public @Nullable byte[] getUnencryptedFiddKey(long messageNumber) {
+        try {
+            Path file = messageFolderPath(messageNumber).resolve(FIDD_KEY_FILE_NAME);
             if (!Files.exists(file) || !Files.isRegularFile(file)) {
                 return null;
             }
@@ -213,7 +240,7 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     @Override
-    public long getMessageFileSize(long messageNumber) {
+    public long getFiddMessageSize(long messageNumber) {
         try {
             Path messageFilePath = messageFilePath(messageNumber);
             if (!Files.exists(messageFilePath) || !Files.isRegularFile(messageFilePath)) {
@@ -226,7 +253,7 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     @Override
-    public InputStream getMessageFile(long messageNumber) {
+    public InputStream getFiddMessage(long messageNumber) {
         try {
             Path messageFilePath = messageFilePath(messageNumber);
             if (!Files.exists(messageFilePath) || !Files.isRegularFile(messageFilePath)) {
@@ -239,7 +266,7 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     @Override
-    public InputStream getMessageFileChunk(long messageNumber, long offset, long length) {
+    public InputStream getFiddMessageChunk(long messageNumber, long offset, long length) {
         try {
             Path messageFilePath = messageFilePath(messageNumber);
             if (!Files.exists(messageFilePath) || !Files.isRegularFile(messageFilePath)) {
@@ -252,14 +279,14 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     @Override
-    public int getKeyFileSignatureCount(long messageNumber) {
+    public int getFiddKeySignatureCount(long messageNumber) {
         return getSignatureCount(messageFolderPath(messageNumber), FIDD_KEY_SIGNATURE_PATTERN, messageNumber);
     }
 
     @Override
-    public byte[] getKeyFileSignature(long messageNumber, int index) {
+    public byte[] getFiddKeySignature(long messageNumber, int index) {
         try {
-            String keyFileSignatureString = String.format(KEY_FILE_NAME + ".%d.sign", index);
+            String keyFileSignatureString = String.format(FIDD_KEY_FILE_NAME + ".%d.sign", index);
             Path keyFileSignatureFile = messageFolderPath(messageNumber).resolve(keyFileSignatureString);
             return Files.readAllBytes(keyFileSignatureFile);
         } catch (IOException e) {
@@ -268,14 +295,14 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     @Override
-    public int getMessageFileSignatureCount(long messageNumber) {
+    public int getFiddMessageSignatureCount(long messageNumber) {
         return getSignatureCount(messageFolderPath(messageNumber), FIDD_MESSAGE_SIGNATURE_PATTERN, messageNumber);
     }
 
     @Override
-    public byte[] getMessageFileSignature(long messageNumber, int index) {
+    public byte[] getFiddMessageSignature(long messageNumber, int index) {
         try {
-            String messageFileSignatureString = String.format(MESSAGE_FILE_NAME + ".%d.sign", index);
+            String messageFileSignatureString = String.format(FIDD_MESSAGE_FILE_NAME + ".%d.sign", index);
             Path messageFileSignatureFile = messageFolderPath(messageNumber).resolve(messageFileSignatureString);
             return Files.readAllBytes(messageFileSignatureFile);
         } catch (IOException e) {
