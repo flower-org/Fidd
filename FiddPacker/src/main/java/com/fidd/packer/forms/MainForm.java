@@ -1291,8 +1291,7 @@ public class MainForm {
                             "Fidd Key File doesn't exist in Packed Content Folder. Try to recover from self-subscription?")) {
                         Pair<X509Certificate, PrivateKey> pair = getCurrentCertificate();
                         if (pair == null) {
-                            JavaFxUtils.showMessage("Certificate load error",
-                                    "Can't self-subscribe: Certificate load error. If you do not plan to self-subscribe, uncheck \"Self-Subscribe\".");
+                            JavaFxUtils.showMessage("Certificate load error", "Can't check self-subscribtion: Certificate load error.");
                             return;
                         }
                         X509Certificate selfCert = pair.getLeft();
