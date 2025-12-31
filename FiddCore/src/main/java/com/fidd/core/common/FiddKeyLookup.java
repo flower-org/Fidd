@@ -1,9 +1,14 @@
 package com.fidd.core.common;
 
+import com.fidd.base.DefaultBaseRepositories;
+import com.fidd.base.Repository;
+import com.fidd.core.pki.StableTransformForAlgo;
 import com.flower.crypt.PkiUtil;
 
 import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.ProviderNotFoundException;
+import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,11 +18,18 @@ import java.util.Map;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class FiddKeyLookup {
+    static final Repository<StableTransformForAlgo> STABLE_TRANSFORM_REPO = new DefaultBaseRepositories().stableTransformRepo();
+
     public static String createLookupFootprint(X509Certificate subscriberCert, long messageNumber, long messageLength) throws Exception {
         String footprint = Long.toString(messageLength) + Long.toString(messageNumber);
         byte[] footprintBytes = footprint.getBytes(StandardCharsets.UTF_8);
 
-        byte[] lookupSignatureBytes = PkiUtil.encrypt(footprintBytes, subscriberCert.getPublicKey());
+        PublicKey publicKey = subscriberCert.getPublicKey();
+        StableTransformForAlgo transform = STABLE_TRANSFORM_REPO.get(publicKey.getAlgorithm());
+        if (transform == null) {
+            throw new ProviderNotFoundException("StableTransform not defined for algorithm " + publicKey.getAlgorithm());
+        }
+        byte[] lookupSignatureBytes = PkiUtil.encrypt(footprintBytes, publicKey, transform.transform());
         return Base36.toBase36(lookupSignatureBytes);
     }
 

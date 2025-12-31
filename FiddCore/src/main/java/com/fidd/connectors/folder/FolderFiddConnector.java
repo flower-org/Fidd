@@ -153,6 +153,11 @@ public class FolderFiddConnector implements FiddConnector {
         this.fiddFolder = Paths.get(fiddFolderPath);
     }
 
+    public FolderFiddConnector(Path fiddFolder) {
+        this.fiddFolder = fiddFolder;
+        this.fiddFolderPath = fiddFolder.toAbsolutePath().toString();
+    }
+
     protected Path messageFolderPath(long messageNumber) { return fiddFolder.resolve(Long.toString(messageNumber)); }
     protected Path keyFolderPath(long messageNumber) { return messageFolderPath(messageNumber).resolve(ENCRYPTED_FIDD_KEY_SUBFOLDER); }
     protected Path messageFilePath(long messageNumber) { return messageFolderPath(messageNumber).resolve(FIDD_MESSAGE_FILE_NAME); }
@@ -219,7 +224,9 @@ public class FolderFiddConnector implements FiddConnector {
 
             String keyFileName = new String(key, StandardCharsets.UTF_8);
             Path keyFile = keyFolder.resolve(keyFileName + ENCRYPTED_FIDD_KEY_FILE_EXT);
-
+            if (!keyFile.toFile().exists()) {
+                return null;
+            }
             return Files.readAllBytes(keyFile);
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -17,6 +17,7 @@ import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.metadata.blobs.BlobsMetadataContainerSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
 import com.fidd.core.pki.SignerChecker;
+import com.fidd.core.pki.StableTransformForAlgo;
 import com.fidd.core.pki.sha256WithRsa.SHA256WithRSASignerChecker;
 import com.fidd.core.pki.x509.X509PublicKeySerializer;
 import com.fidd.core.random.RandomGeneratorType;
@@ -32,6 +33,7 @@ public class DefaultBaseRepositories implements BaseRepositories {
     static final Repository<FiddFileMetadataSerializer> FIDD_FILE_METADATA_FORMAT_REPO;
     static final Repository<LogicalFileMetadataSerializer> LOGICAL_FILE_METADATA_FORMAT_REPO;
     static final Repository<PublicKeySerializer> PUBLIC_KEY_FORMAT_REPO;
+    static final Repository<StableTransformForAlgo> STABLE_TRANSFORM_REPO;
     static final Repository<SignerChecker> SIGNATURE_FORMAT_REPO;
     static final Repository<RandomGeneratorType> RANDOM_GENERATORS_REPO;
     static final Repository<CrcCalculator> CRC_CALCULATOR_REPO;
@@ -56,6 +58,9 @@ public class DefaultBaseRepositories implements BaseRepositories {
 
         X509PublicKeySerializer x509 = new X509PublicKeySerializer();
         PUBLIC_KEY_FORMAT_REPO = new MapRepository<>(x509.name(), List.of(x509));
+
+        StableTransformForAlgo rsaNoPadding = StableTransformForAlgo.of("RSA", "RSA/ECB/NoPadding");
+        STABLE_TRANSFORM_REPO = new MapRepository<>(rsaNoPadding.name(), List.of(rsaNoPadding));
 
         SHA256WithRSASignerChecker signerChecker = new SHA256WithRSASignerChecker();
         SIGNATURE_FORMAT_REPO = new MapRepository<>(signerChecker.name(), List.of(signerChecker));
@@ -98,6 +103,9 @@ public class DefaultBaseRepositories implements BaseRepositories {
     public Repository<PublicKeySerializer> publicKeyFormatRepo() {
         return PUBLIC_KEY_FORMAT_REPO;
     }
+
+    @Override
+    public Repository<StableTransformForAlgo> stableTransformRepo() { return STABLE_TRANSFORM_REPO; }
 
     @Override
     public Repository<SignerChecker> signatureFormatRepo() {
