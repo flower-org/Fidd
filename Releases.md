@@ -1,4 +1,14 @@
 ```
+Dec 31, 2025
+Cryptor-0.1.0-amd64-all.jar
+34506484
+SHA2-256= 74ed5e748eb091689c0d6efed6b5f3f967cf5ad5a2ed21849580132e1e0bc54f
+FiddPacker-0.1.0-amd64-all.jar
+34682107
+SHA2-256= 98daa78c87ad4c144d7e13e68437b06b4fc811aaf516e4236362a31721d5dcea
+```
+
+```
 Dec 15, 2025
 Cryptor-0.0.17-amd64-all.jar
 34504463
