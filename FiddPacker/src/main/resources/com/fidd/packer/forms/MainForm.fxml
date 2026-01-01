@@ -8,9 +8,13 @@
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
@@ -140,6 +144,24 @@
                                           <Label text="Sign LogicalFiles:" GridPane.rowIndex="2" />
                                           <Label text="Sign LogicalFileMetadatas:" GridPane.rowIndex="3" />
                                           <Label text="Sign FiddFileMetadata:" GridPane.rowIndex="1" />
+                                          <Label text="Add Progressive CRCs:" GridPane.rowIndex="4" />
+                                          <Label text="Progressive CRC Algo:" GridPane.rowIndex="5" />
+                                          <ComboBox fx:id="progressiveCrcCalculatorComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                                          <GridPane GridPane.columnIndex="1" GridPane.rowIndex="4">
+                                            <columnConstraints>
+                                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="90.0" minWidth="90.0" prefWidth="75.0" />
+                                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="150.0" minWidth="150.0" prefWidth="150.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                            </rowConstraints>
+                                             <children>
+                                                <CheckBox fx:id="addProgressiveCrcCheckBox" mnemonicParsing="false" text="file size &gt;=" />
+                                                <TextField fx:id="progressiveCrcMinFileSizeTextField" GridPane.columnIndex="1" />
+                                                <Label text="mb" GridPane.columnIndex="2" />
+                                             </children>
+                                          </GridPane>
                                        </children>
                                     </GridPane>
                                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="5">
@@ -164,24 +186,6 @@
                                           <Label text="CRC Algo:" GridPane.rowIndex="3" />
                                           <ComboBox fx:id="crcCalculatorComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                                           <CheckBox fx:id="addCrcsToFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                          <Label text="Add Progressive CRCs:" GridPane.rowIndex="4" />
-                                          <Label text="Progressive CRC Algo:" GridPane.rowIndex="5" />
-                                          <ComboBox fx:id="progressiveCrcCalculatorComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="5" />
-                                          <GridPane GridPane.columnIndex="1" GridPane.rowIndex="4">
-                                            <columnConstraints>
-                                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="90.0" minWidth="90.0" prefWidth="75.0" />
-                                              <ColumnConstraints hgrow="SOMETIMES" maxWidth="150.0" minWidth="150.0" prefWidth="150.0" />
-                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                            </columnConstraints>
-                                            <rowConstraints>
-                                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                            </rowConstraints>
-                                             <children>
-                                                <CheckBox fx:id="addProgressiveCrcCheckBox" mnemonicParsing="false" text="file size &gt;=" />
-                                                <TextField fx:id="progressiveCrcMinFileSizeTextField" GridPane.columnIndex="1" />
-                                                <Label text=" mb" GridPane.columnIndex="2" />
-                                             </children>
-                                          </GridPane>
                                        </children>
                                     </GridPane>
                                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="3">
@@ -460,6 +464,132 @@
                                        </children>
                                     </AnchorPane>
                                 </items>
+                              </SplitPane>
+                           </children>
+                           <padding>
+                              <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                           </padding>
+                        </AnchorPane>
+                     </content>
+                  </Tab>
+                  <Tab fx:id="publishTab" text="Publish">
+                     <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                           <children>
+                              <SplitPane dividerPositions="0.0, 0.5" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                 <items>
+                                    <AnchorPane maxHeight="70.0" minHeight="70.0" minWidth="0.0" prefHeight="70.0" prefWidth="160.0">
+                                       <children>
+                                          <GridPane maxHeight="240.0" minHeight="240.0" prefHeight="240.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                             <columnConstraints>
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                             </columnConstraints>
+                                             <rowConstraints>
+                                                <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints maxHeight="40.0" minHeight="40.0" prefHeight="40.0" vgrow="SOMETIMES" />
+                                             </rowConstraints>
+                                             <children>
+                                                <GridPane>
+                                                   <columnConstraints>
+                                                      <ColumnConstraints hgrow="SOMETIMES" maxWidth="145.0" minWidth="145.0" prefWidth="145.0" />
+                                                      <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                   </columnConstraints>
+                                                   <rowConstraints>
+                                                      <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                   </rowConstraints>
+                                                   <children>
+                                                      <Button mnemonicParsing="false" onAction="#openPackedContentFolderForPublish" text="Fidd message folder" />
+                                                      <TextField fx:id="packedContentFolderForPublishTextField" GridPane.columnIndex="1">
+                                                         <GridPane.margin>
+                                                            <Insets right="10.0" />
+                                                         </GridPane.margin>
+                                                      </TextField>
+                                                   </children>
+                                                   <GridPane.margin>
+                                                      <Insets top="2.0" />
+                                                   </GridPane.margin>
+                                                </GridPane>
+                                                <GridPane GridPane.rowIndex="1">
+                                                   <columnConstraints>
+                                                      <ColumnConstraints hgrow="SOMETIMES" maxWidth="145.0" minWidth="145.0" prefWidth="145.0" />
+                                                      <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                   </columnConstraints>
+                                                   <rowConstraints>
+                                                      <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                   </rowConstraints>
+                                                   <children>
+                                                      <TextField fx:id="subscribersFileTextField" GridPane.columnIndex="1">
+                                                         <GridPane.margin>
+                                                            <Insets right="10.0" />
+                                                         </GridPane.margin>
+                                                      </TextField>
+                                                      <Button mnemonicParsing="false" onAction="#openSubscribersFile" text="Subscribers File" />
+                                                   </children>
+                                                </GridPane>
+                                                <GridPane GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                                   <columnConstraints>
+                                                      <ColumnConstraints hgrow="SOMETIMES" maxWidth="55.0" minWidth="55.0" prefWidth="55.0" />
+                                                      <ColumnConstraints hgrow="SOMETIMES" maxWidth="50.0" minWidth="50.0" prefWidth="50.0" />
+                                                      <ColumnConstraints hgrow="SOMETIMES" maxWidth="150.0" minWidth="150.0" prefWidth="150.0" />
+                                                   </columnConstraints>
+                                                   <rowConstraints>
+                                                      <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                   </rowConstraints>
+                                                   <children>
+                                                      <Button mnemonicParsing="false" onAction="#loadSubscribersFile" text="Load" />
+                                                      <Button mnemonicParsing="false" onAction="#saveSubscribersFile" text="Save" GridPane.columnIndex="1" />
+                                                      <CheckBox fx:id="encryptDecryptSubscribersFileCheckBox" mnemonicParsing="false" onAction="#updateSubscribersFileExtension" selected="true" text="Encrypt / Decrypt" GridPane.columnIndex="2" />
+                                                   </children>
+                                                </GridPane>
+                                                <Button mnemonicParsing="false" onAction="#publishFolder" style="-fx-font-size: 15;" text="-&gt; Encrypt Fidd Keys for subscribers -&gt;" GridPane.columnIndex="1" GridPane.halignment="LEFT">
+                                                   <GridPane.margin>
+                                                      <Insets right="10.0" />
+                                                   </GridPane.margin>
+                                                </Button>
+                                             </children>
+                                          </GridPane>
+                                       </children>
+                                    </AnchorPane>
+                                    <ToolBar prefHeight="40.0" prefWidth="200.0">
+                                      <items>
+                                        <Button mnemonicParsing="false" onAction="#addSubscriber" text="Add Subscriber" />
+                                          <Button mnemonicParsing="false" onAction="#removeSubscriber" text="Remove Subscriber" />
+                                          <CheckBox fx:id="selfSubscribeCheckBox" mnemonicParsing="false" selected="true" text="Self-Subscribe" />
+                                          <CheckBox fx:id="highAmbiguityCheckBox" mnemonicParsing="false" selected="true" text="High Ambiguity" />
+                                      </items>
+                                    </ToolBar>
+                                    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+                                       <children>
+                                          <TitledPane animated="false" text="Subscribers" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                             <content>
+                                                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                                   <children>
+                                                      <TableView fx:id="subscribersTableView" layoutX="94.0" layoutY="68.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                                          <columns>
+                                                              <TableColumn minWidth="150.0" prefWidth="150.0" text="SubscriberId">
+                                                                  <cellValueFactory>
+                                                                      <PropertyValueFactory property="subscriberId" />
+                                                                  </cellValueFactory>
+                                                              </TableColumn>
+                                                              <TableColumn minWidth="200.0" prefWidth="200.0" text="PublicKeyFormat">
+                                                                  <cellValueFactory>
+                                                                      <PropertyValueFactory property="publicKeyFormat" />
+                                                                  </cellValueFactory>
+                                                              </TableColumn>
+                                                              <TableColumn minWidth="200.0" prefWidth="200.0" text="Cert">
+                                                                  <cellValueFactory>
+                                                                      <PropertyValueFactory property="publicKey" />
+                                                                  </cellValueFactory>
+                                                              </TableColumn>
+                                                          </columns>
+                                                      </TableView>
+                                                   </children></AnchorPane>
+                                             </content>
+                                          </TitledPane>
+                                       </children>
+                                    </AnchorPane>
+                                 </items>
                               </SplitPane>
                            </children>
                            <padding>

@@ -8,6 +8,7 @@ import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
 import com.fidd.core.pki.SignerChecker;
+import com.fidd.core.pki.StableTransformForAlgo;
 import com.fidd.core.random.RandomGeneratorType;
 
 public interface BaseRepositories {
@@ -18,6 +19,7 @@ public interface BaseRepositories {
     Repository<LogicalFileMetadataSerializer> logicalFileMetadataFormatRepo();
 
     Repository<PublicKeySerializer> publicKeyFormatRepo();
+    Repository<StableTransformForAlgo> stableTransformRepo();
     Repository<SignerChecker> signatureFormatRepo();
     Repository<CrcCalculator> crcCalculatorsRepo();
 

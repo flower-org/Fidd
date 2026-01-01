@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+
+<SplitPane orientation="VERTICAL" prefHeight="690.0" prefWidth="895.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.fidd.view.forms.MainForm">
+        <items>
+        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+             <children>
+                 <TabPane fx:id="functionTabPane" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                     <tabs>
+                         <Tab fx:id="cryptTextFunctionTab" text="My Cert">
+                             <content>
+                                 <AnchorPane fx:id="topPane" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                     <padding>
+                                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                     </padding></AnchorPane>
+                             </content>
+                         </Tab>
+                         <Tab text="Blogs">
+                             <content>
+                                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                     <children>
+                                         <GridPane layoutX="77.0" layoutY="65.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                             <columnConstraints>
+                                                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                             </columnConstraints>
+                                             <rowConstraints>
+                                                 <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                 <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                             </rowConstraints>
+                                             <children>
+                                                 <GridPane>
+                                                     <columnConstraints>
+                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="105.0" minWidth="105.0" prefWidth="105.0" />
+                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="75.0" minWidth="75.0" prefWidth="75.0" />
+                                                         <ColumnConstraints hgrow="SOMETIMES" maxWidth="100.0" minWidth="100.0" prefWidth="100.0" />
+                                          <ColumnConstraints hgrow="SOMETIMES" maxWidth="75.0" minWidth="75.0" prefWidth="75.0" />
+                                                     </columnConstraints>
+                                                     <rowConstraints>
+                                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                     </rowConstraints>
+                                                     <children>
+                                                         <Button mnemonicParsing="false" text="Add Blog" GridPane.columnIndex="1" />
+                                                         <Button mnemonicParsing="false" text="Remove Blog" GridPane.columnIndex="2" />
+                                          <Button mnemonicParsing="false" text="Edit Blog" GridPane.columnIndex="3">
+                                             <GridPane.margin>
+                                                <Insets />
+                                             </GridPane.margin>
+                                          </Button>
+                                          <Button mnemonicParsing="false" text="Open Blog">
+                                             <GridPane.margin>
+                                                <Insets left="10.0" right="10.0" />
+                                             </GridPane.margin>
+                                          </Button>
+                                                     </children>
+                                                 </GridPane>
+                                    <TableView prefHeight="200.0" prefWidth="200.0" GridPane.rowIndex="1">
+                                      <columns>
+                                        <TableColumn prefWidth="75.0" text="C1" />
+                                        <TableColumn prefWidth="75.0" text="C2" />
+                                      </columns>
+                                    </TableView>
+                                             </children>
+                                         </GridPane>
+                                     </children>
+                                     <padding>
+                                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                     </padding></AnchorPane>
+                             </content>
+                         </Tab>
+                     </tabs>
+                 </TabPane>
+             </children>
+         </AnchorPane>
+     </items>
+   </SplitPane>
