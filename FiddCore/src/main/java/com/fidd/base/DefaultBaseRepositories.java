@@ -1,5 +1,7 @@
 package com.fidd.base;
 
+import com.fidd.connectors.FiddConnectorFactory;
+import com.fidd.connectors.folder.FolderFiddConnectorFactory;
 import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.crc.adler32.Adler32Calculator;
 import com.fidd.core.crc.crc32.Crc32Calculator;
@@ -37,6 +39,7 @@ public class DefaultBaseRepositories implements BaseRepositories {
     static final Repository<SignerChecker> SIGNATURE_FORMAT_REPO;
     static final Repository<RandomGeneratorType> RANDOM_GENERATORS_REPO;
     static final Repository<CrcCalculator> CRC_CALCULATOR_REPO;
+    static final Repository<FiddConnectorFactory> FIDD_CONNECTOR_FACTORY_REPO;
 
     static {
         Aes256CbcEncryptionAlgorithm aes256Cbc = new Aes256CbcEncryptionAlgorithm();
@@ -72,6 +75,9 @@ public class DefaultBaseRepositories implements BaseRepositories {
         Adler32Calculator adler32Calculator = new Adler32Calculator();
         Crc32Calculator crc32Calculator = new Crc32Calculator();
         CRC_CALCULATOR_REPO = new MapRepository<>(adler32Calculator.name(), List.of(adler32Calculator, crc32Calculator));
+
+        FolderFiddConnectorFactory folderFiddConnectorFactory = new FolderFiddConnectorFactory();
+        FIDD_CONNECTOR_FACTORY_REPO = new MapRepository<>(folderFiddConnectorFactory.name(), List.of(folderFiddConnectorFactory));
     }
 
     @Override
@@ -121,4 +127,7 @@ public class DefaultBaseRepositories implements BaseRepositories {
     public Repository<RandomGeneratorType> randomGeneratorsRepo() {
         return RANDOM_GENERATORS_REPO;
     }
+
+    @Override
+    public Repository<FiddConnectorFactory> fiddConnectorFactoryRepo() { return FIDD_CONNECTOR_FACTORY_REPO; }
 }

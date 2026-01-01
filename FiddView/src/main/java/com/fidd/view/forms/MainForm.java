@@ -1,10 +1,12 @@
 package com.fidd.view.forms;
 
+import com.fidd.view.blog.FiddBlog;
 import com.flower.crypt.keys.forms.MultiKeyProvider;
 import com.flower.crypt.keys.forms.RsaFileKeyProvider;
 import com.flower.crypt.keys.forms.RsaPkcs11KeyProvider;
 import com.flower.crypt.keys.forms.RsaRawKeyProvider;
 import com.flower.crypt.keys.forms.TabKeyProvider;
+import com.flower.fxutils.ModalWindow;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -24,8 +26,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class MainForm {
     final static Logger LOGGER = LoggerFactory.getLogger(MainForm.class);
-
-    final static String KEY_NOT_SUPPORTED = "Selected key(s) not supported";
 
     @Nullable Stage mainStage;
 
@@ -73,5 +73,62 @@ public class MainForm {
         try (FileOutputStream fos = new FileOutputStream(file)) {
             fos.write(data);
         }
+    }
+
+    // ---------- Blog operations ----------
+
+    public void openBlog() {
+        // TODO: open selected blog
+    }
+
+    public void addBlog() {
+        // TODO: open dialog to add blog
+        try {
+            FiddBlogAddDialog socksNodeAddDialog = new FiddBlogAddDialog(null);
+            Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainStage),
+                    stage -> { socksNodeAddDialog.setStage(stage); return socksNodeAddDialog; },
+                    "Add new server");
+
+            workspaceStage.setOnHidden(
+                    ev -> {
+                        try {
+                            FiddBlog fiddBlog = socksNodeAddDialog.getFiddBlog();
+                            if (fiddBlog != null) {
+                                // TODO: implement
+                                //addFiddBlog(fiddBlog);
+
+                                // TODO: implement
+                                //refreshContent();
+                            }
+                        } catch (Exception e) {
+                            Alert alert = new Alert(Alert.AlertType.ERROR, "Error adding known server: " + e, ButtonType.OK);
+                            LOGGER.error("Error adding known server: ", e);
+                            alert.showAndWait();
+                        }
+                    }
+            );
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error adding known server: " + e, ButtonType.OK);
+            LOGGER.error("Error adding known server: ", e);
+            alert.showAndWait();
+        }
+    }
+
+    public void removeBlog() {
+        // TODO: remove selected blog
+    }
+
+    public void editBlog() {
+        // TODO: open dialog to edit blog
+    }
+
+    // ---------- Blog List operations ----------
+
+    public void saveBlogs() {
+        // TODO: Open save file dialog
+    }
+
+    public void loadBlogs() {
+        // TODO: Open load file dialog
     }
 }

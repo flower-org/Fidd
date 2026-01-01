@@ -1,5 +1,6 @@
 package com.fidd.base;
 
+import com.fidd.connectors.FiddConnectorFactory;
 import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
@@ -24,4 +25,5 @@ public interface BaseRepositories {
     Repository<CrcCalculator> crcCalculatorsRepo();
 
     Repository<RandomGeneratorType> randomGeneratorsRepo();
+    Repository<FiddConnectorFactory> fiddConnectorFactoryRepo();
 }
