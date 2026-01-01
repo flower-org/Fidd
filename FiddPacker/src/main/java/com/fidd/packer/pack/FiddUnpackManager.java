@@ -330,6 +330,8 @@ public class FiddUnpackManager {
                         skipAll(logicalFileStream, logicalFileMetadataLengthBytes);
 
                         File outputFile = new File(outputFolder, logicalFileMetadata.filePath());
+                        // Create containing directories if needed
+                        outputFile.getParentFile().mkdirs();
                         saveToFile(logicalFileStream, outputFile);
 
                         progressCallback.log("LogicalFile materialized \"" + outputFile.getAbsolutePath() + "\"");

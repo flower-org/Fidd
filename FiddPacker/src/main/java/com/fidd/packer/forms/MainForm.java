@@ -38,6 +38,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -143,6 +145,9 @@ public class MainForm {
     @FXML @Nullable AnchorPane topPane;
 
     @Nullable TabKeyProvider keyProvider;
+
+    @FXML @Nullable TabPane functionTabPane;
+    @FXML @Nullable Tab publishTab;
 
     @FXML @Nullable TextArea generatedCertificateTextArea;
     @FXML @Nullable TextArea generatedPrivateKeyTextArea;
@@ -699,9 +704,16 @@ public class MainForm {
                     List.of(progressiveCrcCalculator)
             );
 
-            JavaFxUtils.showMessage("Fidd Pack Complete!");
-
             formMessageNumber(packedContentDirectoryRoot);
+
+            if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Fidd Pack Complete!",
+                    "Fidd Pack Complete! Switch to Publish?")) {
+                checkNotNull(functionTabPane).getSelectionModel().select(publishTab);
+                checkNotNull(packedContentFolderForPublishTextField).textProperty().set(packedContentDirectory.getPath());
+                //publishFolder();
+            } else {
+                JavaFxUtils.showMessage("All done!");
+            }
         } catch (Exception e) {
             LOGGER.error("Packing error", e);
             Alert alert = new Alert(Alert.AlertType.ERROR, e.toString(), ButtonType.OK);
