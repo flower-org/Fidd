@@ -107,10 +107,11 @@ public class SubscriberAddDialog extends VBox {
                 PublicKeySerializer publicKeySerializer = PUBLIC_KEY_FORMAT_REPO.get(certType);
                 if (publicKeySerializer != null) {
                     try {
+                        byte[] certBytes = certContent.getBytes(StandardCharsets.UTF_8);
                         // Validating that cert is deserializable and not some random bytes
-                        publicKeySerializer.deserialize(certContent.getBytes(StandardCharsets.UTF_8));
+                        publicKeySerializer.deserialize(certBytes);
 
-                        returnSubscriber = SubscriberList.Subscriber.of(subscriberId, certType, certContent.getBytes(StandardCharsets.UTF_8));
+                        returnSubscriber = SubscriberList.Subscriber.of(subscriberId, certType, certBytes);
                         checkNotNull(stage).close();
                     } catch (Exception e) {
                         String errorStr = String.format("Certificate can't be deserialized as %s", certType);
