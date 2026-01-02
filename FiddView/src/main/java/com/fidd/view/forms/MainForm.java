@@ -1,6 +1,6 @@
 package com.fidd.view.forms;
 
-import com.fidd.view.blog.FiddBlog;
+import com.fidd.core.connection.FiddConnection;
 import com.flower.crypt.keys.forms.MultiKeyProvider;
 import com.flower.crypt.keys.forms.RsaFileKeyProvider;
 import com.flower.crypt.keys.forms.RsaPkcs11KeyProvider;
@@ -34,10 +34,10 @@ public class MainForm {
     @Nullable Stage mainStage;
 
     @FXML @Nullable AnchorPane topPane;
-    @FXML @Nullable TableView<FiddBlog> fiddBlogTableView;
+    @FXML @Nullable TableView<FiddConnection> fiddBlogTableView;
 
     @Nullable TabKeyProvider keyProvider;
-    @Nullable ObservableList<FiddBlog> fiddBlogs;
+    @Nullable ObservableList<FiddConnection> fiddConnections;
 
 
     public MainForm() {
@@ -63,8 +63,8 @@ public class MainForm {
 
         keyProvider.initPreferences();
 
-        fiddBlogs = FXCollections.observableArrayList();
-        checkNotNull(fiddBlogTableView).itemsProperty().set(fiddBlogs);
+        fiddConnections = FXCollections.observableArrayList();
+        checkNotNull(fiddBlogTableView).itemsProperty().set(fiddConnections);
     }
 
     private static TabKeyProvider buildMainKeyProvider(Stage mainStage) {
@@ -89,9 +89,9 @@ public class MainForm {
 
     public void openBlog() {
         try {
-            FiddBlog selectedFiddBlog = checkNotNull(fiddBlogTableView).getSelectionModel().getSelectedItem();
-            if (selectedFiddBlog != null) {
-                checkNotNull(fiddBlogs).remove(selectedFiddBlog);
+            FiddConnection selectedFiddConnection = checkNotNull(fiddBlogTableView).getSelectionModel().getSelectedItem();
+            if (selectedFiddConnection != null) {
+                checkNotNull(fiddConnections).remove(selectedFiddConnection);
                 checkNotNull(fiddBlogTableView).refresh();
             }
         } catch (Exception e) {
@@ -101,9 +101,9 @@ public class MainForm {
         }
     }
 
-    protected void addFiddBlog(FiddBlog fiddBlog) {
+    protected void addFiddBlog(FiddConnection fiddConnection) {
         Platform.runLater(() -> {
-            checkNotNull(fiddBlogs).add(fiddBlog);
+            checkNotNull(fiddConnections).add(fiddConnection);
             checkNotNull(fiddBlogTableView).refresh();
         });
     }
@@ -118,9 +118,9 @@ public class MainForm {
             workspaceStage.setOnHidden(
                     ev -> {
                         try {
-                            FiddBlog fiddBlog = socksNodeAddDialog.getFiddBlog();
-                            if (fiddBlog != null) {
-                                addFiddBlog(fiddBlog);
+                            FiddConnection fiddConnection = socksNodeAddDialog.getFiddBlog();
+                            if (fiddConnection != null) {
+                                addFiddBlog(fiddConnection);
                             }
                         } catch (Exception e) {
                             Alert alert = new Alert(Alert.AlertType.ERROR, "Error adding Blog Connection: " + e, ButtonType.OK);
@@ -138,9 +138,9 @@ public class MainForm {
 
     public void removeBlog() {
         try {
-            FiddBlog selectedFiddBlog = checkNotNull(fiddBlogTableView).getSelectionModel().getSelectedItem();
-            if (selectedFiddBlog != null) {
-                checkNotNull(fiddBlogs).remove(selectedFiddBlog);
+            FiddConnection selectedFiddConnection = checkNotNull(fiddBlogTableView).getSelectionModel().getSelectedItem();
+            if (selectedFiddConnection != null) {
+                checkNotNull(fiddConnections).remove(selectedFiddConnection);
                 checkNotNull(fiddBlogTableView).refresh();
             }
         } catch (Exception e) {
@@ -152,10 +152,10 @@ public class MainForm {
 
     public void editBlog() {
         try {
-            FiddBlog selectedFiddBlog = checkNotNull(fiddBlogTableView).getSelectionModel().getSelectedItem();
+            FiddConnection selectedFiddConnection = checkNotNull(fiddBlogTableView).getSelectionModel().getSelectedItem();
             int selectedIndex = checkNotNull(fiddBlogTableView).getSelectionModel().getSelectedIndex();
-            if (selectedFiddBlog != null) {
-                FiddBlogAddDialog fiddBlogAddDialog = new FiddBlogAddDialog(selectedFiddBlog);
+            if (selectedFiddConnection != null) {
+                FiddBlogAddDialog fiddBlogAddDialog = new FiddBlogAddDialog(selectedFiddConnection);
                 Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainStage),
                         stage -> {
                             fiddBlogAddDialog.setStage(stage);
@@ -166,10 +166,10 @@ public class MainForm {
                 workspaceStage.setOnHidden(
                         ev -> {
                             try {
-                                FiddBlog fiddBlog = fiddBlogAddDialog.getFiddBlog();
-                                if (fiddBlog != null) {
-                                    checkNotNull(fiddBlogs).remove(selectedIndex);
-                                    checkNotNull(fiddBlogs).add(selectedIndex, fiddBlog);
+                                FiddConnection fiddConnection = fiddBlogAddDialog.getFiddBlog();
+                                if (fiddConnection != null) {
+                                    checkNotNull(fiddConnections).remove(selectedIndex);
+                                    checkNotNull(fiddConnections).add(selectedIndex, fiddConnection);
                                     checkNotNull(fiddBlogTableView).refresh();
                                 }
                             } catch (Exception e) {

@@ -1,7 +1,6 @@
-package com.fidd.view.blog.yaml;
+package com.fidd.core.connection;
 
-import com.fidd.view.blog.FiddBlog;
-import com.fidd.view.blog.ImmutableFiddBlog;
+import com.fidd.core.connection.yaml.YamlFiddConnectionSerializer;
 import org.junit.jupiter.api.Test;
 
 import java.net.URL;
@@ -15,13 +14,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class YamlFiddBlogSerializerTest {
+public class YamlFiddConnectionSerializerTest {
 
-    private final YamlFiddBlogSerializer serializer = new YamlFiddBlogSerializer();
+    private final YamlFiddConnectionSerializer serializer = new YamlFiddConnectionSerializer();
 
     @Test
     void testSerializeAndDeserialize_fullFields() throws Exception {
-        FiddBlog original = ImmutableFiddBlog.builder()
+        FiddConnection original = ImmutableFiddConnection.builder()
                 .connectorType("github")
                 .blogName("Fidd Blog")
                 .blogUrl(new URL("https://example.com"))
@@ -32,7 +31,7 @@ public class YamlFiddBlogSerializerTest {
         byte[] yamlBytes = serializer.serialize(original);
         assertNotNull(yamlBytes);
 
-        FiddBlog restored = serializer.deserialize(yamlBytes);
+        FiddConnection restored = serializer.deserialize(yamlBytes);
 
         assertEquals(original.connectorType(), restored.connectorType());
         assertEquals(original.blogName(), restored.blogName());
@@ -43,7 +42,7 @@ public class YamlFiddBlogSerializerTest {
 
     @Test
     void testSerializeAndDeserialize_nullOptionalFields() throws Exception {
-        FiddBlog original = ImmutableFiddBlog.builder()
+        FiddConnection original = ImmutableFiddConnection.builder()
                 .connectorType("gitlab")
                 .blogName("Null Blog")
                 .blogUrl(new URL("https://null.com"))
@@ -55,7 +54,7 @@ public class YamlFiddBlogSerializerTest {
         assertFalse(yamlString.contains("publicKeyFormat"));
         assertFalse(yamlString.contains("publicKeyBytes"));
 
-        FiddBlog restored = serializer.deserialize(yamlBytes);
+        FiddConnection restored = serializer.deserialize(yamlBytes);
 
         assertNull(restored.publicKeyFormat());
         assertNull(restored.publicKeyBytes());
@@ -79,7 +78,7 @@ public class YamlFiddBlogSerializerTest {
     @Test
     void testSerialize_throwsRuntimeExceptionOnFailure() {
         // Create a proxy object that Jackson cannot serialize
-        FiddBlog bad = new FiddBlog() {
+        FiddConnection bad = new FiddConnection() {
             @Override public String blogName() { return "bad"; }
             @Override public String connectorType() { return "bad"; }
             @Override public URL blogUrl() { return null; } // Jackson will choke on null URL

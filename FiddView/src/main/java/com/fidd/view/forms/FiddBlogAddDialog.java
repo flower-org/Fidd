@@ -6,8 +6,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.fidd.base.DefaultBaseRepositories;
 import com.fidd.base.Repository;
 import com.fidd.connectors.FiddConnectorFactory;
+import com.fidd.core.connection.FiddConnection;
 import com.fidd.core.pki.PublicKeySerializer;
-import com.fidd.view.blog.FiddBlog;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;
@@ -51,9 +51,9 @@ public class FiddBlogAddDialog extends VBox {
     @FXML @Nullable TextField publisherCertFileTextField;
 
     @Nullable Stage stage;
-    @Nullable volatile FiddBlog returnFiddBlog = null;
+    @Nullable volatile FiddConnection returnFiddConnection = null;
 
-    public FiddBlogAddDialog(@Nullable FiddBlog fiddBlogToEdit) {
+    public FiddBlogAddDialog(@Nullable FiddConnection fiddConnectionToEdit) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("FiddBlogAddDialog.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
@@ -70,15 +70,15 @@ public class FiddBlogAddDialog extends VBox {
         checkNotNull(publisherCertTypeComboBox).itemsProperty().get().addAll(PUBLIC_KEY_FORMAT_REPO.listEntryNames());
         checkNotNull(publisherCertTypeComboBox).getSelectionModel().select(PUBLIC_KEY_FORMAT_REPO.defaultKey());
 
-        if (fiddBlogToEdit != null) {
+        if (fiddConnectionToEdit != null) {
             checkNotNull(addButton).textProperty().set("Edit");
-            checkNotNull(connectorTypeComboBox).getSelectionModel().select(fiddBlogToEdit.connectorType());
-            checkNotNull(blogNameTextField).textProperty().set(fiddBlogToEdit.blogName());
-            checkNotNull(urlTextField).textProperty().set(fiddBlogToEdit.blogUrl().toString());
+            checkNotNull(connectorTypeComboBox).getSelectionModel().select(fiddConnectionToEdit.connectorType());
+            checkNotNull(blogNameTextField).textProperty().set(fiddConnectionToEdit.blogName());
+            checkNotNull(urlTextField).textProperty().set(fiddConnectionToEdit.blogUrl().toString());
 
-            if (fiddBlogToEdit.publicKeyBytes() != null) {
-                checkNotNull(publisherCertTypeComboBox).selectionModelProperty().get().select(checkNotNull(fiddBlogToEdit.publicKeyFormat()));
-                checkNotNull(publisherCertTextArea).textProperty().set(new String(fiddBlogToEdit.publicKeyBytes()));
+            if (fiddConnectionToEdit.publicKeyBytes() != null) {
+                checkNotNull(publisherCertTypeComboBox).selectionModelProperty().get().select(checkNotNull(fiddConnectionToEdit.publicKeyFormat()));
+                checkNotNull(publisherCertTextArea).textProperty().set(new String(fiddConnectionToEdit.publicKeyBytes()));
             }
         }
 
@@ -160,7 +160,7 @@ public class FiddBlogAddDialog extends VBox {
                     publicKeySerializer.deserialize(certBytes);
                 }
 
-                returnFiddBlog = FiddBlog.of(connectorType, blogName, blogUrl, certType, certBytes);
+                returnFiddConnection = FiddConnection.of(connectorType, blogName, blogUrl, certType, certBytes);
                 checkNotNull(stage).close();
             }
         } catch (Exception e) {
@@ -170,8 +170,8 @@ public class FiddBlogAddDialog extends VBox {
         }
     }
 
-    public @Nullable FiddBlog getFiddBlog() {
-        return returnFiddBlog;
+    public @Nullable FiddConnection getFiddBlog() {
+        return returnFiddConnection;
     }
 
     public void selectPublisherCertFile() {

@@ -1,4 +1,4 @@
-package com.fidd.view.blog;
+package com.fidd.core.connection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -12,10 +12,10 @@ import java.net.URL;
 import static com.fidd.core.subscription.SubscriberList.Subscriber.compactLines;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableFiddBlog.class)
-@JsonDeserialize(as = ImmutableFiddBlog.class)
+@JsonSerialize(as = ImmutableFiddConnection.class)
+@JsonDeserialize(as = ImmutableFiddConnection.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public interface FiddBlog {
+public interface FiddConnection {
     String blogName();
     String connectorType();
     URL blogUrl();
@@ -33,10 +33,10 @@ public interface FiddBlog {
     /** JavaFX needs "get" methods for PropertyValueFactory */
     @JsonIgnore default @Nullable String getPublicKey() { return publicKeyBytes() == null ? null : compactLines(new String(publicKeyBytes())); }
 
-    static FiddBlog of(String connectorType, String blogName, URL blogUrl,
-                       @Nullable String publicKeyFormat, @Nullable byte[] publicKeyBytes
+    static FiddConnection of(String connectorType, String blogName, URL blogUrl,
+                             @Nullable String publicKeyFormat, @Nullable byte[] publicKeyBytes
     ) {
-        ImmutableFiddBlog.Builder builder = ImmutableFiddBlog.builder()
+        ImmutableFiddConnection.Builder builder = ImmutableFiddConnection.builder()
                 .connectorType(connectorType)
                 .blogName(blogName)
                 .blogUrl(blogUrl);
