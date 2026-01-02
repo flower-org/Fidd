@@ -1086,7 +1086,7 @@ public class MainForm {
 
     public void addSubscriber() {
         try {
-            SubscriberAddDialog subscriberAddDialog = new SubscriberAddDialog();
+            SubscriberAddDialog subscriberAddDialog = new SubscriberAddDialog(null);
             Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainStage),
                 stage -> { subscriberAddDialog.setStage(stage); return subscriberAddDialog; },
                 "Add subscriber");
@@ -1108,6 +1108,43 @@ public class MainForm {
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error adding subscriber: " + e, ButtonType.OK);
             LOGGER.error("Error adding subscriber: ", e);
+            alert.showAndWait();
+        }
+    }
+
+    public void editSubscriber() {
+        try {
+            SubscriberList.Subscriber selectedSubscriber = checkNotNull(subscribersTableView).getSelectionModel().getSelectedItem();
+            int selectedIndex = checkNotNull(subscribersTableView).getSelectionModel().getSelectedIndex();
+            if (selectedSubscriber != null) {
+                SubscriberAddDialog subscriberAddDialog = new SubscriberAddDialog(selectedSubscriber);
+                Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainStage),
+                        stage -> {
+                            subscriberAddDialog.setStage(stage);
+                            return subscriberAddDialog;
+                        },
+                        "Edit subscriber");
+
+                workspaceStage.setOnHidden(
+                        ev -> {
+                            try {
+                                SubscriberList.Subscriber returnSubscriber = subscriberAddDialog.getReturnSubscriber();
+                                if (returnSubscriber != null) {
+                                    checkNotNull(subscribers).remove(selectedIndex);
+                                    checkNotNull(subscribers).add(selectedIndex, returnSubscriber);
+                                    checkNotNull(subscribersTableView).refresh();
+                                }
+                            } catch (Exception e) {
+                                Alert alert = new Alert(Alert.AlertType.ERROR, "Error editing Blog Connection: " + e, ButtonType.OK);
+                                LOGGER.error("Error editing Blog Connection: ", e);
+                                alert.showAndWait();
+                            }
+                        }
+                );
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error editing Blog Connection: " + e, ButtonType.OK);
+            LOGGER.error("Error editing Blog Connection: ", e);
             alert.showAndWait();
         }
     }

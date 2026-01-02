@@ -9,12 +9,11 @@ import com.fidd.core.subscription.SubscriberList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -37,12 +36,13 @@ public class SubscriberAddDialog extends VBox {
     @FXML @Nullable ComboBox<String> certTypeComboBox;
     @FXML @Nullable TextField certTextField;
     @FXML @Nullable TextArea certTextArea;
+    @FXML @Nullable Button addButton;
 
     @Nullable Stage stage;
 
     @Nullable volatile SubscriberList.Subscriber returnSubscriber = null;
 
-    public SubscriberAddDialog() {
+    public SubscriberAddDialog(@Nullable SubscriberList.Subscriber subscriberToEdit) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("SubscriberAddDialog.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
@@ -76,6 +76,14 @@ public class SubscriberAddDialog extends VBox {
                 }
             }
         });
+
+        if (subscriberToEdit != null) {
+            checkNotNull(addButton).textProperty().set("Edit");
+
+            checkNotNull(subscriberIdTextField).textProperty().set(subscriberToEdit.subscriberId());
+            checkNotNull(certTypeComboBox).getSelectionModel().select(subscriberToEdit.publicKeyFormat());
+            checkNotNull(certTextArea).textProperty().set(new String(subscriberToEdit.publicKeyBytes()));
+        }
     }
 
     public void setStage(Stage stage) {

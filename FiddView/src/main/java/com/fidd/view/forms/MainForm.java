@@ -190,10 +190,22 @@ public class MainForm {
     // ---------- Blog List operations ----------
 
     public void saveBlogs() {
-        // TODO: Open save file dialog
+        try {
+            // TODO: Open save file dialog
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error saving Blog Connections: " + e, ButtonType.OK);
+            LOGGER.error("Error saving Blog Connection: ", e);
+            alert.showAndWait();
+        }
     }
 
     public void loadBlogs() {
-        // TODO: Open load file dialog
+        try {
+            // TODO: Open load file dialog
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error loading Blog Connections: " + e, ButtonType.OK);
+            LOGGER.error("Error loading Blog Connections: ", e);
+            alert.showAndWait();
+        }
     }
 }
