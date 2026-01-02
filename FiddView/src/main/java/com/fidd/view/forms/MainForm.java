@@ -7,9 +7,13 @@ import com.flower.crypt.keys.forms.RsaPkcs11KeyProvider;
 import com.flower.crypt.keys.forms.RsaRawKeyProvider;
 import com.flower.crypt.keys.forms.TabKeyProvider;
 import com.flower.fxutils.ModalWindow;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.TableView;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
@@ -30,8 +34,11 @@ public class MainForm {
     @Nullable Stage mainStage;
 
     @FXML @Nullable AnchorPane topPane;
+    @FXML @Nullable TableView<FiddBlog> fiddBlogTableView;
 
     @Nullable TabKeyProvider keyProvider;
+    @Nullable ObservableList<FiddBlog> fiddBlogs;
+
 
     public MainForm() {
         //This form is created automatically.
@@ -55,6 +62,9 @@ public class MainForm {
         AnchorPane.setRightAnchor(keyProviderForm, 0.0);
 
         keyProvider.initPreferences();
+
+        fiddBlogs = FXCollections.observableArrayList();
+        checkNotNull(fiddBlogTableView).itemsProperty().set(fiddBlogs);
     }
 
     private static TabKeyProvider buildMainKeyProvider(Stage mainStage) {
@@ -78,48 +88,103 @@ public class MainForm {
     // ---------- Blog operations ----------
 
     public void openBlog() {
-        // TODO: open selected blog
+        try {
+            FiddBlog selectedFiddBlog = checkNotNull(fiddBlogTableView).getSelectionModel().getSelectedItem();
+            if (selectedFiddBlog != null) {
+                checkNotNull(fiddBlogs).remove(selectedFiddBlog);
+                checkNotNull(fiddBlogTableView).refresh();
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error Opening Blog connection: " + e, ButtonType.OK);
+            LOGGER.error("Error Opening Blog connection: ", e);
+            alert.showAndWait();
+        }
+    }
+
+    protected void addFiddBlog(FiddBlog fiddBlog) {
+        Platform.runLater(() -> {
+            checkNotNull(fiddBlogs).add(fiddBlog);
+            checkNotNull(fiddBlogTableView).refresh();
+        });
     }
 
     public void addBlog() {
-        // TODO: open dialog to add blog
         try {
             FiddBlogAddDialog socksNodeAddDialog = new FiddBlogAddDialog(null);
             Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainStage),
                     stage -> { socksNodeAddDialog.setStage(stage); return socksNodeAddDialog; },
-                    "Add new server");
+                    "Add new Blog Connection");
 
             workspaceStage.setOnHidden(
                     ev -> {
                         try {
                             FiddBlog fiddBlog = socksNodeAddDialog.getFiddBlog();
                             if (fiddBlog != null) {
-                                // TODO: implement
-                                //addFiddBlog(fiddBlog);
-
-                                // TODO: implement
-                                //refreshContent();
+                                addFiddBlog(fiddBlog);
                             }
                         } catch (Exception e) {
-                            Alert alert = new Alert(Alert.AlertType.ERROR, "Error adding known server: " + e, ButtonType.OK);
-                            LOGGER.error("Error adding known server: ", e);
+                            Alert alert = new Alert(Alert.AlertType.ERROR, "Error adding Blog Connection: " + e, ButtonType.OK);
+                            LOGGER.error("Error adding Blog Connection: ", e);
                             alert.showAndWait();
                         }
                     }
             );
         } catch (Exception e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR, "Error adding known server: " + e, ButtonType.OK);
-            LOGGER.error("Error adding known server: ", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error adding Blog Connection: " + e, ButtonType.OK);
+            LOGGER.error("Error adding Blog Connection: ", e);
             alert.showAndWait();
         }
     }
 
     public void removeBlog() {
-        // TODO: remove selected blog
+        try {
+            FiddBlog selectedFiddBlog = checkNotNull(fiddBlogTableView).getSelectionModel().getSelectedItem();
+            if (selectedFiddBlog != null) {
+                checkNotNull(fiddBlogs).remove(selectedFiddBlog);
+                checkNotNull(fiddBlogTableView).refresh();
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error Removing Blog connection: " + e, ButtonType.OK);
+            LOGGER.error("Error Removing Blog connection: ", e);
+            alert.showAndWait();
+        }
     }
 
     public void editBlog() {
-        // TODO: open dialog to edit blog
+        try {
+            FiddBlog selectedFiddBlog = checkNotNull(fiddBlogTableView).getSelectionModel().getSelectedItem();
+            int selectedIndex = checkNotNull(fiddBlogTableView).getSelectionModel().getSelectedIndex();
+            if (selectedFiddBlog != null) {
+                FiddBlogAddDialog fiddBlogAddDialog = new FiddBlogAddDialog(selectedFiddBlog);
+                Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainStage),
+                        stage -> {
+                            fiddBlogAddDialog.setStage(stage);
+                            return fiddBlogAddDialog;
+                        },
+                        "Edit Blog Connection");
+
+                workspaceStage.setOnHidden(
+                        ev -> {
+                            try {
+                                FiddBlog fiddBlog = fiddBlogAddDialog.getFiddBlog();
+                                if (fiddBlog != null) {
+                                    checkNotNull(fiddBlogs).remove(selectedIndex);
+                                    checkNotNull(fiddBlogs).add(selectedIndex, fiddBlog);
+                                    checkNotNull(fiddBlogTableView).refresh();
+                                }
+                            } catch (Exception e) {
+                                Alert alert = new Alert(Alert.AlertType.ERROR, "Error editing Blog Connection: " + e, ButtonType.OK);
+                                LOGGER.error("Error editing Blog Connection: ", e);
+                                alert.showAndWait();
+                            }
+                        }
+                );
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error editing Blog Connection: " + e, ButtonType.OK);
+            LOGGER.error("Error editing Blog Connection: ", e);
+            alert.showAndWait();
+        }
     }
 
     // ---------- Blog List operations ----------

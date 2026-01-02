@@ -12,6 +12,7 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 
+<?import javafx.scene.control.cell.PropertyValueFactory?>
 <SplitPane orientation="VERTICAL" prefHeight="690.0" prefWidth="895.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.fidd.view.forms.MainForm">
         <items>
         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
@@ -71,11 +72,34 @@
                                           <Button mnemonicParsing="false" onAction="#loadBlogs" text="Load Blogs" GridPane.columnIndex="5" />
                                                      </children>
                                                  </GridPane>
-                                    <TableView prefHeight="200.0" prefWidth="200.0" GridPane.rowIndex="1">
-                                      <columns>
-                                        <TableColumn prefWidth="75.0" text="C1" />
-                                        <TableColumn prefWidth="75.0" text="C2" />
-                                      </columns>
+                                    <TableView fx:id="fiddBlogTableView" prefHeight="200.0" prefWidth="200.0" GridPane.rowIndex="1">
+                                        <columns>
+                                            <TableColumn minWidth="150.0" prefWidth="150.0" text="BlogName">
+                                                <cellValueFactory>
+                                                    <PropertyValueFactory property="blogName" />
+                                                </cellValueFactory>
+                                            </TableColumn>
+                                            <TableColumn minWidth="150.0" prefWidth="150.0" text="ConnectorType">
+                                                <cellValueFactory>
+                                                    <PropertyValueFactory property="connectorType" />
+                                                </cellValueFactory>
+                                            </TableColumn>
+                                            <TableColumn minWidth="300.0" prefWidth="300.0" text="BlogUrl">
+                                                <cellValueFactory>
+                                                    <PropertyValueFactory property="blogUrl" />
+                                                </cellValueFactory>
+                                            </TableColumn>
+                                            <TableColumn minWidth="100.0" prefWidth="100.0" text="PublicKeyFormat">
+                                                <cellValueFactory>
+                                                    <PropertyValueFactory property="publicKeyFormat" />
+                                                </cellValueFactory>
+                                            </TableColumn>
+                                            <TableColumn minWidth="200.0" prefWidth="200.0" text="Cert">
+                                                <cellValueFactory>
+                                                    <PropertyValueFactory property="publicKey" />
+                                                </cellValueFactory>
+                                            </TableColumn>
+                                        </columns>
                                     </TableView>
                                              </children>
                                          </GridPane>

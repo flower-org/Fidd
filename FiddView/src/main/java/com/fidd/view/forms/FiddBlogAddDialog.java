@@ -75,6 +75,11 @@ public class FiddBlogAddDialog extends VBox {
             checkNotNull(connectorTypeComboBox).getSelectionModel().select(fiddBlogToEdit.connectorType());
             checkNotNull(blogNameTextField).textProperty().set(fiddBlogToEdit.blogName());
             checkNotNull(urlTextField).textProperty().set(fiddBlogToEdit.blogUrl().toString());
+
+            if (fiddBlogToEdit.publicKeyBytes() != null) {
+                checkNotNull(publisherCertTypeComboBox).selectionModelProperty().get().select(checkNotNull(fiddBlogToEdit.publicKeyFormat()));
+                checkNotNull(publisherCertTextArea).textProperty().set(new String(fiddBlogToEdit.publicKeyBytes()));
+            }
         }
 
         checkNotNull(connectorTypeComboBox).setOnAction(event -> {
