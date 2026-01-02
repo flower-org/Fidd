@@ -7,4 +7,5 @@ public interface FolderFiddConstants {
     String DEFAULT_FIDD_SIGNATURE_EXT = ".sign";
     String ENCRYPTED_EXT = ".crypt";
     String ENCRYPTED_FIDD_KEY_FILE_EXT = "." + FIDD_KEY_FILE_NAME + ENCRYPTED_EXT;
+    String FOLDER_FIDD_CONNECTOR_FACTORY_NAME = "FOLDER";
 }

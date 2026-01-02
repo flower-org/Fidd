@@ -92,12 +92,14 @@ public class MainForm {
     final static Logger LOGGER = LoggerFactory.getLogger(MainForm.class);
 
     final static Repository<PublicKeySerializer> PUBLIC_KEY_FORMAT_REPO = new DefaultBaseRepositories().publicKeyFormatRepo();
-
+    final static String SUBSCRIBER_LIST_EXT = ".subs";
+    final static String ENCRYPTED_SUBSCRIBER_LIST_EXT = ".subs.crypt";
     final static FileChooser.ExtensionFilter SUBSCRIBER_LIST_EXTENSION_FILTER =
-        new FileChooser.ExtensionFilter("Subscriber List (*.subs)", "*.subs");
+        new FileChooser.ExtensionFilter("Subscriber List (*" + SUBSCRIBER_LIST_EXT + ")",
+                "*" + SUBSCRIBER_LIST_EXT);
     final static FileChooser.ExtensionFilter ENCRYPTED_SUBSCRIBER_LIST_EXTENSION_FILTER =
-            new FileChooser.ExtensionFilter("Subscriber List (*.subs.crypt)", "*.subs.crypt");
-
+        new FileChooser.ExtensionFilter("Subscriber List (*" + ENCRYPTED_SUBSCRIBER_LIST_EXT + ")",
+                "*" + ENCRYPTED_SUBSCRIBER_LIST_EXT);
 
     final static String ENCRYPTION_ALGORITHM = "ENCRYPTION_ALGORITHM";
     final static String FIDD_KEY = "FIDD_KEY";
@@ -1086,7 +1088,7 @@ public class MainForm {
 
     public void addSubscriber() {
         try {
-            SubscriberAddDialog subscriberAddDialog = new SubscriberAddDialog();
+            SubscriberAddDialog subscriberAddDialog = new SubscriberAddDialog(null);
             Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainStage),
                 stage -> { subscriberAddDialog.setStage(stage); return subscriberAddDialog; },
                 "Add subscriber");
@@ -1108,6 +1110,43 @@ public class MainForm {
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error adding subscriber: " + e, ButtonType.OK);
             LOGGER.error("Error adding subscriber: ", e);
+            alert.showAndWait();
+        }
+    }
+
+    public void editSubscriber() {
+        try {
+            SubscriberList.Subscriber selectedSubscriber = checkNotNull(subscribersTableView).getSelectionModel().getSelectedItem();
+            int selectedIndex = checkNotNull(subscribersTableView).getSelectionModel().getSelectedIndex();
+            if (selectedSubscriber != null) {
+                SubscriberAddDialog subscriberAddDialog = new SubscriberAddDialog(selectedSubscriber);
+                Stage workspaceStage = ModalWindow.showModal(checkNotNull(mainStage),
+                        stage -> {
+                            subscriberAddDialog.setStage(stage);
+                            return subscriberAddDialog;
+                        },
+                        "Edit subscriber");
+
+                workspaceStage.setOnHidden(
+                        ev -> {
+                            try {
+                                SubscriberList.Subscriber returnSubscriber = subscriberAddDialog.getReturnSubscriber();
+                                if (returnSubscriber != null) {
+                                    checkNotNull(subscribers).remove(selectedIndex);
+                                    checkNotNull(subscribers).add(selectedIndex, returnSubscriber);
+                                    checkNotNull(subscribersTableView).refresh();
+                                }
+                            } catch (Exception e) {
+                                Alert alert = new Alert(Alert.AlertType.ERROR, "Error editing Blog Connection: " + e, ButtonType.OK);
+                                LOGGER.error("Error editing Blog Connection: ", e);
+                                alert.showAndWait();
+                            }
+                        }
+                );
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error editing Blog Connection: " + e, ButtonType.OK);
+            LOGGER.error("Error editing Blog Connection: ", e);
             alert.showAndWait();
         }
     }
@@ -1139,7 +1178,15 @@ public class MainForm {
                 }
             }
 
+            String oldPath = checkNotNull(subscribersFileTextField).textProperty().get();
             FileChooser fileChooser = new FileChooser();
+            if (!StringUtils.isBlank(oldPath)) {
+                try {
+                    File oldFile = new File(oldPath);
+                    fileChooser.setInitialFileName(oldFile.getName());
+                    fileChooser.setInitialDirectory(oldFile.getParentFile());
+                } catch (Exception e) {}
+            }
             fileChooser.getExtensionFilters().addAll(
                     decrypt ? ENCRYPTED_SUBSCRIBER_LIST_EXTENSION_FILTER : SUBSCRIBER_LIST_EXTENSION_FILTER);
             fileChooser.setTitle("Open Subscribers File");
@@ -1147,19 +1194,17 @@ public class MainForm {
             subscriberListFile = fileChooser.showOpenDialog(checkNotNull(mainStage));
             if (subscriberListFile != null) {
                 checkNotNull(subscribersFileTextField).textProperty().set(subscriberListFile.getPath());
+            } else {
+                return;
             }
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error opening subscribers file: " + e, ButtonType.OK);
             LOGGER.error("Error opening subscribers file: ", e);
             alert.showAndWait();
+            return;
         }
 
-        if (subscriberListFile != null && subscriberListFile.exists()) {
-            if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Load Subscribers File",
-                    "Load the subscribers file now?")) {
-                loadSubscribersFile();
-            }
-        }
+        loadSubscribersFile();
     }
 
     public void loadSubscribersFile() {
@@ -1247,34 +1292,58 @@ public class MainForm {
                 }
             }
 
-            String subscriberListFilePath = checkNotNull(subscribersFileTextField).textProperty().get();
-            File subscriberListFile = new File(subscriberListFilePath);
-            if (subscriberListFile.exists()) {
-                if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Save Subscribers File",
-                                "Save will overwrite Subscribers file. Continue?")) {
-                    return;
+            String oldPath = checkNotNull(subscribersFileTextField).textProperty().get();
+            FileChooser fileChooser = new FileChooser();
+            if (!StringUtils.isBlank(oldPath)) {
+                try {
+                    File oldFile = new File(oldPath);
+                    fileChooser.setInitialFileName(oldFile.getName());
+                    fileChooser.setInitialDirectory(oldFile.getParentFile());
+                } catch (Exception e) {}
+            }
+            fileChooser.getExtensionFilters().addAll(
+                    encrypt ? ENCRYPTED_SUBSCRIBER_LIST_EXTENSION_FILTER : SUBSCRIBER_LIST_EXTENSION_FILTER);
+            fileChooser.setTitle("Save Fidd Connections File");
+
+            File subscriberListFile = fileChooser.showSaveDialog(checkNotNull(mainStage));
+            if (subscriberListFile != null) {
+                if (!subscriberListFile.exists()) {
+                    String path = subscriberListFile.getPath();
+                    String extension = encrypt ? ENCRYPTED_SUBSCRIBER_LIST_EXT : SUBSCRIBER_LIST_EXT;
+                    if (!path.endsWith(extension)) {
+                        path += extension;
+                        subscriberListFile = new File(path);
+                    }
                 }
-                subscriberListFile.delete();
+                checkNotNull(subscribersFileTextField).textProperty().set(subscriberListFile.getAbsolutePath());
+
+                if (subscriberListFile.exists()) {
+                    if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Save Subscribers File",
+                            "Save will overwrite Subscribers file " + subscriberListFile.getAbsolutePath() + ". Continue?")) {
+                        return;
+                    }
+                    subscriberListFile.delete();
+                }
+
+                // serialize subscribers
+                SubscriberList subscriberList = SubscriberList.of(checkNotNull(subscribers).toArray(new SubscriberList.Subscriber[0]));
+                byte[] subscriberListBytes = new YamlSubscriberListSerializer().serialize(subscriberList);
+
+                // encrypt if needed
+                if (encrypt) {
+                    ByteArrayInputStream bis = new ByteArrayInputStream(subscriberListBytes);
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    HybridAesEncryptor.encrypt(bis, bos, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
+                            null, checkNotNull(pair).getLeft().getPublicKey(), null);
+                    subscriberListBytes = bos.toByteArray();
+                }
+
+                // save bytes to File
+                writeBytesToFile(subscriberListBytes, subscriberListFile);
+
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Subscribers file saved successfully " + subscriberListFile.getAbsolutePath(), ButtonType.OK);
+                alert.showAndWait();
             }
-
-            // serialize subscribers
-            SubscriberList subscriberList = SubscriberList.of(checkNotNull(subscribers).toArray(new SubscriberList.Subscriber[0]));
-            byte[] subscriberListBytes = new YamlSubscriberListSerializer().serialize(subscriberList);
-
-            // encrypt if needed
-            if (encrypt) {
-                ByteArrayInputStream bis = new ByteArrayInputStream(subscriberListBytes);
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                HybridAesEncryptor.encrypt(bis, bos, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
-                        null, checkNotNull(pair).getLeft().getPublicKey(), null);
-                subscriberListBytes = bos.toByteArray();
-            }
-
-            // save bytes to File
-            writeBytesToFile(subscriberListBytes, subscriberListFile);
-
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Subscribers file saved successfully " + subscriberListFilePath, ButtonType.OK);
-            alert.showAndWait();
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error opening subscribers file: " + e, ButtonType.OK);
             LOGGER.error("Error opening subscribers file: ", e);
@@ -1293,7 +1362,7 @@ public class MainForm {
                 }
             } else {
                 if (subscribersFilePath.endsWith(ENCRYPTED_EXT)) {
-                    subscribersFilePath = subscribersFilePath.substring(0, subscribersFilePath.length() - 6);
+                    subscribersFilePath = subscribersFilePath.substring(0, subscribersFilePath.length() - ENCRYPTED_EXT.length());
                     checkNotNull(subscribersFileTextField).textProperty().set(subscribersFilePath);
                 }
             }

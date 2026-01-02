@@ -51,6 +51,7 @@ dependencies {
     implementation project(':CryptCore')
     implementation project(':JavaFxUtils')
     implementation project(':KeyManagerFx')
+    implementation project(':FiddCore')
 
     annotationProcessor "org.immutables:value:2.9.2"
 

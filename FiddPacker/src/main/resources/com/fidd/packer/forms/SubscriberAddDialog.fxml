@@ -74,6 +74,6 @@
       </children>
     </AnchorPane>
     <AnchorPane prefHeight="35.0" prefWidth="242.0" VBox.vgrow="NEVER">
-        <Button layoutX="97.0" layoutY="1.0" mnemonicParsing="false" onAction="#okClose" text="Add Subscriber" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="97.0" AnchorPane.rightAnchor="97.0" AnchorPane.topAnchor="0.0" />
+        <Button fx:id="addButton" layoutX="97.0" layoutY="1.0" mnemonicParsing="false" onAction="#okClose" text="Add Subscriber" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="97.0" AnchorPane.rightAnchor="97.0" AnchorPane.topAnchor="0.0" />
     </AnchorPane>
 </fx:root>
