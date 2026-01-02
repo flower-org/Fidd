@@ -22,8 +22,8 @@ public class YamlFiddConnectionSerializerTest {
     void testSerializeAndDeserialize_fullFields() throws Exception {
         FiddConnection original = ImmutableFiddConnection.builder()
                 .connectorType("github")
-                .blogName("Fidd Blog")
-                .blogUrl(new URL("https://example.com"))
+                .name("Fidd Blog")
+                .url(new URL("https://example.com"))
                 .publicKeyFormat("RSA")
                 .publicKeyBytes(new byte[]{1, 2, 3})
                 .build();
@@ -34,8 +34,8 @@ public class YamlFiddConnectionSerializerTest {
         FiddConnection restored = serializer.deserialize(yamlBytes);
 
         assertEquals(original.connectorType(), restored.connectorType());
-        assertEquals(original.blogName(), restored.blogName());
-        assertEquals(original.blogUrl(), restored.blogUrl());
+        assertEquals(original.name(), restored.name());
+        assertEquals(original.url(), restored.url());
         assertEquals(original.publicKeyFormat(), restored.publicKeyFormat());
         assertArrayEquals(original.publicKeyBytes(), restored.publicKeyBytes());
     }
@@ -44,8 +44,8 @@ public class YamlFiddConnectionSerializerTest {
     void testSerializeAndDeserialize_nullOptionalFields() throws Exception {
         FiddConnection original = ImmutableFiddConnection.builder()
                 .connectorType("gitlab")
-                .blogName("Null Blog")
-                .blogUrl(new URL("https://null.com"))
+                .name("Null Blog")
+                .url(new URL("https://null.com"))
                 .build();
 
         byte[] yamlBytes = serializer.serialize(original);
@@ -79,9 +79,9 @@ public class YamlFiddConnectionSerializerTest {
     void testSerialize_throwsRuntimeExceptionOnFailure() {
         // Create a proxy object that Jackson cannot serialize
         FiddConnection bad = new FiddConnection() {
-            @Override public String blogName() { return "bad"; }
+            @Override public String name() { return "bad"; }
             @Override public String connectorType() { return "bad"; }
-            @Override public URL blogUrl() { return null; } // Jackson will choke on null URL
+            @Override public URL url() { return null; } // Jackson will choke on null URL
             @Override public String publicKeyFormat() { return null; }
             @Override public byte[] publicKeyBytes() { return null; }
         };

@@ -31,8 +31,8 @@
             <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
         </rowConstraints>
          <children>
-            <Label text="Blog name:" />
-            <TextField fx:id="blogNameTextField" GridPane.columnIndex="1" />
+            <Label text="Name:" />
+            <TextField fx:id="nameTextField" GridPane.columnIndex="1" />
             <Label fx:id="certLabel" text="URL:" GridPane.rowIndex="1" />
             <GridPane fx:id="certChoiceGridPane" GridPane.columnIndex="1" GridPane.rowIndex="1">
               <columnConstraints>

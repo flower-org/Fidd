@@ -33,15 +33,15 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-public class FiddBlogAddDialog extends VBox {
-    final static Logger LOGGER = LoggerFactory.getLogger(FiddBlogAddDialog.class);
+public class FiddConnectionAddDialog extends VBox {
+    final static Logger LOGGER = LoggerFactory.getLogger(FiddConnectionAddDialog.class);
     final static Repository<FiddConnectorFactory> FIDD_CONNECTOR_FACTORY_REPO =
             new DefaultBaseRepositories().fiddConnectorFactoryRepo();
     final static Repository<PublicKeySerializer> PUBLIC_KEY_FORMAT_REPO =
             new DefaultBaseRepositories().publicKeyFormatRepo();
 
     @FXML @Nullable ComboBox<String> connectorTypeComboBox;
-    @FXML @Nullable TextField blogNameTextField;
+    @FXML @Nullable TextField nameTextField;
     @FXML @Nullable TextField urlTextField;
     @FXML @Nullable Button addButton;
     @FXML @Nullable Button selectFolderButon;
@@ -53,8 +53,8 @@ public class FiddBlogAddDialog extends VBox {
     @Nullable Stage stage;
     @Nullable volatile FiddConnection returnFiddConnection = null;
 
-    public FiddBlogAddDialog(@Nullable FiddConnection fiddConnectionToEdit) {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("FiddBlogAddDialog.fxml"));
+    public FiddConnectionAddDialog(@Nullable FiddConnection fiddConnectionToEdit) {
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("FiddConnectionAddDialog.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
 
@@ -73,8 +73,8 @@ public class FiddBlogAddDialog extends VBox {
         if (fiddConnectionToEdit != null) {
             checkNotNull(addButton).textProperty().set("Edit");
             checkNotNull(connectorTypeComboBox).getSelectionModel().select(fiddConnectionToEdit.connectorType());
-            checkNotNull(blogNameTextField).textProperty().set(fiddConnectionToEdit.blogName());
-            checkNotNull(urlTextField).textProperty().set(fiddConnectionToEdit.blogUrl().toString());
+            checkNotNull(nameTextField).textProperty().set(fiddConnectionToEdit.name());
+            checkNotNull(urlTextField).textProperty().set(fiddConnectionToEdit.url().toString());
 
             if (fiddConnectionToEdit.publicKeyBytes() != null) {
                 checkNotNull(publisherCertTypeComboBox).selectionModelProperty().get().select(checkNotNull(fiddConnectionToEdit.publicKeyFormat()));
@@ -132,21 +132,21 @@ public class FiddBlogAddDialog extends VBox {
     public void okClose() {
         try {
             String connectorType = checkNotNull(connectorTypeComboBox).valueProperty().get();
-            String blogName = checkNotNull(blogNameTextField).textProperty().get();
+            String name = checkNotNull(nameTextField).textProperty().get();
             String urlStr = checkNotNull(urlTextField).textProperty().get();
 
             if (StringUtils.isBlank(connectorType)) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION, "Please specify Connector Type", ButtonType.OK);
                 alert.showAndWait();
-            } else if (StringUtils.isBlank(blogName)) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Please specify Blog Name", ButtonType.OK);
+            } else if (StringUtils.isBlank(name)) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Please specify Name", ButtonType.OK);
                 alert.showAndWait();
             } else if (StringUtils.isBlank(urlStr)) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION, "Please specify URL", ButtonType.OK);
                 alert.showAndWait();
             } else {
                 // Form URL
-                URL blogUrl = new URL(urlStr);
+                URL url = new URL(urlStr);
 
                 byte[] certBytes = null;
                 String certType = null;
@@ -160,7 +160,7 @@ public class FiddBlogAddDialog extends VBox {
                     publicKeySerializer.deserialize(certBytes);
                 }
 
-                returnFiddConnection = FiddConnection.of(connectorType, blogName, blogUrl, certType, certBytes);
+                returnFiddConnection = FiddConnection.of(connectorType, name, url, certType, certBytes);
                 checkNotNull(stage).close();
             }
         } catch (Exception e) {
@@ -170,7 +170,7 @@ public class FiddBlogAddDialog extends VBox {
         }
     }
 
-    public @Nullable FiddConnection getFiddBlog() {
+    public @Nullable FiddConnection getFiddConnection() {
         return returnFiddConnection;
     }
 

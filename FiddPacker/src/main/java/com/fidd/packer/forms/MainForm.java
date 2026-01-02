@@ -92,12 +92,14 @@ public class MainForm {
     final static Logger LOGGER = LoggerFactory.getLogger(MainForm.class);
 
     final static Repository<PublicKeySerializer> PUBLIC_KEY_FORMAT_REPO = new DefaultBaseRepositories().publicKeyFormatRepo();
-
+    final static String SUBSCRIBER_LIST_EXT = ".subs";
+    final static String ENCRYPTED_SUBSCRIBER_LIST_EXT = ".subs.crypt";
     final static FileChooser.ExtensionFilter SUBSCRIBER_LIST_EXTENSION_FILTER =
-        new FileChooser.ExtensionFilter("Subscriber List (*.subs)", "*.subs");
+        new FileChooser.ExtensionFilter("Subscriber List (*" + SUBSCRIBER_LIST_EXT + ")",
+                "*" + SUBSCRIBER_LIST_EXT);
     final static FileChooser.ExtensionFilter ENCRYPTED_SUBSCRIBER_LIST_EXTENSION_FILTER =
-            new FileChooser.ExtensionFilter("Subscriber List (*.subs.crypt)", "*.subs.crypt");
-
+        new FileChooser.ExtensionFilter("Subscriber List (*" + ENCRYPTED_SUBSCRIBER_LIST_EXT + ")",
+                "*" + ENCRYPTED_SUBSCRIBER_LIST_EXT);
 
     final static String ENCRYPTION_ALGORITHM = "ENCRYPTION_ALGORITHM";
     final static String FIDD_KEY = "FIDD_KEY";
@@ -1176,27 +1178,40 @@ public class MainForm {
                 }
             }
 
+            String oldPath = checkNotNull(subscribersFileTextField).textProperty().get();
             FileChooser fileChooser = new FileChooser();
+            if (!StringUtils.isBlank(oldPath)) {
+                try {
+                    File oldFile = new File(oldPath);
+                    fileChooser.setInitialFileName(oldFile.getName());
+                    fileChooser.setInitialDirectory(oldFile.getParentFile());
+                } catch (Exception e) {}
+            }
             fileChooser.getExtensionFilters().addAll(
                     decrypt ? ENCRYPTED_SUBSCRIBER_LIST_EXTENSION_FILTER : SUBSCRIBER_LIST_EXTENSION_FILTER);
             fileChooser.setTitle("Open Subscribers File");
 
             subscriberListFile = fileChooser.showOpenDialog(checkNotNull(mainStage));
             if (subscriberListFile != null) {
-                checkNotNull(subscribersFileTextField).textProperty().set(subscriberListFile.getPath());
+                String path = subscriberListFile.getPath();
+                if (!subscriberListFile.exists()) {
+                    String extension = decrypt ? ENCRYPTED_SUBSCRIBER_LIST_EXT : SUBSCRIBER_LIST_EXT;
+                    if (!path.endsWith(extension)) {
+                        path += extension;
+                    }
+                }
+                checkNotNull(subscribersFileTextField).textProperty().set(path);
+            } else {
+                return;
             }
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error opening subscribers file: " + e, ButtonType.OK);
             LOGGER.error("Error opening subscribers file: ", e);
             alert.showAndWait();
+            return;
         }
 
-        if (subscriberListFile != null && subscriberListFile.exists()) {
-            if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Load Subscribers File",
-                    "Load the subscribers file now?")) {
-                loadSubscribersFile();
-            }
-        }
+        loadSubscribersFile();
     }
 
     public void loadSubscribersFile() {
@@ -1284,15 +1299,29 @@ public class MainForm {
                 }
             }
 
-            String subscriberListFilePath = checkNotNull(subscribersFileTextField).textProperty().get();
-            File subscriberListFile = new File(subscriberListFilePath);
+            String oldPath = checkNotNull(subscribersFileTextField).textProperty().get();
+            FileChooser fileChooser = new FileChooser();
+            if (!StringUtils.isBlank(oldPath)) {
+                try {
+                    File oldFile = new File(oldPath);
+                    fileChooser.setInitialFileName(oldFile.getName());
+                    fileChooser.setInitialDirectory(oldFile.getParentFile());
+                } catch (Exception e) {}
+            }
+            fileChooser.getExtensionFilters().addAll(
+                    encrypt ? ENCRYPTED_SUBSCRIBER_LIST_EXTENSION_FILTER : SUBSCRIBER_LIST_EXTENSION_FILTER);
+            fileChooser.setTitle("Save Fidd Connections File");
+
+            File subscriberListFile = fileChooser.showSaveDialog(checkNotNull(mainStage));
+
             if (subscriberListFile.exists()) {
                 if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Save Subscribers File",
-                                "Save will overwrite Subscribers file. Continue?")) {
+                                "Save will overwrite Subscribers file " + subscriberListFile.getAbsolutePath() + ". Continue?")) {
                     return;
                 }
                 subscriberListFile.delete();
             }
+            checkNotNull(subscribersFileTextField).textProperty().set(subscriberListFile.getAbsolutePath());
 
             // serialize subscribers
             SubscriberList subscriberList = SubscriberList.of(checkNotNull(subscribers).toArray(new SubscriberList.Subscriber[0]));
@@ -1310,7 +1339,7 @@ public class MainForm {
             // save bytes to File
             writeBytesToFile(subscriberListBytes, subscriberListFile);
 
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Subscribers file saved successfully " + subscriberListFilePath, ButtonType.OK);
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Subscribers file saved successfully " + subscriberListFile.getAbsolutePath(), ButtonType.OK);
             alert.showAndWait();
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error opening subscribers file: " + e, ButtonType.OK);

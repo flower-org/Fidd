@@ -29,26 +29,26 @@ public class YamlFiddConnectionListSerializerTest {
         String yaml = new String(yamlBytes, StandardCharsets.UTF_8);
 
         assertNotNull(yaml);
-        assertTrue(yaml.contains("blogName: \"MyBlog\""));
+        assertTrue(yaml.contains("name: \"MyBlog\""));
         assertTrue(yaml.contains("connectorType: \"rss\""));
-        assertTrue(yaml.contains("blogUrl: \"https://example.com\""));
+        assertTrue(yaml.contains("url: \"https://example.com\""));
     }
 
     @Test
     void testDeserializeParsesYaml() throws Exception {
         String yaml = ""
                 + "fiddConnectionList:\n"
-                + "  - blogName: \"MyBlog\"\n"
+                + "  - name: \"MyBlog\"\n"
                 + "    connectorType: \"rss\"\n"
-                + "    blogUrl: \"https://example.com\"\n";
+                + "    url: \"https://example.com\"\n";
 
         FiddConnectionList list = serializer.deserialize(yaml.getBytes(StandardCharsets.UTF_8));
 
         assertNotNull(list);
         assertEquals(1, list.fiddConnectionList().size());
-        assertEquals("MyBlog", list.fiddConnectionList().get(0).blogName());
+        assertEquals("MyBlog", list.fiddConnectionList().get(0).name());
         assertEquals("rss", list.fiddConnectionList().get(0).connectorType());
-        assertEquals(new URL("https://example.com"), list.fiddConnectionList().get(0).blogUrl());
+        assertEquals(new URL("https://example.com"), list.fiddConnectionList().get(0).url());
     }
 
     @Test
@@ -66,12 +66,12 @@ public class YamlFiddConnectionListSerializerTest {
         FiddConnectionList restored = serializer.deserialize(yaml);
 
         assertEquals(original.fiddConnectionList().size(), restored.fiddConnectionList().size());
-        assertEquals(original.fiddConnectionList().get(0).blogName(),
-                restored.fiddConnectionList().get(0).blogName());
+        assertEquals(original.fiddConnectionList().get(0).name(),
+                restored.fiddConnectionList().get(0).name());
         assertEquals(original.fiddConnectionList().get(0).connectorType(),
                 restored.fiddConnectionList().get(0).connectorType());
-        assertEquals(original.fiddConnectionList().get(0).blogUrl(),
-                restored.fiddConnectionList().get(0).blogUrl());
+        assertEquals(original.fiddConnectionList().get(0).url(),
+                restored.fiddConnectionList().get(0).url());
         assertEquals("PEM", restored.fiddConnectionList().get(0).publicKeyFormat());
         assertArrayEquals("abc123".getBytes(StandardCharsets.UTF_8),
                 restored.fiddConnectionList().get(0).publicKeyBytes());
