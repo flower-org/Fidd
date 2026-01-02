@@ -274,14 +274,15 @@ public class MainForm {
 
             File fiddConnectionListFile = fileChooser.showSaveDialog(checkNotNull(mainStage));
             if (fiddConnectionListFile != null) {
-                String path = fiddConnectionListFile.getPath();
                 if (!fiddConnectionListFile.exists()) {
+                    String path = fiddConnectionListFile.getPath();
                     String extension = encrypt ? ENCRYPTED_FIDD_CONNECTION_LIST_EXT : FIDD_CONNECTION_LIST_EXT;
                     if (!path.endsWith(extension)) {
                         path += extension;
+                        fiddConnectionListFile = new File(path);
                     }
                 }
-                checkNotNull(fiddConnectionsFileTextField).textProperty().set(path);
+                checkNotNull(fiddConnectionsFileTextField).textProperty().set(fiddConnectionListFile.getAbsolutePath());
 
                 if (fiddConnectionListFile.exists()) {
                     if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Save Fidd Connections File",
@@ -347,14 +348,7 @@ public class MainForm {
 
             fiddConnectionListFile = fileChooser.showOpenDialog(checkNotNull(mainStage));
             if (fiddConnectionListFile != null) {
-                String path = fiddConnectionListFile.getPath();
-                if (!fiddConnectionListFile.exists()) {
-                    String extension = decrypt ? ENCRYPTED_FIDD_CONNECTION_LIST_EXT : FIDD_CONNECTION_LIST_EXT;
-                    if (!path.endsWith(extension)) {
-                        path += extension;
-                    }
-                }
-                checkNotNull(fiddConnectionsFileTextField).textProperty().set(path);
+                checkNotNull(fiddConnectionsFileTextField).textProperty().set(fiddConnectionListFile.getPath());
             } else {
                 return;
             }
@@ -439,7 +433,7 @@ public class MainForm {
                 }
             } else {
                 if (fiddConnectionsFilePath.endsWith(ENCRYPTED_EXT)) {
-                    fiddConnectionsFilePath = fiddConnectionsFilePath.substring(0, fiddConnectionsFilePath.length() - 6);
+                    fiddConnectionsFilePath = fiddConnectionsFilePath.substring(0, fiddConnectionsFilePath.length() - ENCRYPTED_EXT.length());
                     checkNotNull(fiddConnectionsFileTextField).textProperty().set(fiddConnectionsFilePath);
                 }
             }

@@ -1193,14 +1193,7 @@ public class MainForm {
 
             subscriberListFile = fileChooser.showOpenDialog(checkNotNull(mainStage));
             if (subscriberListFile != null) {
-                String path = subscriberListFile.getPath();
-                if (!subscriberListFile.exists()) {
-                    String extension = decrypt ? ENCRYPTED_SUBSCRIBER_LIST_EXT : SUBSCRIBER_LIST_EXT;
-                    if (!path.endsWith(extension)) {
-                        path += extension;
-                    }
-                }
-                checkNotNull(subscribersFileTextField).textProperty().set(path);
+                checkNotNull(subscribersFileTextField).textProperty().set(subscriberListFile.getPath());
             } else {
                 return;
             }
@@ -1313,34 +1306,44 @@ public class MainForm {
             fileChooser.setTitle("Save Fidd Connections File");
 
             File subscriberListFile = fileChooser.showSaveDialog(checkNotNull(mainStage));
-
-            if (subscriberListFile.exists()) {
-                if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Save Subscribers File",
-                                "Save will overwrite Subscribers file " + subscriberListFile.getAbsolutePath() + ". Continue?")) {
-                    return;
+            if (subscriberListFile != null) {
+                if (!subscriberListFile.exists()) {
+                    String path = subscriberListFile.getPath();
+                    String extension = encrypt ? ENCRYPTED_SUBSCRIBER_LIST_EXT : SUBSCRIBER_LIST_EXT;
+                    if (!path.endsWith(extension)) {
+                        path += extension;
+                        subscriberListFile = new File(path);
+                    }
                 }
-                subscriberListFile.delete();
+                checkNotNull(subscribersFileTextField).textProperty().set(subscriberListFile.getAbsolutePath());
+
+                if (subscriberListFile.exists()) {
+                    if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Save Subscribers File",
+                            "Save will overwrite Subscribers file " + subscriberListFile.getAbsolutePath() + ". Continue?")) {
+                        return;
+                    }
+                    subscriberListFile.delete();
+                }
+
+                // serialize subscribers
+                SubscriberList subscriberList = SubscriberList.of(checkNotNull(subscribers).toArray(new SubscriberList.Subscriber[0]));
+                byte[] subscriberListBytes = new YamlSubscriberListSerializer().serialize(subscriberList);
+
+                // encrypt if needed
+                if (encrypt) {
+                    ByteArrayInputStream bis = new ByteArrayInputStream(subscriberListBytes);
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    HybridAesEncryptor.encrypt(bis, bos, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
+                            null, checkNotNull(pair).getLeft().getPublicKey(), null);
+                    subscriberListBytes = bos.toByteArray();
+                }
+
+                // save bytes to File
+                writeBytesToFile(subscriberListBytes, subscriberListFile);
+
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Subscribers file saved successfully " + subscriberListFile.getAbsolutePath(), ButtonType.OK);
+                alert.showAndWait();
             }
-            checkNotNull(subscribersFileTextField).textProperty().set(subscriberListFile.getAbsolutePath());
-
-            // serialize subscribers
-            SubscriberList subscriberList = SubscriberList.of(checkNotNull(subscribers).toArray(new SubscriberList.Subscriber[0]));
-            byte[] subscriberListBytes = new YamlSubscriberListSerializer().serialize(subscriberList);
-
-            // encrypt if needed
-            if (encrypt) {
-                ByteArrayInputStream bis = new ByteArrayInputStream(subscriberListBytes);
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                HybridAesEncryptor.encrypt(bis, bos, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
-                        null, checkNotNull(pair).getLeft().getPublicKey(), null);
-                subscriberListBytes = bos.toByteArray();
-            }
-
-            // save bytes to File
-            writeBytesToFile(subscriberListBytes, subscriberListFile);
-
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Subscribers file saved successfully " + subscriberListFile.getAbsolutePath(), ButtonType.OK);
-            alert.showAndWait();
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error opening subscribers file: " + e, ButtonType.OK);
             LOGGER.error("Error opening subscribers file: ", e);
@@ -1359,7 +1362,7 @@ public class MainForm {
                 }
             } else {
                 if (subscribersFilePath.endsWith(ENCRYPTED_EXT)) {
-                    subscribersFilePath = subscribersFilePath.substring(0, subscribersFilePath.length() - 6);
+                    subscribersFilePath = subscribersFilePath.substring(0, subscribersFilePath.length() - ENCRYPTED_EXT.length());
                     checkNotNull(subscribersFileTextField).textProperty().set(subscribersFilePath);
                 }
             }

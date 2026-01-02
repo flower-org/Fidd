@@ -91,7 +91,7 @@
                                                     <PropertyValueFactory property="url" />
                                                 </cellValueFactory>
                                             </TableColumn>
-                                            <TableColumn minWidth="100.0" prefWidth="131.0" text="PublicKeyFormat">
+                                            <TableColumn minWidth="135.0" prefWidth="135.0" text="PublicKeyFormat">
                                                 <cellValueFactory>
                                                     <PropertyValueFactory property="publicKeyFormat" />
                                                 </cellValueFactory>
