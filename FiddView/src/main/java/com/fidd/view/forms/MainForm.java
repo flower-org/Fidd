@@ -127,6 +127,8 @@ public class MainForm {
             FiddConnection selectedFiddConnection = checkNotNull(fiddConnectionTableView).getSelectionModel().getSelectedItem();
             if (selectedFiddConnection != null) {
                 openFiddTab(selectedFiddConnection);
+            } else {
+                JavaFxUtils.showMessage("Fidd Connection not selected.");
             }
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error Opening Fidd connection: " + e, ButtonType.OK);
@@ -427,9 +429,6 @@ public class MainForm {
                 checkNotNull(fiddConnections).clear();
                 checkNotNull(fiddConnections).addAll(fiddConnectionList.fiddConnectionList());
                 checkNotNull(fiddConnectionTableView).refresh();
-
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Fidd Connections file loaded successfully " + fiddConnectionListFilePath, ButtonType.OK);
-                alert.showAndWait();
             }
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error loading Fidd Connections file: " + e, ButtonType.OK);

@@ -6,9 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -147,6 +149,16 @@ public class FolderFiddConnector implements FiddConnector {
 
     protected final String fiddFolderPath;
     protected final Path fiddFolder;
+
+    public FolderFiddConnector(URL fiddFolderUrl) {
+        try {
+            Path fiddFolder = new File(fiddFolderUrl.toURI()).toPath();
+            this.fiddFolder = fiddFolder;
+            this.fiddFolderPath = fiddFolder.toAbsolutePath().toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public FolderFiddConnector(String fiddFolderPath) {
         this.fiddFolderPath = fiddFolderPath;
