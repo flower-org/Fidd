@@ -1,7 +1,7 @@
 package com.fidd.packer.pack;
 
 import com.fidd.base.BaseRepositories;
-import com.fidd.base.Repository;
+import com.fidd.core.common.FiddKeyUtil;
 import com.fidd.core.common.FiddSignature;
 import com.fidd.core.common.ProgressiveCrc;
 import com.fidd.core.common.SubFileInputStream;
@@ -11,7 +11,6 @@ import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKey;
-import com.fidd.core.fiddkey.FiddKeySerializer;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.metadata.MetadataContainer;
@@ -84,21 +83,11 @@ public class FiddUnpackManager {
         // 1. Load Fidd.Key file (format detection)
         progressCallback.log("1. Loading FiddKey " + fiddKeyFileName);
 
-        FiddKey fiddKey = null;
-        Repository<FiddKeySerializer> fiddKeyFormatRepo = baseRepositories.fiddKeyFormatRepo();
-        progressCallback.log("Detecting FiddKey format.");
-        for (String fiddKeyFormat : fiddKeyFormatRepo.listEntryNames()) {
-            FiddKeySerializer serializer = fiddKeyFormatRepo.get(fiddKeyFormat);
-            try {
-                fiddKey = serializer.deserialize(fiddKeyBytes);
-                progressCallback.log("FiddKey format: `" + fiddKeyFormat + "` - successfully deserialized FiddKey.");
-                break;
-            } catch (Exception e) {
-                progressCallback.log("FiddKey format: `" + fiddKeyFormat + "` - failed to deserialize FiddKey.");
-            }
-        }
+        FiddKey fiddKey = FiddKeyUtil.loadFiddKeyFromBytes(fiddKeyBytes);
         if (fiddKey == null) {
             warnAndMaybeThrow("Failed to deserialize FiddKey - can't proceed.", progressCallback, true);
+        } else {
+            progressCallback.log("Successfully deserialized FiddKey.");
         }
 
         // 2. Check CRC for Sections

@@ -5,6 +5,7 @@ import com.fidd.base.DefaultBaseRepositories;
 import com.fidd.base.Repository;
 import com.fidd.connectors.folder.FolderFiddConnector;
 import com.fidd.core.common.FiddKeyLookup;
+import com.fidd.core.common.FiddKeyUtil;
 import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
@@ -1379,26 +1380,8 @@ public class MainForm {
 
         FolderFiddConnector connector = new FolderFiddConnector(packedContentFolder.toPath().getParent());
         long messageNumber = Long.parseLong(packedContentFolder.toPath().getFileName().toString());
-        File fiddMessage = new File(packedContentFolder, FIDD_MESSAGE_FILE_NAME);
-        long messageLength = fiddMessage.length();
 
-        String footprint = FiddKeyLookup.createLookupFootprint(userCert, messageNumber, messageLength);
-        List<byte[]> candidates = connector.getFiddKeyCandidates(messageNumber, footprint.getBytes(StandardCharsets.UTF_8));
-        for (byte[] candidate : candidates) {
-            try {
-                byte[] encryptedKey = connector.getFiddKey(messageNumber, candidate);
-                ByteArrayInputStream inputStream = new ByteArrayInputStream(encryptedKey);
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-                HybridAesEncryptor.decrypt(inputStream, outputStream, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
-                        userPrivateKey, null, null);
-
-                return outputStream.toByteArray();
-            } catch (Exception e) {
-                LOGGER.debug("Failed to decrypt candidate " + new String(candidate));
-            }
-        }
-        return null;
+        return FiddKeyUtil.loadFiddKeyBytes(messageNumber, connector, userCert, userPrivateKey);
     }
 
     public void publishFolder() {
