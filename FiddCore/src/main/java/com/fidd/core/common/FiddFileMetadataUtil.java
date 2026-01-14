@@ -44,10 +44,12 @@ public class FiddFileMetadataUtil {
             byte[] metadataContainerBytes;
             if (fiddFileMetadataSection.encryptionKeyData() != null) {
                 metadataContainerBytes = checkNotNull(encryptionAlgorithm).decrypt(fiddFileMetadataSection.encryptionKeyData(), sectionBytes);
+                LOGGER.info("FiddFileMetadata Section decrypted successfully");
             } else {
-                metadataContainerBytes = sectionBytes;
+                LOGGER.info("Key not found for FiddFileMetadata Section");
+                metadataContainerBytes = checkNotNull(encryptionAlgorithm).decrypt(new byte[]{}, sectionBytes);
+                LOGGER.info("DUMMY KEY FiddFileMetadata Section \"decrypted\" with empty key");
             }
-            LOGGER.info("FiddFileMetadata Section decrypted successfully");
 
             LOGGER.info("Loading FiddFileMetadataContainer using format: " + metadataContainerSerializer.name());
             MetadataContainerSerializer.MetadataContainerAndLength metadataContainer =

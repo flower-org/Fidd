@@ -89,7 +89,7 @@ public class FiddFileMetadataUtilTest {
     }
 
     @Test
-    void testLoadFiddFileMetadata_noEncryptionKey_usesRawBytes() throws Exception {
+    void testLoadFiddFileMetadata_noEncryptionKey_usesEmptyKey() throws Exception {
         long messageNumber = 1L;
 
         byte[] rawBytes = "raw".getBytes();
@@ -117,6 +117,9 @@ public class FiddFileMetadataUtilTest {
 
         when(baseRepositories.encryptionAlgorithmRepo().get("NONE"))
                 .thenReturn(encryptionAlgorithm);
+
+        when(encryptionAlgorithm.decrypt(new byte[]{}, rawBytes))
+                .thenReturn(rawBytes);
 
         when(metadataContainerSerializer.deserialize(rawBytes))
                 .thenReturn(containerAndLength);
