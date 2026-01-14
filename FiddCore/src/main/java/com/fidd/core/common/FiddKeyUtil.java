@@ -1,6 +1,6 @@
 package com.fidd.core.common;
 
-import com.fidd.base.DefaultBaseRepositories;
+import com.fidd.base.BaseRepositories;
 import com.fidd.base.Repository;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.fiddkey.FiddKey;
@@ -21,12 +21,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class FiddKeyUtil {
     public final static Logger LOGGER = LoggerFactory.getLogger(FiddKeyUtil.class);
-    public static final Repository<FiddKeySerializer> FIDD_KEY_FORMAT_REPO = new DefaultBaseRepositories().fiddKeyFormatRepo();
 
-    public static @Nullable byte[] loadFiddKeyBytes(long messageNumber, FiddConnector fiddConnector,
-                                                X509Certificate userCert, @Nullable PrivateKey privateKey) throws Exception {
+    public static @Nullable byte[] loadFiddKeyBytes(BaseRepositories baseRepositories, long messageNumber, FiddConnector fiddConnector,
+                                                    X509Certificate userCert, @Nullable PrivateKey privateKey) throws Exception {
         long messageLength = fiddConnector.getFiddMessageSize(messageNumber);
-        String footprint = FiddKeyLookup.createLookupFootprint(userCert, messageNumber, messageLength);
+        String footprint = FiddKeyLookup.createLookupFootprint(baseRepositories, userCert, messageNumber, messageLength);
         List<byte[]> candidates = fiddConnector.getFiddKeyCandidates(messageNumber, footprint.getBytes(StandardCharsets.UTF_8));
         for (byte[] candidate : candidates) {
             try {
@@ -49,10 +48,11 @@ public class FiddKeyUtil {
         return null;
     }
 
-    public static @Nullable FiddKey loadFiddKeyFromBytes(byte[] fiddKeyBytes) {
+    public static @Nullable FiddKey loadFiddKeyFromBytes(BaseRepositories baseRepositories, byte[] fiddKeyBytes) {
+        Repository<FiddKeySerializer> fiddKeyFormatRepo = baseRepositories.fiddKeyFormatRepo();
         LOGGER.info("Detecting FiddKey format.");
-        for (String fiddKeyFormat : FIDD_KEY_FORMAT_REPO.listEntryNames()) {
-            FiddKeySerializer serializer = FIDD_KEY_FORMAT_REPO.get(fiddKeyFormat);
+        for (String fiddKeyFormat : fiddKeyFormatRepo.listEntryNames()) {
+            FiddKeySerializer serializer = fiddKeyFormatRepo.get(fiddKeyFormat);
             try {
                 FiddKey fiddKey = checkNotNull(serializer).deserialize(fiddKeyBytes);
                 LOGGER.info("FiddKey format: `" + fiddKeyFormat + "` - successfully deserialized FiddKey.");

@@ -1387,7 +1387,7 @@ public class MainForm {
         FolderFiddConnector connector = new FolderFiddConnector(packedContentFolder.toPath().getParent());
         long messageNumber = Long.parseLong(packedContentFolder.toPath().getFileName().toString());
 
-        return FiddKeyUtil.loadFiddKeyBytes(messageNumber, connector, userCert, userPrivateKey);
+        return FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, connector, userCert, userPrivateKey);
     }
 
     public void publishFolder() {
@@ -1532,7 +1532,7 @@ public class MainForm {
 
             long messageNumber = Long.parseLong(packedContentFolder.getName());
             long messageLength = fiddMessage.length();
-            List<String> footprints = FiddKeyLookup.createLookupFootprints(subscriberCerts, messageNumber, messageLength);
+            List<String> footprints = FiddKeyLookup.createLookupFootprints(baseRepositories, subscriberCerts, messageNumber, messageLength);
             List<String> encryptedKeyFileNames;
             if (isHighAmbiguity) {
                 encryptedKeyFileNames = FiddKeyLookup.buildHighAmbiguityPrefixList(footprints);

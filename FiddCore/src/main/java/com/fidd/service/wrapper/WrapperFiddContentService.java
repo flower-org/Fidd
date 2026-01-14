@@ -1,5 +1,6 @@
 package com.fidd.service.wrapper;
 
+import com.fidd.base.BaseRepositories;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.common.FiddKeyUtil;
 import com.fidd.core.fiddfile.FiddFileMetadata;
@@ -26,12 +27,14 @@ public class WrapperFiddContentService implements FiddContentService {
     // TODO: hardcoding this to "BLOBS" for now
     final static String METADATA_CONTAINER_SERIALIZER_FORMAT = "BLOBS";
 
+    protected final BaseRepositories baseRepositories;
     protected final FiddConnector fiddConnector;
     protected final X509Certificate userCert;
     @Nullable PrivateKey userPrivateKey;
 
-    public WrapperFiddContentService(FiddConnector fiddConnector,
+    public WrapperFiddContentService(BaseRepositories baseRepositories, FiddConnector fiddConnector,
                                      X509Certificate userCert, @Nullable PrivateKey userPrivateKey) {
+        this.baseRepositories = baseRepositories;
         this.fiddConnector = fiddConnector;
         this.userCert = userCert;
         this.userPrivateKey = userPrivateKey;
@@ -58,15 +61,15 @@ public class WrapperFiddContentService implements FiddContentService {
     public @Nullable FiddFileMetadata getFiddFileMetadata(long messageNumber) {
         try {
             // 1. Load FiddKey
-            byte[] fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(messageNumber, fiddConnector, userCert, userPrivateKey);
+            byte[] fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector, userCert, userPrivateKey);
             if (fiddKeyBytes == null) { return null; }
-            FiddKey fiddKey = FiddKeyUtil.loadFiddKeyFromBytes(fiddKeyBytes);
+            FiddKey fiddKey = FiddKeyUtil.loadFiddKeyFromBytes(baseRepositories, fiddKeyBytes);
             if (fiddKey == null) { return null; }
 
             // 2. Load FiddFileMetadata Section
             FiddKey.Section fiddFileMetadataSection = checkNotNull(fiddKey.fiddFileMetadata());
             Pair<FiddFileMetadata, MetadataContainer> fiddFileMetadataAndContainer =
-                    loadFiddFileMetadata(fiddConnector, messageNumber,
+                    loadFiddFileMetadata(baseRepositories, fiddConnector, messageNumber,
                         fiddFileMetadataSection, METADATA_CONTAINER_SERIALIZER_FORMAT);
 
             return fiddFileMetadataAndContainer.getLeft();

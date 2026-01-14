@@ -86,7 +86,7 @@ public class FiddUnpackManager {
         // 1. Load Fidd.Key file (format detection)
         progressCallback.log("1. Loading FiddKey " + fiddKeyFileName);
 
-        FiddKey fiddKey = FiddKeyUtil.loadFiddKeyFromBytes(fiddKeyBytes);
+        FiddKey fiddKey = FiddKeyUtil.loadFiddKeyFromBytes(baseRepositories, fiddKeyBytes);
         if (fiddKey == null) {
             warnAndMaybeThrow("Failed to deserialize FiddKey - can't proceed.", progressCallback, true);
         } else {
@@ -121,7 +121,7 @@ public class FiddUnpackManager {
 
         Pair<FiddFileMetadata, MetadataContainer> fiddFileMetadataAndContainer = null;
         try {
-            fiddFileMetadataAndContainer = loadFiddFileMetadata(fiddConnector, messageNumber,
+            fiddFileMetadataAndContainer = loadFiddFileMetadata(baseRepositories, fiddConnector, messageNumber,
                     checkNotNull(fiddKey).fiddFileMetadata(), METADATA_CONTAINER_SERIALIZER_FORMAT);
         } catch (NotEnoughBytesException e) {
             warnAndMaybeThrow(StringUtils.defaultIfBlank(e.getMessage(), e.toString()), progressCallback, true);

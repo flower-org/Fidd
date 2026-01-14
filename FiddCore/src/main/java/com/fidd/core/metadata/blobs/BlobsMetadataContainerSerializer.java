@@ -57,17 +57,7 @@ public class BlobsMetadataContainerSerializer implements MetadataContainerSerial
                 .signatures(signatures)
                 .build();
 
-        return new MetadataContainerAndLength() {
-            @Override
-            public long lengthBytes() {
-                return lengthBytes;
-            }
-
-            @Override
-            public MetadataContainer metadataContainer() {
-                return metadataContainer;
-            }
-        };
+        return MetadataContainerAndLength.of(lengthBytes, metadataContainer);
     }
 
     @Override

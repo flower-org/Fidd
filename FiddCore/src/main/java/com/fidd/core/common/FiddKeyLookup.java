@@ -1,5 +1,6 @@
 package com.fidd.core.common;
 
+import com.fidd.base.BaseRepositories;
 import com.fidd.base.DefaultBaseRepositories;
 import com.fidd.base.Repository;
 import com.fidd.core.pki.StableTransformForAlgo;
@@ -18,14 +19,13 @@ import java.util.Map;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class FiddKeyLookup {
-    static final Repository<StableTransformForAlgo> STABLE_TRANSFORM_REPO = new DefaultBaseRepositories().stableTransformRepo();
-
-    public static String createLookupFootprint(X509Certificate subscriberCert, long messageNumber, long messageLength) throws Exception {
+    public static String createLookupFootprint(BaseRepositories baseRepositories, X509Certificate subscriberCert,
+                                               long messageNumber, long messageLength) throws Exception {
         String footprint = Long.toString(messageLength) + Long.toString(messageNumber);
         byte[] footprintBytes = footprint.getBytes(StandardCharsets.UTF_8);
 
         PublicKey publicKey = subscriberCert.getPublicKey();
-        StableTransformForAlgo transform = STABLE_TRANSFORM_REPO.get(publicKey.getAlgorithm());
+        StableTransformForAlgo transform = baseRepositories.stableTransformRepo().get(publicKey.getAlgorithm());
         if (transform == null) {
             throw new ProviderNotFoundException("StableTransform not defined for algorithm " + publicKey.getAlgorithm());
         }
@@ -33,10 +33,10 @@ public class FiddKeyLookup {
         return Base36.toBase36(lookupSignatureBytes);
     }
 
-    public static List<String> createLookupFootprints(List<X509Certificate> subscriberCerts, long messageNumber, long messageLength) throws Exception {
+    public static List<String> createLookupFootprints(BaseRepositories baseRepositories, List<X509Certificate> subscriberCerts, long messageNumber, long messageLength) throws Exception {
         List<String> signatures = new java.util.ArrayList<>();
         for (X509Certificate subscriberCert : subscriberCerts) {
-            signatures.add(createLookupFootprint(subscriberCert, messageNumber, messageLength));
+            signatures.add(createLookupFootprint(baseRepositories, subscriberCert, messageNumber, messageLength));
         }
         return signatures;
     }
