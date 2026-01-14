@@ -959,8 +959,8 @@ public class MainForm {
                             JavaFxUtils.showMessage("Failed to recover Fidd Key File from subscription.");
                             return;
                         } else {
-                            if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Save recovered Fidd Key File? (NOT RECOMMENDED)",
-                                    "Successfully recovered Fidd Key File from subscription. Save unencrypted file on disk?")) {
+                            if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Confirm NOT saving recovered Fidd Key File?",
+                                    "Successfully recovered Fidd Key File from subscription. Confirm NOT saving unencrypted file on disk? (\"No\" will save the file)")) {
                                 Files.write(new File(packedContentFolder, FIDD_KEY_FILE_NAME).toPath(), fiddKeyBytes);
                             }
                         }
@@ -1043,8 +1043,14 @@ public class MainForm {
 
             // TODO: Progress Bar modal window ??
 
+            FolderFiddConnector connector = new FolderFiddConnector(packedContentFolder.toPath().getParent());
+            long messageNumber = Long.parseLong(packedContentFolder.toPath().getFileName().toString());
+
             boolean throwOnValidationFailures = !ignoreValidationFailures;
             FiddUnpackManager.fiddUnpackPost(baseRepositories,
+                    connector,
+                    messageNumber,
+
                     fiddFile,
                     fiddKeyFileName,
                     fiddKeyBytes,
@@ -1413,8 +1419,8 @@ public class MainForm {
                             JavaFxUtils.showMessage("Failed to recover Fidd Key File from self-subscription.");
                             return;
                         } else {
-                            if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Save recovered Fidd Key File? (NOT RECOMMENDED)",
-                                    "Successfully recovered Fidd Key File from self-subscription. Save unencrypted file on disk?")) {
+                            if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Confirm NOT saving recovered Fidd Key File?",
+                                    "Successfully recovered Fidd Key File from subscription. Confirm NOT saving unencrypted file on disk? (\"No\" will save the file)")) {
                                 Files.write(unencryptedFiddKeyFile.toPath(), unencryptedFiddKey);
                             }
                         }

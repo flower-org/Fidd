@@ -35,31 +35,33 @@ public class FiddKeyUtil {
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
                 // TODO: this decryption algo should also be made configurable
+                // TODO: also there is an assumption in the code that this decryption can't result in false positives
+                //  so if something like XOR is used it should be accompanied with CRC
                 // Decrypt using private key
                 HybridAesEncryptor.decrypt(inputStream, outputStream, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
                         privateKey, null, null);
 
                 return outputStream.toByteArray();
             } catch (Exception e) {
-                LOGGER.debug("Failed to decrypt candidate {}", new String(candidate));
+                LOGGER.error("Failed to decrypt candidate {}", new String(candidate), e);
             }
         }
         return null;
     }
 
     public static @Nullable FiddKey loadFiddKeyFromBytes(byte[] fiddKeyBytes) {
-        LOGGER.debug("Detecting FiddKey format.");
+        LOGGER.info("Detecting FiddKey format.");
         for (String fiddKeyFormat : FIDD_KEY_FORMAT_REPO.listEntryNames()) {
             FiddKeySerializer serializer = FIDD_KEY_FORMAT_REPO.get(fiddKeyFormat);
             try {
                 FiddKey fiddKey = checkNotNull(serializer).deserialize(fiddKeyBytes);
-                LOGGER.debug("FiddKey format: `" + fiddKeyFormat + "` - successfully deserialized FiddKey.");
+                LOGGER.info("FiddKey format: `" + fiddKeyFormat + "` - successfully deserialized FiddKey.");
                 return fiddKey;
             } catch (Exception e) {
-                LOGGER.debug("FiddKey format: `" + fiddKeyFormat + "` - failed to deserialize FiddKey.");
+                LOGGER.error("FiddKey format: `" + fiddKeyFormat + "` - failed to deserialize FiddKey.", e);
             }
         }
-        LOGGER.debug("Failed to deserialize FiddKey");
+        LOGGER.info("Failed to deserialize FiddKey");
         return null;
     }
 }

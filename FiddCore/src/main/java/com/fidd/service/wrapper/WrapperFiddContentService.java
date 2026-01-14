@@ -5,7 +5,9 @@ import com.fidd.core.common.FiddKeyUtil;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.core.fiddkey.FiddKey;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
+import com.fidd.core.metadata.MetadataContainer;
 import com.fidd.service.FiddContentService;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,8 +17,14 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.List;
 
+import static com.fidd.core.common.FiddFileMetadataUtil.loadFiddFileMetadata;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class WrapperFiddContentService implements FiddContentService {
     public final static Logger LOGGER = LoggerFactory.getLogger(WrapperFiddContentService.class);
+
+    // TODO: hardcoding this to "BLOBS" for now
+    final static String METADATA_CONTAINER_SERIALIZER_FORMAT = "BLOBS";
 
     protected final FiddConnector fiddConnector;
     protected final X509Certificate userCert;
@@ -55,22 +63,13 @@ public class WrapperFiddContentService implements FiddContentService {
             FiddKey fiddKey = FiddKeyUtil.loadFiddKeyFromBytes(fiddKeyBytes);
             if (fiddKey == null) { return null; }
 
-            // 2. Get FiddFileMetadata Section
-            // TODO: DRY / unify methods
-            FiddKey.Section fiddFileMetadataSection = fiddKey.fiddFileMetadata();
+            // 2. Load FiddFileMetadata Section
+            FiddKey.Section fiddFileMetadataSection = checkNotNull(fiddKey.fiddFileMetadata());
+            Pair<FiddFileMetadata, MetadataContainer> fiddFileMetadataAndContainer =
+                    loadFiddFileMetadata(fiddConnector, messageNumber,
+                        fiddFileMetadataSection, METADATA_CONTAINER_SERIALIZER_FORMAT);
 
-            // 3. Load encrypted FiddFileMetadata from FiddFile
-            // TODO: DRY / unify methods
-            long sectionOffset = fiddFileMetadataSection.sectionOffset();
-            long sectionLength = fiddFileMetadataSection.sectionLength();
-
-            // 4. Decrypt FiddFileMetadata
-            // TODO: DRY / unify methods
-            fiddFileMetadataSection.encryptionAlgorithm();
-            fiddFileMetadataSection.encryptionKeyData();
-
-            FiddFileMetadata metadata = null;
-            return metadata;
+            return fiddFileMetadataAndContainer.getLeft();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
