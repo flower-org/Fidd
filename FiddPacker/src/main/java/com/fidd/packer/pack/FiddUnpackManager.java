@@ -4,6 +4,7 @@ import com.fidd.base.BaseRepositories;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.common.FiddKeyUtil;
 import com.fidd.core.common.FiddSignature;
+import com.fidd.core.common.LogicalFileMetadataUtil;
 import com.fidd.core.common.ProgressiveCrc;
 import com.fidd.core.common.SubFileInputStream;
 import com.fidd.core.crc.CrcCalculator;
@@ -12,7 +13,6 @@ import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.core.fiddkey.FiddKey;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
-import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.metadata.MetadataContainer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.metadata.NotEnoughBytesException;
@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -220,14 +219,15 @@ public class FiddUnpackManager {
 
         for (int i = 0; i < fiddKey.logicalFiles().size(); i++) {
             FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
-            validateAndMaterializeLogicalFile(i, baseRepositories, fiddFile, logicalFileSection,
+            validateAndMaterializeLogicalFile(i, baseRepositories, fiddConnector, messageNumber, logicalFileSection,
                     METADATA_CONTAINER_SERIALIZER_FORMAT, outputFolder, progressCallback, currentCert, throwOnValidationFailure,
                     validateLogicalFileMetadatas, validateLogicalFiles, true);
         }
     }
 
     private static void validateAndMaterializeLogicalFile(int logicalFileIndex, BaseRepositories baseRepositories,
-                                                          File fiddFile, FiddKey.Section logicalFileSection,
+                                                          FiddConnector fiddConnector,
+                                                          long messageNumber, FiddKey.Section logicalFileSection,
                                                           String metadataContainerSerializerFormat,
                                                           File outputFolder, ProgressCallback progressCallback,
                                                           @Nullable X509Certificate publicKey,
@@ -247,9 +247,10 @@ public class FiddUnpackManager {
         } else {
             progressCallback.log("8.2 Loading LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
 
+            LOGGER.info("Getting LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
             Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength> pair =
-                getLogicalFileMetadata(logicalFileIndex, baseRepositories, encryptionAlgorithm, fiddFile,
-                        logicalFileSection, metadataContainerSerializer, progressCallback, throwOnValidationFailure);
+                LogicalFileMetadataUtil.getLogicalFileMetadata(baseRepositories, encryptionAlgorithm, fiddConnector, messageNumber,
+                        logicalFileSection, metadataContainerSerializer, throwOnValidationFailure);
 
             if (pair != null) {
                 if (!validateLogicalFileMetadatas) {
@@ -278,7 +279,7 @@ public class FiddUnpackManager {
 
                             try (InputStream logicalFileStream =
                                         encryptionAlgorithm.getDecryptedStream(logicalFileSection.encryptionKeyData(),
-                                             new SubFileInputStream(fiddFile, logicalFileSection.sectionOffset(),
+                                            fiddConnector.getFiddMessageChunk(messageNumber, logicalFileSection.sectionOffset(),
                                                  logicalFileSection.sectionLength()))) {
                                 skipAll(logicalFileStream, logicalFileMetadataLengthBytes);
 
@@ -301,7 +302,7 @@ public class FiddUnpackManager {
 
                             try (InputStream logicalFileStream =
                                          encryptionAlgorithm.getDecryptedStream(logicalFileSection.encryptionKeyData(),
-                                                 new SubFileInputStream(fiddFile, logicalFileSection.sectionOffset(),
+                                                 fiddConnector.getFiddMessageChunk(messageNumber, logicalFileSection.sectionOffset(),
                                                          logicalFileSection.sectionLength()))) {
                                 skipAll(logicalFileStream, logicalFileMetadataLengthBytes);
 
@@ -324,7 +325,7 @@ public class FiddUnpackManager {
 
                     try (InputStream logicalFileStream =
                                  encryptionAlgorithm.getDecryptedStream(logicalFileSection.encryptionKeyData(),
-                                         new SubFileInputStream(fiddFile, logicalFileSection.sectionOffset(),
+                                         fiddConnector.getFiddMessageChunk(messageNumber, logicalFileSection.sectionOffset(),
                                                  logicalFileSection.sectionLength()))) {
                         skipAll(logicalFileStream, logicalFileMetadataLengthBytes);
 
@@ -362,66 +363,6 @@ public class FiddUnpackManager {
                 skipped = 1;
             }
             remaining -= skipped;
-        }
-    }
-
-    public static byte[] concat(byte[] buffer1, byte[] buffer2, int buffer2Len) {
-        byte[] result = new byte[buffer1.length + buffer2Len];
-        System.arraycopy(buffer1, 0, result, 0, buffer1.length);
-        System.arraycopy(buffer2, 0, result, buffer1.length, buffer2Len);
-        return result;
-    }
-
-    @Nullable
-    private static Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength>
-                                    getLogicalFileMetadata(int logicalFileIndex, BaseRepositories baseRepositories,
-                                               EncryptionAlgorithm encryptionAlgorithm, File fiddFile,
-                                               FiddKey.Section logicalFileSection,
-                                               MetadataContainerSerializer metadataContainerSerializer,
-                                               ProgressCallback progressCallback,
-                                               boolean throwOnValidationFailure) throws IOException {
-        progressCallback.log("Getting LogicalFileMetadata for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
-
-        MetadataContainerSerializer.MetadataContainerAndLength metadataContainerAndLength = null;
-        try (SubFileInputStream sectionInputStream =
-                     new SubFileInputStream(fiddFile, logicalFileSection.sectionOffset(), logicalFileSection.sectionLength())) {
-            byte[] cumul = new byte[0];
-            int bufferSize = (int)Math.min(4096L, logicalFileSection.sectionLength());
-            byte[] buffer = new byte[bufferSize];
-            int totalRead = 0;
-            while (totalRead < logicalFileSection.sectionLength()) {
-                int bytesRead = sectionInputStream.read(buffer);
-                if (bytesRead == -1) {
-                    warnAndMaybeThrow("Failed to read metadata", progressCallback, throwOnValidationFailure);
-                    return null;
-                }
-                totalRead += bytesRead;
-                cumul = concat(cumul, buffer, totalRead);
-
-                try {
-                    InputStream ciphertextStream = new ByteArrayInputStream(cumul);
-                    ByteArrayOutputStream plaintextStream = new ByteArrayOutputStream();
-                    encryptionAlgorithm.decrypt(logicalFileSection.encryptionKeyData(), ciphertextStream, plaintextStream, true);
-                    byte[] metadataContainerBytes = plaintextStream.toByteArray();
-                    metadataContainerAndLength = metadataContainerSerializer.deserialize(metadataContainerBytes);
-                    break;
-                } catch (NotEnoughBytesException ne) {
-                    // Load more bytes then
-                }
-            }
-        }
-
-        String logicalFileMetadataFormat = checkNotNull(metadataContainerAndLength).metadataContainer().metadataFormat();
-        LogicalFileMetadataSerializer logicalFileMetadataSerializer =
-                baseRepositories.logicalFileMetadataFormatRepo().get(logicalFileMetadataFormat);
-        if (logicalFileMetadataSerializer == null) {
-            warnAndMaybeThrow("LogicalFileMetadata format " + logicalFileMetadataFormat + " is not supported.",
-                    progressCallback, throwOnValidationFailure);
-            return null;
-        } else {
-            LogicalFileMetadata logicalFileMetadata =
-                    logicalFileMetadataSerializer.deserialize(metadataContainerAndLength.metadataContainer().metadata());
-            return Pair.of(logicalFileMetadata, metadataContainerAndLength);
         }
     }
 

@@ -20,8 +20,8 @@ public interface FiddContentService {
     @Nullable FiddFileMetadata getFiddFileMetadata(long messageNumber);
     @Nullable List<LogicalFileMetadata> getLogicalFiles(long messageNumber);
 
-    @Nullable InputStream readLogicalFile(long messageNumber, String filePath);
-    @Nullable InputStream readLogicalFileChunk(long messageNumber, String filePath, long offset, long length);
+    @Nullable InputStream readLogicalFile(long messageNumber, LogicalFileMetadata logicalFileMetadata);
+    @Nullable InputStream readLogicalFileChunk(long messageNumber, LogicalFileMetadata logicalFileMetadata, long offset, long length);
 
     // ---------------------------------------------
     //    TODO: Validations; CRC; progressive CRC

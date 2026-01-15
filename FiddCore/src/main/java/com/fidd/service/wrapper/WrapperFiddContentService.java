@@ -3,10 +3,12 @@ package com.fidd.service.wrapper;
 import com.fidd.base.BaseRepositories;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.common.FiddKeyUtil;
+import com.fidd.core.common.LogicalFileMetadataUtil;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.core.fiddkey.FiddKey;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
 import com.fidd.core.metadata.MetadataContainer;
+import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.service.FiddContentService;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -16,6 +18,7 @@ import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.fidd.core.common.FiddFileMetadataUtil.loadFiddFileMetadata;
@@ -67,7 +70,7 @@ public class WrapperFiddContentService implements FiddContentService {
             if (fiddKey == null) { return null; }
 
             // 2. Load FiddFileMetadata Section
-            FiddKey.Section fiddFileMetadataSection = checkNotNull(fiddKey.fiddFileMetadata());
+            FiddKey.Section fiddFileMetadataSection = fiddKey.fiddFileMetadata();
             Pair<FiddFileMetadata, MetadataContainer> fiddFileMetadataAndContainer =
                     loadFiddFileMetadata(baseRepositories, fiddConnector, messageNumber,
                         fiddFileMetadataSection, METADATA_CONTAINER_SERIALIZER_FORMAT);
@@ -80,16 +83,39 @@ public class WrapperFiddContentService implements FiddContentService {
 
     @Override
     public @Nullable List<LogicalFileMetadata> getLogicalFiles(long messageNumber) {
-        return List.of();
+        try {
+            // 1. Load FiddKey
+            byte[] fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector, userCert, userPrivateKey);
+            if (fiddKeyBytes == null) { return null; }
+            FiddKey fiddKey = FiddKeyUtil.loadFiddKeyFromBytes(baseRepositories, fiddKeyBytes);
+            if (fiddKey == null) { return null; }
+
+            // 2. Load LogicalFileMetadata Sections
+            List<LogicalFileMetadata> logicalFileMetadataList = new ArrayList<>();
+            for (int i = 0; i < fiddKey.logicalFiles().size(); i++) {
+                LOGGER.info("Getting LogicalFileMetadata for Section #" + (i+1) + " (Logical File #" + i + ")");
+                FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
+                Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength> logicalFileMetadataAndContainer =
+                     LogicalFileMetadataUtil.getLogicalFileMetadata(baseRepositories,
+                            fiddConnector, messageNumber,
+                            logicalFileSection);
+
+                logicalFileMetadataList.add(checkNotNull(logicalFileMetadataAndContainer).getLeft());
+            }
+
+            return logicalFileMetadataList;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public @Nullable InputStream readLogicalFile(long messageNumber, String filePath) {
+    public @Nullable InputStream readLogicalFile(long messageNumber, LogicalFileMetadata logicalFileMetadata) {
         return null;
     }
 
     @Override
-    public @Nullable InputStream readLogicalFileChunk(long messageNumber, String filePath, long offset, long length) {
+    public @Nullable InputStream readLogicalFileChunk(long messageNumber, LogicalFileMetadata logicalFileMetadata, long offset, long length) {
         return null;
     }
 }
