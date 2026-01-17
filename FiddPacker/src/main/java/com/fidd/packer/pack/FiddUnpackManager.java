@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.fidd.core.common.FiddFileMetadataUtil.loadFiddFileMetadata;
+import static com.fidd.core.common.LogicalFileUtil.getLogicalFileInputStream;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class FiddUnpackManager {
@@ -323,12 +324,8 @@ public class FiddUnpackManager {
                     progressCallback.log("8.5 Materializing LogicalFile \"" + logicalFileMetadata.filePath() +
                             "\" for Section #" + (logicalFileIndex+1) + " (Logical File #" + logicalFileIndex + ")");
 
-                    try (InputStream logicalFileStream =
-                                 encryptionAlgorithm.getDecryptedStream(logicalFileSection.encryptionKeyData(),
-                                         fiddConnector.getFiddMessageChunk(messageNumber, logicalFileSection.sectionOffset(),
-                                                 logicalFileSection.sectionLength()))) {
-                        skipAll(logicalFileStream, logicalFileMetadataLengthBytes);
-
+                    try (InputStream logicalFileStream = getLogicalFileInputStream(baseRepositories, fiddConnector,
+                                         messageNumber, logicalFileSection, logicalFileMetadataLengthBytes)) {
                         File outputFile = new File(outputFolder, logicalFileMetadata.filePath());
                         // Create containing directories if needed
                         outputFile.getParentFile().mkdirs();

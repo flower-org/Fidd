@@ -10,6 +10,7 @@ import com.fidd.core.logicalfile.LogicalFileMetadata;
 import com.fidd.core.metadata.MetadataContainer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.service.FiddContentService;
+import com.fidd.service.LogicalFileInfo;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.fidd.core.common.FiddFileMetadataUtil.loadFiddFileMetadata;
+import static com.fidd.core.common.LogicalFileUtil.getLogicalFileInputStream;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class WrapperFiddContentService implements FiddContentService {
@@ -82,7 +84,7 @@ public class WrapperFiddContentService implements FiddContentService {
     }
 
     @Override
-    public @Nullable List<LogicalFileMetadata> getLogicalFiles(long messageNumber) {
+    public @Nullable List<LogicalFileInfo> getLogicalFiles(long messageNumber) {
         try {
             // 1. Load FiddKey
             byte[] fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector, userCert, userPrivateKey);
@@ -90,8 +92,8 @@ public class WrapperFiddContentService implements FiddContentService {
             FiddKey fiddKey = FiddKeyUtil.loadFiddKeyFromBytes(baseRepositories, fiddKeyBytes);
             if (fiddKey == null) { return null; }
 
-            // 2. Load LogicalFileMetadata Sections
-            List<LogicalFileMetadata> logicalFileMetadataList = new ArrayList<>();
+            // 2. Load LogicalFileInfo Sections
+            List<LogicalFileInfo> logicalFileInfo = new ArrayList<>();
             for (int i = 0; i < fiddKey.logicalFiles().size(); i++) {
                 LOGGER.info("Getting LogicalFileMetadata for Section #" + (i+1) + " (Logical File #" + i + ")");
                 FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
@@ -100,22 +102,30 @@ public class WrapperFiddContentService implements FiddContentService {
                             fiddConnector, messageNumber,
                             logicalFileSection);
 
-                logicalFileMetadataList.add(checkNotNull(logicalFileMetadataAndContainer).getLeft());
+                logicalFileInfo.add(LogicalFileInfo.of(checkNotNull(logicalFileMetadataAndContainer).getLeft(),
+                        logicalFileSection,
+                        logicalFileMetadataAndContainer.getRight().lengthBytes()
+                    ));
             }
 
-            return logicalFileMetadataList;
+            return logicalFileInfo;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public @Nullable InputStream readLogicalFile(long messageNumber, LogicalFileMetadata logicalFileMetadata) {
-        return null;
+    public @Nullable InputStream readLogicalFile(long messageNumber, LogicalFileInfo LogicalFileInfo) {
+        try {
+            return getLogicalFileInputStream(baseRepositories, fiddConnector,
+                    messageNumber, LogicalFileInfo.section(), LogicalFileInfo.fileOffset());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public @Nullable InputStream readLogicalFileChunk(long messageNumber, LogicalFileMetadata logicalFileMetadata, long offset, long length) {
+    public @Nullable InputStream readLogicalFileChunk(long messageNumber, LogicalFileInfo LogicalFileInfo, long offset, long length) {
         return null;
     }
 }

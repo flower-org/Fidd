@@ -18,10 +18,10 @@ public interface FiddContentService {
 
     // TODO: specific access errors?
     @Nullable FiddFileMetadata getFiddFileMetadata(long messageNumber);
-    @Nullable List<LogicalFileMetadata> getLogicalFiles(long messageNumber);
+    @Nullable List<LogicalFileInfo> getLogicalFiles(long messageNumber);
 
-    @Nullable InputStream readLogicalFile(long messageNumber, LogicalFileMetadata logicalFileMetadata);
-    @Nullable InputStream readLogicalFileChunk(long messageNumber, LogicalFileMetadata logicalFileMetadata, long offset, long length);
+    @Nullable InputStream readLogicalFile(long messageNumber, LogicalFileInfo logicalFileInfo);
+    @Nullable InputStream readLogicalFileChunk(long messageNumber, LogicalFileInfo logicalFileInfo, long offset, long length);
 
     // ---------------------------------------------
     //    TODO: Validations; CRC; progressive CRC
