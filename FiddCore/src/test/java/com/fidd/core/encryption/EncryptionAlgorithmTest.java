@@ -1,9 +1,11 @@
 package com.fidd.core.encryption;
 
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
+import com.fidd.core.encryption.aes256.Aes256CtrEncryptionAlgorithm;
 import com.fidd.core.encryption.unencrypted.NoEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
 import com.fidd.core.random.plain.PlainRandomGeneratorType;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -11,6 +13,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -20,6 +23,7 @@ public class EncryptionAlgorithmTest {
     static Stream<Arguments> encryptionAlgorithms() {
         return Stream.of(
                 Arguments.of(new Aes256CbcEncryptionAlgorithm()),
+          Arguments.of(new Aes256CtrEncryptionAlgorithm()),
                 Arguments.of(new XorEncryptionAlgorithm()),
                 Arguments.of(new NoEncryptionAlgorithm())
         );
@@ -135,4 +139,55 @@ public class EncryptionAlgorithmTest {
 
         assertArrayEquals(plaintext, decryptedOut.toByteArray(), "Stream decryption should restore original data");
     }
+
+  @Test
+  void testCtrRandomAccessDecryptInsideSingleBlock()
+  {
+    Aes256CtrEncryptionAlgorithm ctr = new Aes256CtrEncryptionAlgorithm();
+    byte[] keyData = ctr.generateNewKeyData(new PlainRandomGeneratorType());
+
+    byte[] plaintext = "Hello AES CTR random access test".getBytes(StandardCharsets.US_ASCII);
+    byte[] ciphertext = ctr.encrypt(keyData, plaintext);
+
+    int offset = 6;   // "AES ..."
+    int length = 7;   // "AES CTR"
+    byte[] slice = ctr.randomAccessDecrypt(keyData, ciphertext, offset, length);
+
+    assertArrayEquals(Arrays.copyOfRange(plaintext, offset, offset + length), slice);
+    assertEquals("AES CTR", new String(slice, StandardCharsets.US_ASCII));
+  }
+
+  @Test
+  void testCtrRandomAccessDecryptCrossesBlockBoundary()
+  {
+    Aes256CtrEncryptionAlgorithm ctr = new Aes256CtrEncryptionAlgorithm();
+    byte[] keyData = ctr.generateNewKeyData(new PlainRandomGeneratorType());
+
+    // 32 bytes
+    byte[] plaintext = "0123456789ABCDEF0123456789ABCDEF".getBytes(StandardCharsets.US_ASCII);
+    byte[] ciphertext = ctr.encrypt(keyData, plaintext);
+
+    int offset = 15; // last byte of block 0
+    int length = 4;  // byte 15-18
+    byte[] slice = ctr.randomAccessDecrypt(keyData, ciphertext, offset, length);
+
+    assertArrayEquals(Arrays.copyOfRange(plaintext, offset, offset + length), slice);
+    assertEquals("F012", new String(slice, StandardCharsets.US_ASCII));
+  }
+
+  @Test
+  void testCtrRandomAccessDecryptTail()
+  {
+    Aes256CtrEncryptionAlgorithm ctr = new Aes256CtrEncryptionAlgorithm();
+    byte[] keyData = ctr.generateNewKeyData(new PlainRandomGeneratorType());
+
+    byte[] plaintext = "Hello AES CTR random access test".getBytes(StandardCharsets.US_ASCII);
+    byte[] ciphertext = ctr.encrypt(keyData, plaintext);
+
+    int offset = 17; // "access test" starts here
+    int length = plaintext.length - offset;
+    byte[] slice = ctr.randomAccessDecrypt(keyData, ciphertext, offset, length);
+
+    assertArrayEquals(Arrays.copyOfRange(plaintext, offset, plaintext.length), slice);
+  }
 }
