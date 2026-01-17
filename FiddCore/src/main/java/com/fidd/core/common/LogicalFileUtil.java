@@ -14,6 +14,12 @@ import java.security.InvalidAlgorithmParameterException;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class LogicalFileUtil {
+    /** This method only works with `RandomAccessEncryptionAlgorithm`-s.
+     * Making this work with non-random-access algorithms would require reading and discarding all data before offset,
+     * which is inefficient and defeats the purpose of random chunked read.
+     * While it's technically still possible to serve 0-based reads with a non-random-access algorithm efficiently,
+     * that would only cover this functionality partially, making it be confusing and hard to understand.
+     */
     public static InputStream getLogicalFileInputStreamChunk(BaseRepositories baseRepositories, FiddConnector fiddConnector,
                                                         long messageNumber, FiddKey.Section section, long fileOffset, long dataOffset, long dataLength) throws InvalidAlgorithmParameterException {
         EncryptionAlgorithm baseEncryptionAlgorithm =
