@@ -24,6 +24,7 @@ import java.util.List;
 
 import static com.fidd.core.common.FiddFileMetadataUtil.loadFiddFileMetadata;
 import static com.fidd.core.common.LogicalFileUtil.getLogicalFileInputStream;
+import static com.fidd.core.common.LogicalFileUtil.getLogicalFileInputStreamChunk;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class WrapperFiddContentService implements FiddContentService {
@@ -126,6 +127,11 @@ public class WrapperFiddContentService implements FiddContentService {
 
     @Override
     public @Nullable InputStream readLogicalFileChunk(long messageNumber, LogicalFileInfo LogicalFileInfo, long offset, long length) {
-        return null;
+        try {
+            return getLogicalFileInputStreamChunk(baseRepositories, fiddConnector,
+                    messageNumber, LogicalFileInfo.section(), LogicalFileInfo.fileOffset(), offset, length);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
