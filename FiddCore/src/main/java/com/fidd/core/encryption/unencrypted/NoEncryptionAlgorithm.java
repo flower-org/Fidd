@@ -1,5 +1,6 @@
 package com.fidd.core.encryption.unencrypted;
 
+import com.fidd.core.common.SubInputStream;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.encryption.RandomAccessEncryptionAlgorithm;
 import com.fidd.core.random.RandomGeneratorType;
@@ -56,14 +57,23 @@ public class NoEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     }
 
     @Override
-    public byte[] randomAccessDecrypt(byte[] keyData, byte[] ciphertext, long offset, int length) {
-        return Arrays.copyOfRange(ciphertext, (int) offset, (int) offset + length);
+    public byte[] randomAccessDecrypt(byte[] keyData, byte[] ciphertext, long offset, long length) {
+        return Arrays.copyOfRange(ciphertext, (int) offset, (int)(offset + length));
     }
 
     @Override
-    public void randomAccessDecrypt(byte[] keyData, long offset, int length, InputStream ciphertextAtOffset, OutputStream plaintext) {
+    public void randomAccessDecrypt(byte[] keyData, long offset, long length, InputStream ciphertextAtOffset, OutputStream plaintext) {
         // For simplicity, just reuse the stream processor
-        processStream(length, ciphertextAtOffset, plaintext, null);
+        processStream((int)length, ciphertextAtOffset, plaintext, null);
+    }
+
+    @Override
+    public InputStream getRandomAccessDecryptedStream(byte[] keyData, long offset, long length, InputStream ciphertextAtOffset) {
+        try {
+            return new SubInputStream(ciphertextAtOffset, 0, length);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // --- Helper methods ---

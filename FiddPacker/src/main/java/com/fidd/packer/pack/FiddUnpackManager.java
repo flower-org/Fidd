@@ -562,7 +562,7 @@ public class FiddUnpackManager {
                                        long sectionOffset,
                                        long sectionLength,
                                        byte[] crc) throws IOException {
-        try (SubFileInputStream sectionStream = new SubFileInputStream(fiddFile, sectionOffset, sectionLength)) {
+        try (InputStream sectionStream = SubFileInputStream.of(fiddFile, sectionOffset, sectionLength)) {
             byte[] calcCrc = crcCalculator.calculateCrc(sectionStream);
             return Arrays.equals(crc, calcCrc);
         }

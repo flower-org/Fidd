@@ -326,7 +326,7 @@ public class FolderFiddConnector implements FiddConnector {
             if (!Files.exists(messageFilePath) || !Files.isRegularFile(messageFilePath)) {
                 throw new FileNotFoundException("Message file not found: " + messageNumber);
             }
-            return new SubFileInputStream(messageFilePath.toFile(), offset, length);
+            return SubFileInputStream.of(messageFilePath.toFile(), offset, length);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
