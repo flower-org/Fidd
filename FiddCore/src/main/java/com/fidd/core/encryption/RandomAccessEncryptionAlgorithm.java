@@ -9,5 +9,5 @@ public interface RandomAccessEncryptionAlgorithm extends EncryptionAlgorithm {
     byte[] randomAccessDecrypt(byte[] keyData, byte[] ciphertext, long plaintextOffset, long plaintextLength);
     void randomAccessDecrypt(byte[] keyData, long plaintextOffset, long plaintextLength, InputStream ciphertextAtOffset, OutputStream plaintext);
 
-    InputStream getRandomAccessDecryptedStream(byte[] keyData, long plaintextOffset, long plaintextLength, InputStream stream);
+    InputStream getRandomAccessDecryptedStream(byte[] keyData, long plaintextOffset, long plaintextLength, InputStream ciphertextAtOffset);
 }
