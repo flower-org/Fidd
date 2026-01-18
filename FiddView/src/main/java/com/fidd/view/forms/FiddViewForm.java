@@ -3,22 +3,29 @@ package com.fidd.view.forms;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.service.FiddContentService;
 import com.fidd.service.LogicalFileInfo;
+import com.flower.fxutils.JavaFxUtils;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Button;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,6 +36,7 @@ public class FiddViewForm extends AnchorPane  {
     final static Logger LOGGER = LoggerFactory.getLogger(FiddViewForm.class);
 
     static final int MESSAGE_LOAD_BATCH_SIZE = 5;
+    static final int FILE_SAVE_BUFFER_SIZE = 8192;
 
     // https://iconscout.com/free-icon-pack/free-free-user-interface-icons-set-icon-pack_37661 - source
     // https://iconscout.com/icon-pack/arrow-and-navigation-icon-pack_66887 - nice folder icon, but costs money
@@ -40,7 +48,6 @@ public class FiddViewForm extends AnchorPane  {
 
     public interface FiddTreeNode {
         @Nullable ImageView getImage();
-        default void action() {}
     }
 
     public static class FiddRootNode implements FiddTreeNode {
@@ -71,7 +78,8 @@ public class FiddViewForm extends AnchorPane  {
     public static class FiddFileNode implements FiddTreeNode {
         protected final ImageView imageView = new ImageView(FILE_ICON);
         protected final String fileName;
-        public FiddFileNode(String fileName) { this.fileName = fileName; }
+        protected final LogicalFileInfo logicalFileInfo;
+        public FiddFileNode(String fileName, LogicalFileInfo logicalFileInfo) { this.fileName = fileName; this.logicalFileInfo = logicalFileInfo;}
         @Override public @Nullable ImageView getImage() { return imageView; }
         @Override public String toString() { return fileName; }
     }
@@ -93,7 +101,7 @@ public class FiddViewForm extends AnchorPane  {
         public ExpandDirection direction() { return direction; }
         @Override public @Nullable ImageView getImage() { return imageView; }
         @Override public String toString() { return "Load more (Double-click)..."; }
-        public void action() {
+        public void expand() {
             // TODO: dedup
             // TODO: load up
             Integer myPosition = null;
@@ -112,6 +120,8 @@ public class FiddViewForm extends AnchorPane  {
 
     @Nullable Stage stage;
     @Nullable @FXML TreeView<FiddTreeNode> fiddStructureTreeView;
+    @Nullable @FXML Button saveFileButton;
+    @Nullable @FXML Button getFileUrlButton;
 
     protected final String blogName;
     protected final FiddContentService fiddContentService;
@@ -143,7 +153,9 @@ public class FiddViewForm extends AnchorPane  {
                 TreeItem<FiddTreeNode> treeItem = checkNotNull(fiddStructureTreeView).getSelectionModel().getSelectedItem();
                 if (treeItem != null) {
                     FiddTreeNode node = treeItem.getValue();
-                    node.action();
+                    if (node instanceof FiddExpandNode expandNode) {
+                        expandNode.expand();
+                    }
                 }
             }
         });
@@ -156,11 +168,27 @@ public class FiddViewForm extends AnchorPane  {
                     TreeItem<FiddTreeNode> treeItem = checkNotNull(fiddStructureTreeView).getSelectionModel().getSelectedItem();
                     if (treeItem != null) {
                         FiddTreeNode node = treeItem.getValue();
-                        node.action();
+                        if (node instanceof FiddExpandNode expandNode) {
+                            expandNode.expand();
+                        }
                     }
                     break;
             }
         });
+        fiddStructureTreeView.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            if (newSel != null) {
+                FiddTreeNode value = newSel.getValue();
+                if (value instanceof FiddFileNode) {
+                    checkNotNull(saveFileButton).setDisable(false);
+                    checkNotNull(getFileUrlButton).setDisable(false);
+                    return;
+                }
+            }
+
+            checkNotNull(saveFileButton).setDisable(true);
+            checkNotNull(getFileUrlButton).setDisable(true);
+        });
+
         loadNextBatch(0);
     }
 
@@ -227,7 +255,7 @@ public class FiddViewForm extends AnchorPane  {
                     if (child == null) {
                         if (i == parts.length - 1) {
                             // Add file
-                            FiddFileNode fileNode = new FiddFileNode(part);
+                            FiddFileNode fileNode = new FiddFileNode(part, logicalFileInfo);
                             child = new TreeItem<>(fileNode, fileNode.getImage());
                         } else {
                             // Add folder
@@ -317,5 +345,57 @@ public class FiddViewForm extends AnchorPane  {
             list.add(new FiddExpandNode(FiddExpandNode.ExpandDirection.PREVIOUS));
         }
         return list;
+    }
+
+    long findMessageNumber(TreeItem<FiddTreeNode> treeItem) {
+        while (treeItem.getParent() != null) {
+            treeItem = treeItem.getParent();
+
+            FiddTreeNode node = treeItem.getValue();
+            if (node instanceof FiddMessageNode messageNode) {
+                return messageNode.messageNumber;
+            }
+        }
+        throw new RuntimeException("FiddMessage ancestor not found for FileNode");
+    }
+
+    public void saveFile() {
+        TreeItem<FiddTreeNode> treeItem = checkNotNull(fiddStructureTreeView).getSelectionModel().getSelectedItem();
+        if (treeItem != null) {
+            FiddTreeNode node = treeItem.getValue();
+            if (node instanceof FiddFileNode fileNode) {
+                long messageNumber = findMessageNumber(treeItem);
+                LogicalFileInfo logicalFileInfo = fileNode.logicalFileInfo;
+
+                FileChooser fileChooser = new FileChooser();
+                fileChooser.setInitialFileName(fileNode.fileName);
+                File outputFileFile = fileChooser.showSaveDialog(checkNotNull(stage));
+
+                try (InputStream in = fiddContentService.readLogicalFile(messageNumber, logicalFileInfo);
+                    OutputStream out = new FileOutputStream(outputFileFile)) {
+
+                    byte[] buffer = new byte[FILE_SAVE_BUFFER_SIZE];
+                    int bytesRead;
+                    while ((bytesRead = in.read(buffer)) != -1) {
+                        out.write(buffer, 0, bytesRead);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+                JavaFxUtils.showMessage("File Saved", "File " + fileNode.fileName +
+                        " saved to: " + outputFileFile.getAbsolutePath());
+            }
+        }
+    }
+
+    public void getFileUrl() {
+        TreeItem<FiddTreeNode> treeItem = checkNotNull(fiddStructureTreeView).getSelectionModel().getSelectedItem();
+        if (treeItem != null) {
+            FiddTreeNode node = treeItem.getValue();
+            if (node instanceof FiddFileNode fileNode) {
+                // TODO: implement
+            }
+        }
     }
 }

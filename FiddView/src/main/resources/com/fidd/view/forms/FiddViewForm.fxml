@@ -13,8 +13,8 @@
             <children>
                 <ToolBar AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                     <items>
-                        <Button mnemonicParsing="false" text="Download" />
-                        <Button mnemonicParsing="false" text="Get Local URL" />
+                        <Button fx:id="saveFileButton" disable="true" mnemonicParsing="false" onAction="#saveFile" text="Save File to Disk" />
+                        <Button fx:id="getFileUrlButton" disable="true" mnemonicParsing="false" onAction="#getFileUrl" text="Get File URL" />
                     </items>
                 </ToolBar>
             </children>
