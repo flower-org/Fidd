@@ -1,8 +1,15 @@
 package com.fidd.view.forms;
 
+import com.fidd.base.BaseRepositories;
+import com.fidd.base.DefaultBaseRepositories;
+import com.fidd.connectors.DefaultFiddConnectorFactory;
+import com.fidd.connectors.FiddConnector;
+import com.fidd.connectors.FiddConnectorFactory;
 import com.fidd.core.connection.FiddConnection;
 import com.fidd.core.connection.FiddConnectionList;
 import com.fidd.core.connection.yaml.YamlFiddConnectionListSerializer;
+import com.fidd.service.FiddContentService;
+import com.fidd.service.wrapper.WrapperFiddContentService;
 import com.flower.crypt.HybridAesEncryptor;
 import com.flower.crypt.keys.KeyContext;
 import com.flower.crypt.keys.RsaKeyContext;
@@ -24,6 +31,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -63,6 +71,8 @@ public class MainForm {
     final static FileChooser.ExtensionFilter ENCRYPTED_FIDD_CONNECTION_LIST_EXTENSION_FILTER =
             new FileChooser.ExtensionFilter("Fidd Connection List (*" + ENCRYPTED_FIDD_CONNECTION_LIST_EXT + ")",
                     "*" + ENCRYPTED_FIDD_CONNECTION_LIST_EXT);
+    final static FiddConnectorFactory FIDD_CONNECTOR_FACTORY = new DefaultFiddConnectorFactory();
+    final static BaseRepositories BASE_REPOSITORIES = new DefaultBaseRepositories();
 
     @Nullable Stage mainStage;
 
@@ -122,6 +132,12 @@ public class MainForm {
 
     // ---------- Fidd Connection operations ----------
 
+    public void fiddConnectionDoubleClick(MouseEvent event) {
+        if (event.getClickCount() == 2) {
+            openFiddConnection();
+        }
+    }
+
     public void openFiddConnection() {
         try {
             FiddConnection selectedFiddConnection = checkNotNull(fiddConnectionTableView).getSelectionModel().getSelectedItem();
@@ -138,12 +154,27 @@ public class MainForm {
     }
 
     public void openFiddTab(FiddConnection fiddConnection) {
-        FiddViewForm fiddViewForm = new FiddViewForm(fiddConnection);
-        fiddViewForm.setStage(checkNotNull(mainStage));
-        final Tab tab = new Tab(fiddConnection.name(), fiddViewForm);
-        tab.setClosable(true);
+        if (keyProvider == null) {
+            throw new RuntimeException("Key Provider not found.");
+        }
+        KeyContext keyContext = keyProvider.getKeyContext();
 
-        addTab(tab);
+        if (keyContext instanceof RsaKeyContext) {
+            X509Certificate certificate = ((RsaKeyContext) keyContext).certificate();
+            PrivateKey key = ((RsaKeyContext) keyContext).privateKey();
+
+            FiddConnector fiddConnector = FIDD_CONNECTOR_FACTORY.createConnector(fiddConnection.url());
+            FiddContentService fiddContentService = new WrapperFiddContentService(BASE_REPOSITORIES, fiddConnector, certificate, key);
+
+            FiddViewForm fiddViewForm = new FiddViewForm(fiddConnection.name(), fiddContentService);
+            fiddViewForm.setStage(checkNotNull(mainStage));
+            final Tab tab = new Tab(fiddConnection.name(), fiddViewForm);
+            tab.setClosable(true);
+
+            addTab(tab);
+        } else {
+            throw new RuntimeException("Unsupported Key Context: " + keyContext.getClass());
+        }
     }
 
     void addTab(Tab tab) {

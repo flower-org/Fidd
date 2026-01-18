@@ -36,10 +36,10 @@ public class WrapperFiddContentService implements FiddContentService {
     protected final BaseRepositories baseRepositories;
     protected final FiddConnector fiddConnector;
     protected final X509Certificate userCert;
-    @Nullable PrivateKey userPrivateKey;
+    protected final PrivateKey userPrivateKey;
 
     public WrapperFiddContentService(BaseRepositories baseRepositories, FiddConnector fiddConnector,
-                                     X509Certificate userCert, @Nullable PrivateKey userPrivateKey) {
+                                     X509Certificate userCert, PrivateKey userPrivateKey) {
         this.baseRepositories = baseRepositories;
         this.fiddConnector = fiddConnector;
         this.userCert = userCert;
@@ -85,7 +85,7 @@ public class WrapperFiddContentService implements FiddContentService {
     }
 
     @Override
-    public @Nullable List<LogicalFileInfo> getLogicalFiles(long messageNumber) {
+    public @Nullable List<LogicalFileInfo> getLogicalFileInfos(long messageNumber) {
         try {
             // 1. Load FiddKey
             byte[] fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector, userCert, userPrivateKey);

@@ -1,7 +1,7 @@
 package com.fidd.view.forms;
 
-import com.fidd.connectors.folder.FolderFiddConnector;
-import com.fidd.core.connection.FiddConnection;
+import com.fidd.core.fiddfile.FiddFileMetadata;
+import com.fidd.service.FiddContentService;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -19,7 +19,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -27,19 +26,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class FiddViewForm extends AnchorPane  {
     final static Logger LOGGER = LoggerFactory.getLogger(FiddViewForm.class);
 
+    static final int MESSAGE_LOAD_BATCH_SIZE = 5;
+
     // https://iconscout.com/free-icon-pack/free-free-user-interface-icons-set-icon-pack_37661 - source
     // https://iconscout.com/icon-pack/arrow-and-navigation-icon-pack_66887 - nice folder icon, but costs money
     static final Image FOLDER_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/doc.png")));
     static final Image DOWN_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/down.png")));
     static final Image UP_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/up-arrow.png")));
-
-    @Nullable Stage stage;
-    @Nullable @FXML TreeView<FiddTreeNode> fiddStructureTreeView;
-
-    protected final FiddConnection fiddConnection;
-    protected final FolderFiddConnector folderFiddConnector;
-    protected final TreeItem<FiddTreeNode> rootItem;
-    protected final AtomicBoolean loading = new AtomicBoolean(false);
 
     public interface FiddTreeNode {
         @Nullable ImageView getImage();
@@ -88,11 +81,16 @@ public class FiddViewForm extends AnchorPane  {
         }
     }
 
-    public void setStage(Stage stage) {
-        this.stage = stage;
-    }
+    @Nullable Stage stage;
+    @Nullable @FXML TreeView<FiddTreeNode> fiddStructureTreeView;
 
-    public FiddViewForm(FiddConnection fiddConnection) {
+    protected final String blogName;
+    protected final FiddContentService fiddContentService;
+    protected final TreeItem<FiddTreeNode> rootItem;
+    protected final AtomicBoolean loading = new AtomicBoolean(false);
+    protected @Nullable Long lastContiguouslyLoadedMessageNumber = null;
+
+    public FiddViewForm(String fiddName, FiddContentService fiddContentService) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("FiddViewForm.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
@@ -103,12 +101,14 @@ public class FiddViewForm extends AnchorPane  {
             throw new RuntimeException(exception);
         }
 
-        this.fiddConnection = fiddConnection;
-        FiddTreeNode rootNode = new FiddNode(fiddConnection.getName());
+        this.blogName = fiddName;
+        this.fiddContentService = fiddContentService;
+
+        FiddTreeNode rootNode = new FiddNode(fiddName);
         rootItem = new TreeItem<>(rootNode, rootNode.getImage());
         checkNotNull(fiddStructureTreeView).rootProperty().set(rootItem);
 
-        // Double-Click
+        // Double-Click - TODO: move to FXML
         fiddStructureTreeView.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
                 TreeItem<FiddTreeNode> treeItem = checkNotNull(fiddStructureTreeView).getSelectionModel().getSelectedItem();
@@ -118,7 +118,7 @@ public class FiddViewForm extends AnchorPane  {
                 }
             }
         });
-        // DOWN/ENTER/PAGE_DOWN
+        // DOWN/ENTER/PAGE_DOWN: TODO: move to FXML
         fiddStructureTreeView.setOnKeyPressed(event -> {
             switch (event.getCode()) {
                 case DOWN:
@@ -132,9 +132,11 @@ public class FiddViewForm extends AnchorPane  {
                     break;
             }
         });
-
-        this.folderFiddConnector = new FolderFiddConnector(fiddConnection.url());
         loadNextBatch(0);
+    }
+
+    public void setStage(Stage stage) {
+        this.stage = stage;
     }
 
     protected void loadNextBatch(int position) {
@@ -168,11 +170,33 @@ public class FiddViewForm extends AnchorPane  {
     }
 
     protected List<FiddTreeNode> fetchNextNodesFromServerOrDB() {
-        List<FiddTreeNode> list = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            list.add(new FiddMessageNode(UUID.randomUUID().toString()));
+        List<Long> messages;
+        if (lastContiguouslyLoadedMessageNumber == null) {
+            messages = fiddContentService.getMessageNumbersTail(MESSAGE_LOAD_BATCH_SIZE);
+        } else {
+            messages = fiddContentService.getMessageNumbersBefore(lastContiguouslyLoadedMessageNumber, MESSAGE_LOAD_BATCH_SIZE, false);
         }
-        list.add(new FiddExpandNode(FiddExpandNode.ExpandDirection.PREVIOUS));
+
+        List<FiddTreeNode> list = new ArrayList<>();
+        for (int i = 0; i < messages.size(); i++) {
+            long messageNumber = messages.get(i);
+            FiddFileMetadata fiddFileMetadata = null;
+            try {
+                fiddFileMetadata = fiddContentService.getFiddFileMetadata(messageNumber);
+                lastContiguouslyLoadedMessageNumber = messageNumber;
+            } catch (Exception e) {
+                LOGGER.debug("Message failed to load: blog " + blogName + " message " + messageNumber, e);
+            }
+
+            String treeNodeText = "#" + messageNumber + " " +
+                    (fiddFileMetadata != null
+                            ? fiddFileMetadata.postId() + " [v" + fiddFileMetadata.versionNumber() + "]"
+                            : "(Can't load message)");
+            list.add(new FiddMessageNode(treeNodeText));
+        }
+        if (messages.size() >= MESSAGE_LOAD_BATCH_SIZE) {
+            list.add(new FiddExpandNode(FiddExpandNode.ExpandDirection.PREVIOUS));
+        }
         return list;
     }
 }
