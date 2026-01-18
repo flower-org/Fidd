@@ -21,9 +21,9 @@
         <items>
         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
              <children>
-                 <TabPane fx:id="functionTabPane" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                 <TabPane fx:id="mainTabPane" tabClosingPolicy="ALL_TABS" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                      <tabs>
-                         <Tab fx:id="cryptTextFunctionTab" text="My Cert">
+                         <Tab fx:id="cryptTextFunctionTab" closable="false" text="My Cert">
                              <content>
                                  <AnchorPane fx:id="topPane" minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                      <padding>
@@ -31,7 +31,7 @@
                                      </padding></AnchorPane>
                              </content>
                          </Tab>
-                         <Tab text="Fidd Connections">
+                         <Tab closable="false" text="Fidd Connections">
                              <content>
                                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                      <children>

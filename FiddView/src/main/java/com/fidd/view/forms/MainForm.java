@@ -20,6 +20,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
@@ -64,6 +66,7 @@ public class MainForm {
 
     @Nullable Stage mainStage;
 
+    @FXML @Nullable TabPane mainTabPane;
     @FXML @Nullable AnchorPane topPane;
     @FXML @Nullable TableView<FiddConnection> fiddConnectionTableView;
     @FXML @Nullable CheckBox encryptDecryptFiddConnectionsCheckBox;
@@ -123,14 +126,29 @@ public class MainForm {
         try {
             FiddConnection selectedFiddConnection = checkNotNull(fiddConnectionTableView).getSelectionModel().getSelectedItem();
             if (selectedFiddConnection != null) {
-                checkNotNull(fiddConnections).remove(selectedFiddConnection);
-                checkNotNull(fiddConnectionTableView).refresh();
+                openFiddTab(selectedFiddConnection);
+            } else {
+                JavaFxUtils.showMessage("Fidd Connection not selected.");
             }
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error Opening Fidd connection: " + e, ButtonType.OK);
             LOGGER.error("Error Opening Fidd connection: ", e);
             alert.showAndWait();
         }
+    }
+
+    public void openFiddTab(FiddConnection fiddConnection) {
+        FiddViewForm fiddViewForm = new FiddViewForm(fiddConnection);
+        fiddViewForm.setStage(checkNotNull(mainStage));
+        final Tab tab = new Tab(fiddConnection.name(), fiddViewForm);
+        tab.setClosable(true);
+
+        addTab(tab);
+    }
+
+    void addTab(Tab tab) {
+        checkNotNull(mainTabPane).getTabs().add(tab);
+        mainTabPane.getSelectionModel().select(tab);
     }
 
     protected void addFiddConnection(FiddConnection fiddConnection) {
@@ -411,9 +429,6 @@ public class MainForm {
                 checkNotNull(fiddConnections).clear();
                 checkNotNull(fiddConnections).addAll(fiddConnectionList.fiddConnectionList());
                 checkNotNull(fiddConnectionTableView).refresh();
-
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Fidd Connections file loaded successfully " + fiddConnectionListFilePath, ButtonType.OK);
-                alert.showAndWait();
             }
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error loading Fidd Connections file: " + e, ButtonType.OK);

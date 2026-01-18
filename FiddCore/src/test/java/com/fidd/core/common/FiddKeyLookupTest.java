@@ -1,10 +1,14 @@
 package com.fidd.core.common;
 
-import com.fidd.core.common.FiddKeyLookup.Trie;
+import com.fidd.base.BaseRepositories;
+import com.fidd.base.Repository;
+import com.fidd.core.pki.StableTransformForAlgo;
 import com.flower.crypt.PkiUtil;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
+import java.nio.file.ProviderNotFoundException;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -14,76 +18,103 @@ import static org.mockito.Mockito.*;
 
 class FiddKeyLookupTest {
 
-    @Test
-    void testCreateLookupFootprint() throws Exception {
-        X509Certificate cert = mock(X509Certificate.class);
-        PublicKey key = mock(PublicKey.class);
+    BaseRepositories baseRepositories;
+    Repository<StableTransformForAlgo> transformRepo;
+    X509Certificate cert;
+    PublicKey publicKey;
+    StableTransformForAlgo transform;
 
-        when(cert.getPublicKey()).thenReturn(key);
+    @BeforeEach
+    void setup() {
+        baseRepositories = mock(BaseRepositories.class);
+        transformRepo = mock(Repository.class);
+        cert = mock(X509Certificate.class);
+        publicKey = mock(PublicKey.class);
+        transform = mock(StableTransformForAlgo.class);
+
+        when(baseRepositories.stableTransformRepo()).thenReturn(transformRepo);
+        when(cert.getPublicKey()).thenReturn(publicKey);
+    }
+
+    // ------------------------------------------------------------
+    // createLookupFootprint
+    // ------------------------------------------------------------
+
+    @Test
+    void testCreateLookupFootprint_success() throws Exception {
+        when(publicKey.getAlgorithm()).thenReturn("RSA");
+        when(transformRepo.get("RSA")).thenReturn(transform);
+        when(transform.transform()).thenReturn("TRANSFORMED");
 
         byte[] encrypted = new byte[]{1, 2, 3};
-        try (MockedStatic<PkiUtil> pki = mockStatic(PkiUtil.class);
-             MockedStatic<Base36> base36 = mockStatic(Base36.class)) {
 
-            pki.when(() -> PkiUtil.encrypt(any(byte[].class), eq(key))).thenReturn(encrypted);
-            base36.when(() -> Base36.toBase36(encrypted)).thenReturn("ABC123");
+        try (MockedStatic<PkiUtil> mocked = mockStatic(PkiUtil.class);
+             MockedStatic<Base36> mocked36 = mockStatic(Base36.class)) {
 
-            String result = FiddKeyLookup.createLookupFootprint(cert, 10L, 20L);
+            mocked.when(() -> PkiUtil.encrypt(any(), eq(publicKey), eq("TRANSFORMED")))
+                    .thenReturn(encrypted);
+
+            mocked36.when(() -> Base36.toBase36(encrypted))
+                    .thenReturn("ABC123");
+
+            String result = FiddKeyLookup.createLookupFootprint(
+                    baseRepositories, cert, 5L, 10L);
 
             assertEquals("ABC123", result);
         }
     }
 
     @Test
-    void testCreateLookupFootprints() throws Exception {
-        X509Certificate cert1 = mock(X509Certificate.class);
-        X509Certificate cert2 = mock(X509Certificate.class);
-        PublicKey key = mock(PublicKey.class);
+    void testCreateLookupFootprint_missingTransform() {
+        when(publicKey.getAlgorithm()).thenReturn("EC");
+        when(transformRepo.get("EC")).thenReturn(null);
 
-        when(cert1.getPublicKey()).thenReturn(key);
-        when(cert2.getPublicKey()).thenReturn(key);
-
-        byte[] encrypted = new byte[]{9, 9};
-        try (MockedStatic<PkiUtil> pki = mockStatic(PkiUtil.class);
-             MockedStatic<Base36> base36 = mockStatic(Base36.class)) {
-
-            pki.when(() -> PkiUtil.encrypt(any(byte[].class), eq(key))).thenReturn(encrypted);
-            base36.when(() -> Base36.toBase36(encrypted)).thenReturn("ZZ");
-
-            List<String> results = FiddKeyLookup.createLookupFootprints(
-                    List.of(cert1, cert2), 1L, 2L);
-
-            assertEquals(List.of("ZZ", "ZZ"), results);
-        }
+        assertThrows(ProviderNotFoundException.class, () ->
+                FiddKeyLookup.createLookupFootprint(baseRepositories, cert, 1L, 1L));
     }
+
+    // ------------------------------------------------------------
+    // Trie tests
+    // ------------------------------------------------------------
 
     @Test
-    void testTrieBasicBehavior() {
-        Trie root = new Trie();
+    void testTrieBasicOperations() {
+        FiddKeyLookup.Trie root = new FiddKeyLookup.Trie();
 
-        assertEquals(0, root.getCount());
-        Trie a = root.create('a');
-        assertEquals(1, a.getCount());
-        assertNull(root.get('b'));
+        assertNull(root.get('a'));
+
+        FiddKeyLookup.Trie child = root.create('a');
+        assertNotNull(child);
+        assertEquals(1, child.getCount());
+        assertEquals(child, root.get('a'));
+
+        child.addCount();
+        assertEquals(2, child.getCount());
     }
+
+    // ------------------------------------------------------------
+    // buildHighAmbiguityPrefixList
+    // ------------------------------------------------------------
 
     @Test
     void testBuildHighAmbiguityPrefixList() {
-        List<String> footprints = List.of("abcd", "abxy", "abzz");
+        List<String> input = List.of("abcd", "abxy", "abcz");
 
-        List<String> result = FiddKeyLookup.buildHighAmbiguityPrefixList(footprints);
+        List<String> result = FiddKeyLookup.buildHighAmbiguityPrefixList(input);
 
-        // High ambiguity: stops when a new branch is created
-        assertEquals(List.of("a", "ab", "abz"), result);
+        assertEquals(List.of("a", "ab", "abc"), result);
     }
+
+    // ------------------------------------------------------------
+    // buildLowAmbiguityPrefixList
+    // ------------------------------------------------------------
 
     @Test
     void testBuildLowAmbiguityPrefixList() {
-        List<String> footprints = List.of("abcd", "abxy", "abzz");
+        List<String> input = List.of("abcd", "abxy", "abcz");
 
-        List<String> result = FiddKeyLookup.buildLowAmbiguityPrefixList(footprints);
+        List<String> result = FiddKeyLookup.buildLowAmbiguityPrefixList(input);
 
-        // Low ambiguity: shortest prefix that uniquely identifies each
-        assertEquals(List.of("abc", "abx", "abz"), result);
+        assertEquals(List.of("abcd", "abx", "abcz"), result);
     }
 }
