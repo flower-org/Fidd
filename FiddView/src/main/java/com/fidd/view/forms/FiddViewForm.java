@@ -2,6 +2,7 @@ package com.fidd.view.forms;
 
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.service.FiddContentService;
+import com.fidd.service.LogicalFileInfo;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -12,6 +13,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +32,9 @@ public class FiddViewForm extends AnchorPane  {
 
     // https://iconscout.com/free-icon-pack/free-free-user-interface-icons-set-icon-pack_37661 - source
     // https://iconscout.com/icon-pack/arrow-and-navigation-icon-pack_66887 - nice folder icon, but costs money
-    static final Image FOLDER_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/doc.png")));
+    static final Image MESSAGE_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/doc.png")));
+    static final Image FOLDER_ICON_ = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/folder.png")));
+    static final Image FILE_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/file.png")));
     static final Image DOWN_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/down.png")));
     static final Image UP_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/up-arrow.png")));
 
@@ -39,20 +43,45 @@ public class FiddViewForm extends AnchorPane  {
         default void action() {}
     }
 
-    public static class FiddNode implements FiddTreeNode {
-        protected final ImageView imageView = new ImageView(FOLDER_ICON);
+    public static class FiddRootNode implements FiddTreeNode {
+        protected final ImageView imageView = new ImageView(MESSAGE_ICON);
         protected final String fiddName;
-        public FiddNode(String fiddName) { this.fiddName = fiddName; }
+        public FiddRootNode(String fiddName) { this.fiddName = fiddName; }
         @Override public @Nullable ImageView getImage() { return imageView; }
         @Override public String toString() { return fiddName; }
     }
 
     public static class FiddMessageNode implements FiddTreeNode {
-        protected final ImageView imageView = new ImageView(FOLDER_ICON);
+        protected final ImageView imageView = new ImageView(MESSAGE_ICON);
         protected final String messageName;
-        public FiddMessageNode(String messageName) { this.messageName = messageName; }
+        protected final long messageNumber;
+        public FiddMessageNode(String messageName, long messageNumber) { this.messageName = messageName; this.messageNumber = messageNumber; }
         @Override public @Nullable ImageView getImage() { return imageView; }
         @Override public String toString() { return messageName; }
+    }
+
+    public static class FiddFolderNode implements FiddTreeNode {
+        protected final ImageView imageView = new ImageView(FOLDER_ICON_);
+        protected final String folderName;
+        public FiddFolderNode(String folderName) { this.folderName = folderName; }
+        @Override public @Nullable ImageView getImage() { return imageView; }
+        @Override public String toString() { return folderName; }
+    }
+
+    public static class FiddFileNode implements FiddTreeNode {
+        protected final ImageView imageView = new ImageView(FILE_ICON);
+        protected final String fileName;
+        public FiddFileNode(String fileName) { this.fileName = fileName; }
+        @Override public @Nullable ImageView getImage() { return imageView; }
+        @Override public String toString() { return fileName; }
+    }
+
+    public static class FiddTextNode implements FiddTreeNode {
+        protected final ImageView imageView = new ImageView(MESSAGE_ICON);
+        protected final String fiddName;
+        public FiddTextNode(String fiddName) { this.fiddName = fiddName; }
+        @Override public @Nullable ImageView getImage() { return imageView; }
+        @Override public String toString() { return fiddName; }
     }
 
     public class FiddExpandNode implements FiddTreeNode {
@@ -104,7 +133,7 @@ public class FiddViewForm extends AnchorPane  {
         this.blogName = fiddName;
         this.fiddContentService = fiddContentService;
 
-        FiddTreeNode rootNode = new FiddNode(fiddName);
+        FiddTreeNode rootNode = new FiddRootNode(fiddName);
         rootItem = new TreeItem<>(rootNode, rootNode.getImage());
         checkNotNull(fiddStructureTreeView).rootProperty().set(rootItem);
 
@@ -164,8 +193,98 @@ public class FiddViewForm extends AnchorPane  {
         }
     }
 
+    public class FiddMessageTreeItem extends TreeItem<FiddTreeNode> {
+        private boolean childrenLoaded = false;
+        private final long messageNumber;
+
+        public FiddMessageTreeItem(FiddMessageNode fiddMessageNode) {
+            super(fiddMessageNode, fiddMessageNode.getImage());
+            messageNumber = fiddMessageNode.messageNumber;
+
+            // Add dummy child so the expand arrow appears
+            this.getChildren().add(new TreeItem<>(new FiddTextNode("Loading...")));
+
+            // Load children when expanded
+            this.expandedProperty().addListener((obs, wasExpanded, isNowExpanded) -> {
+                if (isNowExpanded && !childrenLoaded) {
+                    childrenLoaded = true;
+                    loadChildren();
+                }
+            });
+        }
+
+        public static void addLogicalFile(TreeItem<FiddTreeNode> root, LogicalFileInfo logicalFileInfo) {
+            String relativePath = logicalFileInfo.metadata().filePath();
+            String[] parts = relativePath.split("/");
+
+            TreeItem<FiddTreeNode> current = root;
+
+            for (int i = 0; i < parts.length; i++) {
+                String part = parts[i];
+                if (!StringUtils.isBlank(part)) {
+                    // Look for an existing child with this name
+                    TreeItem<FiddTreeNode> child = findChild(current, part);
+                    if (child == null) {
+                        if (i == parts.length - 1) {
+                            // Add file
+                            FiddFileNode fileNode = new FiddFileNode(part);
+                            child = new TreeItem<>(fileNode, fileNode.getImage());
+                        } else {
+                            // Add folder
+                            FiddFolderNode folderNode = new FiddFolderNode(part);
+                            child = new TreeItem<>(folderNode, folderNode.getImage());
+                        }
+                        current.getChildren().add(child);
+                    }
+
+                    current = child;
+                }
+            }
+        }
+
+        private static @Nullable TreeItem<FiddTreeNode> findChild(TreeItem<FiddTreeNode> parent, String value) {
+            for (TreeItem<FiddTreeNode> child : parent.getChildren()) {
+                if (child.getValue().toString().equals(value)) {
+                    return child;
+                }
+            }
+            return null;
+        }
+
+        private void loadChildren() {
+            Task<List<LogicalFileInfo>> task = new Task<>() {
+                @Override
+                protected List<LogicalFileInfo> call() {
+                    return fiddContentService.getLogicalFileInfos(messageNumber);
+                }
+            };
+
+            task.setOnSucceeded(e -> Platform.runLater(
+                () -> {
+                    List<LogicalFileInfo> logicalFileInfos = task.getValue();
+
+                    // Remove dummy
+                    this.getChildren().clear();
+
+                    for (LogicalFileInfo node : logicalFileInfos) {
+                        String relativePath = node.metadata().filePath();
+                        if (!StringUtils.isBlank(relativePath)) {
+                            addLogicalFile(this, node);
+                        }
+                    }
+                }));
+
+            new Thread(task).start();
+        }
+    }
+
     protected void addFiddMessageToTree(FiddTreeNode node, int pos) {
-        TreeItem<FiddTreeNode> treeItem = new TreeItem<>(node, node.getImage());
+        TreeItem<FiddTreeNode> treeItem;
+        if (node instanceof FiddMessageNode) {
+            treeItem = new FiddMessageTreeItem((FiddMessageNode) node);
+        } else {
+            treeItem = new TreeItem<>(node, node.getImage());
+        }
         rootItem.getChildren().add(pos, treeItem);
     }
 
@@ -192,7 +311,7 @@ public class FiddViewForm extends AnchorPane  {
                     (fiddFileMetadata != null
                             ? fiddFileMetadata.postId() + " [v" + fiddFileMetadata.versionNumber() + "]"
                             : "(Can't load message)");
-            list.add(new FiddMessageNode(treeNodeText));
+            list.add(new FiddMessageNode(treeNodeText, messageNumber));
         }
         if (messages.size() >= MESSAGE_LOAD_BATCH_SIZE) {
             list.add(new FiddExpandNode(FiddExpandNode.ExpandDirection.PREVIOUS));
