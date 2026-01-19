@@ -184,9 +184,18 @@ public class FolderFiddConnectorTest {
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // latest=100 (exclusive), earliest=70 (exclusive)
-        List<Long> result = fidd.getMessageNumbersBetween(100, false, 70, false);
+        List<Long> result = fidd.getMessageNumbersBetween(100, false, 70, false, 10, true);
 
         // Should include: 90, 80
+        assertEquals(List.of(90L, 80L), result);
+
+        result = fidd.getMessageNumbersBetween(100, false, 70, false, 1, true);
+        assertEquals(List.of(90L), result);
+
+        result = fidd.getMessageNumbersBetween(100, false, 70, false, 1, false);
+        assertEquals(List.of(80L), result);
+
+        result = fidd.getMessageNumbersBetween(100, false, 70, false, 2, false);
         assertEquals(List.of(90L, 80L), result);
     }
 
@@ -200,8 +209,17 @@ public class FolderFiddConnectorTest {
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // latest=90 (inclusive), earliest=70 (exclusive)
-        List<Long> result = fidd.getMessageNumbersBetween(90, true, 70, false);
+        List<Long> result = fidd.getMessageNumbersBetween(90, true, 70, false, 10, true);
 
+        assertEquals(List.of(90L, 80L), result);
+
+        result = fidd.getMessageNumbersBetween(90, true, 70, false, 1, true);
+        assertEquals(List.of(90L), result);
+
+        result = fidd.getMessageNumbersBetween(90, true, 70, false, 1, false);
+        assertEquals(List.of(80L), result);
+
+        result = fidd.getMessageNumbersBetween(90, true, 70, false, 10, false);
         assertEquals(List.of(90L, 80L), result);
     }
 
@@ -215,8 +233,17 @@ public class FolderFiddConnectorTest {
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // latest=100 (exclusive), earliest=80 (inclusive)
-        List<Long> result = fidd.getMessageNumbersBetween(100, false, 80, true);
+        List<Long> result = fidd.getMessageNumbersBetween(100, false, 80, true, 10, true);
 
+        assertEquals(List.of(90L, 80L), result);
+
+        result = fidd.getMessageNumbersBetween(100, false, 80, true, 1, true);
+        assertEquals(List.of(90L), result);
+
+        result = fidd.getMessageNumbersBetween(100, false, 80, true, 1, false);
+        assertEquals(List.of(80L), result);
+
+        result = fidd.getMessageNumbersBetween(100, false, 80, true, 10, false);
         assertEquals(List.of(90L, 80L), result);
     }
 
@@ -230,8 +257,17 @@ public class FolderFiddConnectorTest {
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         // latest=90 (inclusive), earliest=80 (inclusive)
-        List<Long> result = fidd.getMessageNumbersBetween(90, true, 80, true);
+        List<Long> result = fidd.getMessageNumbersBetween(90, true, 80, true, 10, true);
 
+        assertEquals(List.of(90L, 80L), result);
+
+        result = fidd.getMessageNumbersBetween(90, true, 80, true, 1, true);
+        assertEquals(List.of(90L), result);
+
+        result = fidd.getMessageNumbersBetween(90, true, 80, true, 1, false);
+        assertEquals(List.of(80L), result);
+
+        result = fidd.getMessageNumbersBetween(90, true, 80, true, 10, false);
         assertEquals(List.of(90L, 80L), result);
     }
 
@@ -245,9 +281,18 @@ public class FolderFiddConnectorTest {
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
-        List<Long> result = fidd.getMessageNumbersBetween(100, true, 70, true);
+        List<Long> result = fidd.getMessageNumbersBetween(100, true, 70, true, 10, true);
 
         // Should include 100, 90, 80, 70 — but NOT 60
+        assertEquals(List.of(100L, 90L, 80L, 70L), result);
+
+        result = fidd.getMessageNumbersBetween(100, true, 70, true, 2, true);
+        assertEquals(List.of(100L, 90L), result);
+
+        result = fidd.getMessageNumbersBetween(100, true, 70, true, 3, false);
+        assertEquals(List.of(90L, 80L, 70L), result);
+
+        result = fidd.getMessageNumbersBetween(100, true, 70, true, 10, false);
         assertEquals(List.of(100L, 90L, 80L, 70L), result);
     }
 
@@ -261,9 +306,18 @@ public class FolderFiddConnectorTest {
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
-        List<Long> result = fidd.getMessageNumbersBetween(105, false, 65, false);
+        List<Long> result = fidd.getMessageNumbersBetween(105, false, 65, false, 10, true);
 
         // Should include 100, 90, 80, 70 — but NOT 60
+        assertEquals(List.of(100L, 90L, 80L, 70L), result);
+
+        result = fidd.getMessageNumbersBetween(105, false, 65, false, 3, true);
+        assertEquals(List.of(100L, 90L, 80L), result);
+
+        result = fidd.getMessageNumbersBetween(105, false, 65, false, 2, false);
+        assertEquals(List.of(80L, 70L), result);
+
+        result = fidd.getMessageNumbersBetween(105, false, 65, false, 10, false);
         assertEquals(List.of(100L, 90L, 80L, 70L), result);
     }
 
@@ -278,8 +332,17 @@ public class FolderFiddConnectorTest {
 
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
-        List<Long> result = fidd.getMessageNumbersBetween(100, true, 80, true);
+        List<Long> result = fidd.getMessageNumbersBetween(100, true, 80, true, 10, true);
 
+        assertEquals(List.of(100L, 90L, 80L), result);
+
+        result = fidd.getMessageNumbersBetween(100, true, 80, true, 1, true);
+        assertEquals(List.of(100L), result);
+
+        result = fidd.getMessageNumbersBetween(100, true, 80, true, 2, false);
+        assertEquals(List.of(90L, 80L), result);
+
+        result = fidd.getMessageNumbersBetween(100, true, 80, true, 10, true);
         assertEquals(List.of(100L, 90L, 80L), result);
     }
 

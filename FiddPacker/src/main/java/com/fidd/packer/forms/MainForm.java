@@ -5,6 +5,7 @@ import com.fidd.base.DefaultBaseRepositories;
 import com.fidd.base.Repository;
 import com.fidd.connectors.folder.FolderFiddConnector;
 import com.fidd.core.common.FiddKeyLookup;
+import com.fidd.core.common.FiddKeyUtil;
 import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
@@ -958,8 +959,8 @@ public class MainForm {
                             JavaFxUtils.showMessage("Failed to recover Fidd Key File from subscription.");
                             return;
                         } else {
-                            if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Save recovered Fidd Key File? (NOT RECOMMENDED)",
-                                    "Successfully recovered Fidd Key File from subscription. Save unencrypted file on disk?")) {
+                            if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Confirm NOT saving recovered Fidd Key File?",
+                                    "Successfully recovered Fidd Key File from subscription. Confirm NOT saving unencrypted file on disk? (\"No\" will save the file)")) {
                                 Files.write(new File(packedContentFolder, FIDD_KEY_FILE_NAME).toPath(), fiddKeyBytes);
                             }
                         }
@@ -1042,8 +1043,14 @@ public class MainForm {
 
             // TODO: Progress Bar modal window ??
 
+            FolderFiddConnector connector = new FolderFiddConnector(packedContentFolder.toPath().getParent());
+            long messageNumber = Long.parseLong(packedContentFolder.toPath().getFileName().toString());
+
             boolean throwOnValidationFailures = !ignoreValidationFailures;
             FiddUnpackManager.fiddUnpackPost(baseRepositories,
+                    connector,
+                    messageNumber,
+
                     fiddFile,
                     fiddKeyFileName,
                     fiddKeyBytes,
@@ -1379,26 +1386,8 @@ public class MainForm {
 
         FolderFiddConnector connector = new FolderFiddConnector(packedContentFolder.toPath().getParent());
         long messageNumber = Long.parseLong(packedContentFolder.toPath().getFileName().toString());
-        File fiddMessage = new File(packedContentFolder, FIDD_MESSAGE_FILE_NAME);
-        long messageLength = fiddMessage.length();
 
-        String footprint = FiddKeyLookup.createLookupFootprint(userCert, messageNumber, messageLength);
-        List<byte[]> candidates = connector.getFiddKeyCandidates(messageNumber, footprint.getBytes(StandardCharsets.UTF_8));
-        for (byte[] candidate : candidates) {
-            try {
-                byte[] encryptedKey = connector.getFiddKey(messageNumber, candidate);
-                ByteArrayInputStream inputStream = new ByteArrayInputStream(encryptedKey);
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-                HybridAesEncryptor.decrypt(inputStream, outputStream, HybridAesEncryptor.Mode.PUBLIC_KEY_ENCRYPT,
-                        userPrivateKey, null, null);
-
-                return outputStream.toByteArray();
-            } catch (Exception e) {
-                LOGGER.debug("Failed to decrypt candidate " + new String(candidate));
-            }
-        }
-        return null;
+        return FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, connector, userCert, userPrivateKey);
     }
 
     public void publishFolder() {
@@ -1430,8 +1419,8 @@ public class MainForm {
                             JavaFxUtils.showMessage("Failed to recover Fidd Key File from self-subscription.");
                             return;
                         } else {
-                            if (JavaFxUtils.YesNo.YES == JavaFxUtils.showYesNoDialog("Save recovered Fidd Key File? (NOT RECOMMENDED)",
-                                    "Successfully recovered Fidd Key File from self-subscription. Save unencrypted file on disk?")) {
+                            if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog("Confirm NOT saving recovered Fidd Key File?",
+                                    "Successfully recovered Fidd Key File from subscription. Confirm NOT saving unencrypted file on disk? (\"No\" will save the file)")) {
                                 Files.write(unencryptedFiddKeyFile.toPath(), unencryptedFiddKey);
                             }
                         }
@@ -1543,7 +1532,7 @@ public class MainForm {
 
             long messageNumber = Long.parseLong(packedContentFolder.getName());
             long messageLength = fiddMessage.length();
-            List<String> footprints = FiddKeyLookup.createLookupFootprints(subscriberCerts, messageNumber, messageLength);
+            List<String> footprints = FiddKeyLookup.createLookupFootprints(baseRepositories, subscriberCerts, messageNumber, messageLength);
             List<String> encryptedKeyFileNames;
             if (isHighAmbiguity) {
                 encryptedKeyFileNames = FiddKeyLookup.buildHighAmbiguityPrefixList(footprints);

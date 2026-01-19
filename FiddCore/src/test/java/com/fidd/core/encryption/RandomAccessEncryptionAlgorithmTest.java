@@ -8,6 +8,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
@@ -64,6 +66,33 @@ public class RandomAccessEncryptionAlgorithmTest {
         algo.randomAccessDecrypt(key, offset, length, ciphertextStream, plaintextOut);
 
         byte[] decryptedSlice = plaintextOut.toByteArray();
+        byte[] expectedSlice = Arrays.copyOfRange(plaintext, offset, offset + length);
+
+        assertArrayEquals(expectedSlice, decryptedSlice,
+                "Stream-based random access decryption should match plaintext slice");
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("randomAccessEncryptionAlgorithms")
+    void testRandomAccessDecryptInputStream(RandomAccessEncryptionAlgorithm algo) throws IOException {
+        byte[] key = "fixed-test-key-1234567890123456".getBytes(); // 32 bytes
+        byte[] plaintext = "StreamingRandomAccessDecryptionTest!".getBytes();
+
+        // Encrypt full plaintext
+        byte[] ciphertext = algo.encrypt(key, plaintext);
+
+        // Offset and length
+        int offset = 8;
+        int length = 12;
+
+        // Provide ciphertext slice via InputStream
+        ByteArrayInputStream ciphertextStream =
+                new ByteArrayInputStream(Arrays.copyOfRange(ciphertext, offset, offset + length));
+        // Decrypt slice
+        InputStream plaintextOut = algo.getRandomAccessDecryptedStream(key, offset, length, ciphertextStream);
+
+        byte[] decryptedSlice = plaintextOut.readAllBytes();
         byte[] expectedSlice = Arrays.copyOfRange(plaintext, offset, offset + length);
 
         assertArrayEquals(expectedSlice, decryptedSlice,

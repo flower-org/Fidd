@@ -1,5 +1,6 @@
 package com.fidd.core.encryption.xor;
 
+import com.fidd.core.common.SubInputStream;
 import com.fidd.core.encryption.RandomAccessEncryptionAlgorithm;
 import com.fidd.core.random.RandomGeneratorType;
 
@@ -59,16 +60,25 @@ public class XorEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
     }
 
     @Override
-    public byte[] randomAccessDecrypt(byte[] keyData, byte[] ciphertext, long offset, int length) {
+    public byte[] randomAccessDecrypt(byte[] keyData, byte[] ciphertext, long offset, long length) {
         // Decrypt only a slice of the ciphertext
-        byte[] slice = Arrays.copyOfRange(ciphertext, (int) offset, (int) offset + length);
+        byte[] slice = Arrays.copyOfRange(ciphertext, (int) offset, (int) (offset + length));
         return xorWithKey(slice, keyData, (int)(offset % keyData.length));
     }
 
     @Override
-    public void randomAccessDecrypt(byte[] keyData, long offset, int length, InputStream ciphertextAtOffset, OutputStream plaintext) {
+    public void randomAccessDecrypt(byte[] keyData, long offset, long length, InputStream ciphertextAtOffset, OutputStream plaintext) {
         // For simplicity, just reuse the stream processor
-        processStream(keyData, (int)(offset % keyData.length), length, ciphertextAtOffset, plaintext, null);
+        processStream(keyData, (int)(offset % keyData.length), (int)length, ciphertextAtOffset, plaintext, null);
+    }
+
+    @Override
+    public InputStream getRandomAccessDecryptedStream(byte[] keyData, long offset, long length, InputStream ciphertextAtOffset) {
+        try {
+            return new SubInputStream(new XorInputStream(ciphertextAtOffset, keyData, offset), 0, length);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // --- Helper methods ---

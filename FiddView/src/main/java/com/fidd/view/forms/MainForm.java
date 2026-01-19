@@ -1,8 +1,16 @@
 package com.fidd.view.forms;
 
+import com.fidd.base.BaseRepositories;
+import com.fidd.base.DefaultBaseRepositories;
+import com.fidd.connectors.DefaultFiddConnectorFactory;
+import com.fidd.connectors.FiddConnector;
+import com.fidd.connectors.FiddConnectorFactory;
 import com.fidd.core.connection.FiddConnection;
 import com.fidd.core.connection.FiddConnectionList;
 import com.fidd.core.connection.yaml.YamlFiddConnectionListSerializer;
+import com.fidd.service.FiddContentService;
+import com.fidd.service.wrapper.WrapperFiddContentService;
+import com.fidd.view.serviceCache.FiddContentServiceCache;
 import com.flower.crypt.HybridAesEncryptor;
 import com.flower.crypt.keys.KeyContext;
 import com.flower.crypt.keys.RsaKeyContext;
@@ -20,8 +28,11 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -61,9 +72,17 @@ public class MainForm {
     final static FileChooser.ExtensionFilter ENCRYPTED_FIDD_CONNECTION_LIST_EXTENSION_FILTER =
             new FileChooser.ExtensionFilter("Fidd Connection List (*" + ENCRYPTED_FIDD_CONNECTION_LIST_EXT + ")",
                     "*" + ENCRYPTED_FIDD_CONNECTION_LIST_EXT);
+    final static FiddConnectorFactory FIDD_CONNECTOR_FACTORY = new DefaultFiddConnectorFactory();
+    final static BaseRepositories BASE_REPOSITORIES = new DefaultBaseRepositories();
+    final static int DEFAULT_HTTP_PORT = 80;
 
     @Nullable Stage mainStage;
+    @Nullable BaseRepositories repositories;
+    @Nullable FiddContentServiceCache fiddContentServiceCache;
+    @Nullable String fiddApiHost;
+    @Nullable Integer fiddApiPort;
 
+    @FXML @Nullable TabPane mainTabPane;
     @FXML @Nullable AnchorPane topPane;
     @FXML @Nullable TableView<FiddConnection> fiddConnectionTableView;
     @FXML @Nullable CheckBox encryptDecryptFiddConnectionsCheckBox;
@@ -82,8 +101,13 @@ public class MainForm {
         alert.showAndWait();
     }
 
-    public void init(Stage mainStage) {
+    public void init(Stage mainStage, BaseRepositories repositories, FiddContentServiceCache fiddContentServiceCache,
+                     String fiddApiHost, @Nullable Integer fiddApiPort) {
         this.mainStage = mainStage;
+        this.repositories = repositories;
+        this.fiddContentServiceCache = fiddContentServiceCache;
+        this.fiddApiHost = fiddApiHost;
+        this.fiddApiPort = fiddApiPort == null || fiddApiPort == DEFAULT_HTTP_PORT ? null : fiddApiPort;
 
         keyProvider = buildMainKeyProvider(mainStage);
         AnchorPane keyProviderForm = keyProvider.tabContent();
@@ -119,18 +143,61 @@ public class MainForm {
 
     // ---------- Fidd Connection operations ----------
 
+    public void fiddConnectionDoubleClick(MouseEvent event) {
+        if (event.getClickCount() == 2) {
+            openFiddConnection();
+        }
+    }
+
     public void openFiddConnection() {
         try {
             FiddConnection selectedFiddConnection = checkNotNull(fiddConnectionTableView).getSelectionModel().getSelectedItem();
             if (selectedFiddConnection != null) {
-                checkNotNull(fiddConnections).remove(selectedFiddConnection);
-                checkNotNull(fiddConnectionTableView).refresh();
+                openFiddTab(selectedFiddConnection);
+            } else {
+                JavaFxUtils.showMessage("Fidd Connection not selected.");
             }
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error Opening Fidd connection: " + e, ButtonType.OK);
             LOGGER.error("Error Opening Fidd connection: ", e);
             alert.showAndWait();
         }
+    }
+
+    public void openFiddTab(FiddConnection fiddConnection) {
+        if (keyProvider == null) {
+            throw new RuntimeException("Key Provider not found.");
+        }
+        KeyContext keyContext = keyProvider.getKeyContext();
+
+        if (keyContext instanceof RsaKeyContext) {
+            X509Certificate certificate = ((RsaKeyContext) keyContext).certificate();
+            PrivateKey key = ((RsaKeyContext) keyContext).privateKey();
+
+            FiddConnector fiddConnector = FIDD_CONNECTOR_FACTORY.createConnector(fiddConnection.url());
+            FiddContentService fiddContentService = new WrapperFiddContentService(BASE_REPOSITORIES, fiddConnector, certificate, key);
+
+            FiddViewForm fiddViewForm = new FiddViewForm(fiddConnection.name(), fiddContentService, checkNotNull(fiddApiHost), fiddApiPort);
+            fiddViewForm.setStage(checkNotNull(mainStage));
+            final Tab tab = new Tab(fiddConnection.name(), fiddViewForm);
+            tab.setClosable(true);
+
+            if (!checkNotNull(fiddContentServiceCache).addServiceIfAbsent(fiddConnection.name(), fiddContentService)) {
+                JavaFxUtils.showMessage("Fidd Connection with name '" + fiddConnection.name() + "' is already opened.");
+                return;
+            }
+
+            tab.onClosedProperty().set(event -> checkNotNull(fiddContentServiceCache).removeService(fiddConnection.name()));
+
+            addTab(tab);
+        } else {
+            throw new RuntimeException("Unsupported Key Context: " + keyContext.getClass());
+        }
+    }
+
+    void addTab(Tab tab) {
+        checkNotNull(mainTabPane).getTabs().add(tab);
+        mainTabPane.getSelectionModel().select(tab);
     }
 
     protected void addFiddConnection(FiddConnection fiddConnection) {
@@ -411,9 +478,6 @@ public class MainForm {
                 checkNotNull(fiddConnections).clear();
                 checkNotNull(fiddConnections).addAll(fiddConnectionList.fiddConnectionList());
                 checkNotNull(fiddConnectionTableView).refresh();
-
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Fidd Connections file loaded successfully " + fiddConnectionListFilePath, ButtonType.OK);
-                alert.showAndWait();
             }
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error loading Fidd Connections file: " + e, ButtonType.OK);

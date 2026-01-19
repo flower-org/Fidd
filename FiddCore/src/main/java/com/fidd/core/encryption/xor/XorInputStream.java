@@ -6,11 +6,18 @@ import java.io.InputStream;
 public class XorInputStream extends InputStream {
     private final InputStream wrapped;
     private final byte[] key;
-    private int keyPos = 0;
+    private long keyPos;
 
     public XorInputStream(InputStream wrapped, byte[] key) {
         this.wrapped = wrapped;
         this.key = key;
+        this.keyPos = 0;
+    }
+
+    public XorInputStream(InputStream wrapped, byte[] key, long keyPos) {
+        this.wrapped = wrapped;
+        this.key = key;
+        this.keyPos = keyPos;
     }
 
     @Override
@@ -20,7 +27,7 @@ public class XorInputStream extends InputStream {
             return -1;
         }
         // XOR with current key byte
-        int result = (b ^ key[keyPos & (key.length - 1)]) & 0xFF;
+        int result = (b ^ key[(int)keyPos & (key.length - 1)]) & 0xFF;
         keyPos++;
         return result;
     }
@@ -32,7 +39,7 @@ public class XorInputStream extends InputStream {
             return -1;
         }
         for (int i = 0; i < count; i++) {
-            buf[off + i] = (byte) (buf[off + i] ^ key[(keyPos + i) % key.length]);
+            buf[off + i] = (byte) (buf[off + i] ^ key[(int)((keyPos + i) % key.length)]);
         }
         keyPos += count;
         return count;

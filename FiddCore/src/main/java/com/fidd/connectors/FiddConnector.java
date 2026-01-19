@@ -11,7 +11,7 @@ public interface FiddConnector {
     List<Long> getMessageNumbersBefore(long messageNumber, int count, boolean inclusive);
     /** Descending order */
     List<Long> getMessageNumbersBetween(long latestMessage, boolean inclusiveLatest,
-                                        long earliestMessage, boolean inclusiveEarliest);
+                                        long earliestMessage, boolean inclusiveEarliest, int count, boolean getLatest);
 
     /** Returns empty list if subscriber has no key candidates, which can also happen in case
      * when Fidd Key is stored unencrypted */

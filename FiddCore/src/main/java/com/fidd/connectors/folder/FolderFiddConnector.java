@@ -6,9 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -16,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -86,7 +89,15 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     protected static TreeMap<Long, Long> getMessagesNumberMap(Path fiddPath) {
-        TreeMap<Long, Long> messages = new TreeMap<>((o1, o2) -> Long.compare(o2, o1));
+        return getMessagesNumberMap(fiddPath, (o1, o2) -> Long.compare(o2, o1));
+    }
+
+    protected static TreeMap<Long, Long> getMessagesNumberMapEarliestFirst(Path fiddPath) {
+        return getMessagesNumberMap(fiddPath, Long::compare);
+    }
+
+    protected static TreeMap<Long, Long> getMessagesNumberMap(Path fiddPath, Comparator<Long> comparator) {
+        TreeMap<Long, Long> messages = new TreeMap<>(comparator);
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(fiddPath, Files::isDirectory)) {
             for (Path path : directoryStream) {
                 try {
@@ -124,21 +135,47 @@ public class FolderFiddConnector implements FiddConnector {
     }
 
     protected static List<Long> getMessageNumbersBetween(Path fiddPath, long latestMessage, boolean inclusiveLatest,
-                                                         long earliestMessage, boolean inclusiveEarliest) {
-        TreeMap<Long, Long> messages = getMessagesNumberMap(fiddPath);
-
-        SortedMap<Long, Long> tailMap = messages.tailMap(latestMessage, inclusiveLatest);
-
+                                                         long earliestMessage, boolean inclusiveEarliest, int count, boolean getLatest) {
         List<Long> result = new ArrayList<>();
-        for (Long key : tailMap.keySet()) {
-            if (key > earliestMessage) {
-                result.add(key);
-            } else if (key == earliestMessage) {
-                if (inclusiveEarliest) {
-                    result.add(key);
+        int addedCount = 0;
+
+        if (getLatest) {
+            TreeMap<Long, Long> messages = getMessagesNumberMap(fiddPath);
+            SortedMap<Long, Long> tailMap = messages.tailMap(latestMessage, inclusiveLatest);
+            for (Long key : tailMap.keySet()) {
+                if (addedCount >= count) {
+                    break;
                 }
-            } else {
-                break;
+                if (key > earliestMessage) {
+                    result.add(key);
+                    addedCount++;
+                } else if (key == earliestMessage) {
+                    if (inclusiveEarliest) {
+                        result.add(key);
+                        addedCount++;
+                    }
+                } else {
+                    break;
+                }
+            }
+        } else {
+            TreeMap<Long, Long> messages = getMessagesNumberMapEarliestFirst(fiddPath);
+            SortedMap<Long, Long> tailMap = messages.tailMap(earliestMessage, inclusiveEarliest);
+            for (Long key : tailMap.keySet()) {
+                if (addedCount >= count) {
+                    break;
+                }
+                if (key < latestMessage) {
+                    result.add(0, key);
+                    addedCount++;
+                } else if (key == latestMessage) {
+                    if (inclusiveLatest) {
+                        result.add(0, key);
+                        addedCount++;
+                    }
+                } else {
+                    break;
+                }
             }
         }
 
@@ -147,6 +184,16 @@ public class FolderFiddConnector implements FiddConnector {
 
     protected final String fiddFolderPath;
     protected final Path fiddFolder;
+
+    public FolderFiddConnector(URL fiddFolderUrl) {
+        try {
+            Path fiddFolder = new File(fiddFolderUrl.toURI()).toPath();
+            this.fiddFolder = fiddFolder;
+            this.fiddFolderPath = fiddFolder.toAbsolutePath().toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public FolderFiddConnector(String fiddFolderPath) {
         this.fiddFolderPath = fiddFolderPath;
@@ -174,8 +221,8 @@ public class FolderFiddConnector implements FiddConnector {
 
     @Override
     public List<Long> getMessageNumbersBetween(long latestMessage, boolean inclusiveLatest,
-                                               long earliestMessage, boolean inclusiveEarliest) {
-        return getMessageNumbersBetween(fiddFolder, latestMessage, inclusiveLatest, earliestMessage, inclusiveEarliest);
+                                               long earliestMessage, boolean inclusiveEarliest, int count, boolean getLatest) {
+        return getMessageNumbersBetween(fiddFolder, latestMessage, inclusiveLatest, earliestMessage, inclusiveEarliest, count, getLatest);
     }
 
     @Override
@@ -279,7 +326,7 @@ public class FolderFiddConnector implements FiddConnector {
             if (!Files.exists(messageFilePath) || !Files.isRegularFile(messageFilePath)) {
                 throw new FileNotFoundException("Message file not found: " + messageNumber);
             }
-            return new SubFileInputStream(messageFilePath.toFile(), offset, length);
+            return SubFileInputStream.of(messageFilePath.toFile(), offset, length);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

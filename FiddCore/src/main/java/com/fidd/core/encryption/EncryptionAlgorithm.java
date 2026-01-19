@@ -8,6 +8,8 @@ import java.io.OutputStream;
 import java.util.List;
 
 public interface EncryptionAlgorithm extends NamedEntry {
+    default long plaintextLengthToCiphertextLength(long plaintextLength) { return plaintextLength; }
+
     String UNENCRYPTED = "UNENCRYPTED";
 
     interface CrcCallback {
