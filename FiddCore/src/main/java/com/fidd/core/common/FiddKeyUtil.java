@@ -23,7 +23,7 @@ public class FiddKeyUtil {
     public final static Logger LOGGER = LoggerFactory.getLogger(FiddKeyUtil.class);
 
     public static @Nullable byte[] loadFiddKeyBytes(BaseRepositories baseRepositories, long messageNumber, FiddConnector fiddConnector,
-                                                    X509Certificate userCert, @Nullable PrivateKey privateKey) throws Exception {
+                                                    X509Certificate userCert, PrivateKey privateKey) throws Exception {
         long messageLength = fiddConnector.getFiddMessageSize(messageNumber);
         String footprint = FiddKeyLookup.createLookupFootprint(baseRepositories, userCert, messageNumber, messageLength);
         List<byte[]> candidates = fiddConnector.getFiddKeyCandidates(messageNumber, footprint.getBytes(StandardCharsets.UTF_8));

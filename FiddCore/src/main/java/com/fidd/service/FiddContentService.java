@@ -1,7 +1,6 @@
 package com.fidd.service;
 
 import com.fidd.core.fiddfile.FiddFileMetadata;
-import com.fidd.core.logicalfile.LogicalFileMetadata;
 
 import javax.annotation.Nullable;
 import java.io.InputStream;
@@ -18,7 +17,7 @@ public interface FiddContentService {
 
     // TODO: specific access errors?
     @Nullable FiddFileMetadata getFiddFileMetadata(long messageNumber);
-    @Nullable List<LogicalFileInfo> getLogicalFiles(long messageNumber);
+    @Nullable List<LogicalFileInfo> getLogicalFileInfos(long messageNumber);
 
     @Nullable InputStream readLogicalFile(long messageNumber, LogicalFileInfo logicalFileInfo);
     @Nullable InputStream readLogicalFileChunk(long messageNumber, LogicalFileInfo logicalFileInfo, long offset, long length);
