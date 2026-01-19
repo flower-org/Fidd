@@ -10,6 +10,7 @@ import com.fidd.core.connection.FiddConnectionList;
 import com.fidd.core.connection.yaml.YamlFiddConnectionListSerializer;
 import com.fidd.service.FiddContentService;
 import com.fidd.service.wrapper.WrapperFiddContentService;
+import com.fidd.view.serviceCache.FiddContentServiceCache;
 import com.flower.crypt.HybridAesEncryptor;
 import com.flower.crypt.keys.KeyContext;
 import com.flower.crypt.keys.RsaKeyContext;
@@ -75,6 +76,8 @@ public class MainForm {
     final static BaseRepositories BASE_REPOSITORIES = new DefaultBaseRepositories();
 
     @Nullable Stage mainStage;
+    @Nullable BaseRepositories repositories;
+    @Nullable FiddContentServiceCache fiddContentServiceCache;
 
     @FXML @Nullable TabPane mainTabPane;
     @FXML @Nullable AnchorPane topPane;
@@ -95,8 +98,10 @@ public class MainForm {
         alert.showAndWait();
     }
 
-    public void init(Stage mainStage) {
+    public void init(Stage mainStage, BaseRepositories repositories, FiddContentServiceCache fiddContentServiceCache) {
         this.mainStage = mainStage;
+        this.repositories = repositories;
+        this.fiddContentServiceCache = fiddContentServiceCache;
 
         keyProvider = buildMainKeyProvider(mainStage);
         AnchorPane keyProviderForm = keyProvider.tabContent();
@@ -170,6 +175,13 @@ public class MainForm {
             fiddViewForm.setStage(checkNotNull(mainStage));
             final Tab tab = new Tab(fiddConnection.name(), fiddViewForm);
             tab.setClosable(true);
+
+            if (!checkNotNull(fiddContentServiceCache).addServiceIfAbsent(fiddConnection.name(), fiddContentService)) {
+                JavaFxUtils.showMessage("Fidd Connection with name '" + fiddConnection.name() + "' is already opened.");
+                return;
+            }
+
+            tab.onClosedProperty().set(event -> checkNotNull(fiddContentServiceCache).removeService(fiddConnection.name()));
 
             addTab(tab);
         } else {
