@@ -74,10 +74,13 @@ public class MainForm {
                     "*" + ENCRYPTED_FIDD_CONNECTION_LIST_EXT);
     final static FiddConnectorFactory FIDD_CONNECTOR_FACTORY = new DefaultFiddConnectorFactory();
     final static BaseRepositories BASE_REPOSITORIES = new DefaultBaseRepositories();
+    final static int DEFAULT_HTTP_PORT = 80;
 
     @Nullable Stage mainStage;
     @Nullable BaseRepositories repositories;
     @Nullable FiddContentServiceCache fiddContentServiceCache;
+    @Nullable String fiddApiHost;
+    @Nullable Integer fiddApiPort;
 
     @FXML @Nullable TabPane mainTabPane;
     @FXML @Nullable AnchorPane topPane;
@@ -98,10 +101,13 @@ public class MainForm {
         alert.showAndWait();
     }
 
-    public void init(Stage mainStage, BaseRepositories repositories, FiddContentServiceCache fiddContentServiceCache) {
+    public void init(Stage mainStage, BaseRepositories repositories, FiddContentServiceCache fiddContentServiceCache,
+                     String fiddApiHost, @Nullable Integer fiddApiPort) {
         this.mainStage = mainStage;
         this.repositories = repositories;
         this.fiddContentServiceCache = fiddContentServiceCache;
+        this.fiddApiHost = fiddApiHost;
+        this.fiddApiPort = fiddApiPort == null || fiddApiPort == DEFAULT_HTTP_PORT ? null : fiddApiPort;
 
         keyProvider = buildMainKeyProvider(mainStage);
         AnchorPane keyProviderForm = keyProvider.tabContent();
@@ -171,7 +177,7 @@ public class MainForm {
             FiddConnector fiddConnector = FIDD_CONNECTOR_FACTORY.createConnector(fiddConnection.url());
             FiddContentService fiddContentService = new WrapperFiddContentService(BASE_REPOSITORIES, fiddConnector, certificate, key);
 
-            FiddViewForm fiddViewForm = new FiddViewForm(fiddConnection.name(), fiddContentService);
+            FiddViewForm fiddViewForm = new FiddViewForm(fiddConnection.name(), fiddContentService, checkNotNull(fiddApiHost), fiddApiPort);
             fiddViewForm.setStage(checkNotNull(mainStage));
             final Tab tab = new Tab(fiddConnection.name(), fiddViewForm);
             tab.setClosable(true);

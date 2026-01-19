@@ -40,7 +40,7 @@ public class App extends Application {
             LOGGER.info("Started HTTP API server on port {}", fiddApiServerPort);
 
             MainForm mainForm = fxmlLoader.getController();
-            mainForm.init(mainStage, repositories, fiddContentServiceCache);
+            mainForm.init(mainStage, repositories, fiddContentServiceCache, "localhost", fiddApiServerPort);
 
             Scene mainScene = new Scene(rootNode, 1024, 768);
 

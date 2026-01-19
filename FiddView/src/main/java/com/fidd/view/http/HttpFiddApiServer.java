@@ -19,7 +19,6 @@ import com.fidd.base.BaseRepositories;
 import com.fidd.view.serviceCache.FiddContentServiceCache;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -55,8 +54,8 @@ public final class HttpFiddApiServer {
     // Configure SSL.
     final SslContext sslCtx = ServerUtil.buildSslContext();
 
-    EventLoopGroup bossGroup = new NioEventLoopGroup();
-    EventLoopGroup workerGroup = new NioEventLoopGroup();
+    bossGroup = new NioEventLoopGroup();
+    workerGroup = new NioEventLoopGroup();
 
     ServerBootstrap b = new ServerBootstrap();
     b.group(bossGroup, workerGroup)

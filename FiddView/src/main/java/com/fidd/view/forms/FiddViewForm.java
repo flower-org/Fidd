@@ -13,6 +13,8 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -123,13 +125,14 @@ public class FiddViewForm extends AnchorPane  {
     @Nullable @FXML Button saveFileButton;
     @Nullable @FXML Button getFileUrlButton;
 
-    protected final String blogName;
+    protected final String fiddName;
+    protected final String fiddApiServerAndPort;
     protected final FiddContentService fiddContentService;
     protected final TreeItem<FiddTreeNode> rootItem;
     protected final AtomicBoolean loading = new AtomicBoolean(false);
     protected @Nullable Long lastContiguouslyLoadedMessageNumber = null;
 
-    public FiddViewForm(String fiddName, FiddContentService fiddContentService) {
+    public FiddViewForm(String fiddName, FiddContentService fiddContentService, String fiddApiHost, @Nullable Integer fiddApiPort) {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("FiddViewForm.fxml"));
         fxmlLoader.setRoot(this);
         fxmlLoader.setController(this);
@@ -140,7 +143,8 @@ public class FiddViewForm extends AnchorPane  {
             throw new RuntimeException(exception);
         }
 
-        this.blogName = fiddName;
+        this.fiddName = fiddName;
+        this.fiddApiServerAndPort = fiddApiHost + (fiddApiPort != null ? (":" + fiddApiPort) : "");
         this.fiddContentService = fiddContentService;
 
         FiddTreeNode rootNode = new FiddRootNode(fiddName);
@@ -155,6 +159,8 @@ public class FiddViewForm extends AnchorPane  {
                     FiddTreeNode node = treeItem.getValue();
                     if (node instanceof FiddExpandNode expandNode) {
                         expandNode.expand();
+                    } else if (node instanceof FiddFileNode) {
+                        getFileUrl();
                     }
                 }
             }
@@ -332,7 +338,7 @@ public class FiddViewForm extends AnchorPane  {
                 fiddFileMetadata = fiddContentService.getFiddFileMetadata(messageNumber);
                 lastContiguouslyLoadedMessageNumber = messageNumber;
             } catch (Exception e) {
-                LOGGER.debug("Message failed to load: blog " + blogName + " message " + messageNumber, e);
+                LOGGER.debug("Message failed to load: fidd " + fiddName + " message " + messageNumber, e);
             }
 
             String treeNodeText = "#" + messageNumber + " " +
@@ -389,12 +395,21 @@ public class FiddViewForm extends AnchorPane  {
         }
     }
 
+    public void copyToClipboard(String text) {
+        ClipboardContent content = new ClipboardContent();
+        content.putString(text);
+        Clipboard.getSystemClipboard().setContent(content);
+    }
+
     public void getFileUrl() {
         TreeItem<FiddTreeNode> treeItem = checkNotNull(fiddStructureTreeView).getSelectionModel().getSelectedItem();
         if (treeItem != null) {
             FiddTreeNode node = treeItem.getValue();
             if (node instanceof FiddFileNode fileNode) {
-                // TODO: implement
+                long messageNumber = findMessageNumber(treeItem);
+                String path = "http://" + fiddApiServerAndPort + "/" + fiddName + "/" + messageNumber + "/" + fileNode.logicalFileInfo.metadata().filePath();
+                copyToClipboard(path);
+                JavaFxUtils.showMessage("Copied URL to clipboard", "URL copied to clipboard:\n" + path);
             }
         }
     }

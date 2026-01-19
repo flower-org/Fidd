@@ -151,8 +151,9 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
       return;
     }
 
-    // TODO: maybe just set to false?
-    final boolean keepAlive = HttpUtil.isKeepAlive(request);
+    // TODO: for now just setting to false to minimize hanging connections
+    //final boolean keepAlive = HttpUtil.isKeepAlive(request);
+    final boolean keepAlive = false;
     final String uri = request.uri();
     final String path = sanitizeUri(uri);
     if (path == null) {
