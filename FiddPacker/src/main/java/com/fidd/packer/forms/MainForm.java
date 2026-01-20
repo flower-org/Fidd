@@ -647,7 +647,7 @@ public class MainForm {
 
             X509Certificate currentCert = null;
             PrivateKey privateKey = null;
-            if (createFileAndKeySignatures || addFiddFileMetadataSignature || addLogicalFileSignatures || addLogicalFileMetadataSignatures) {
+            if (createFileAndKeySignatures || addFiddFileMetadataSignature || addLogicalFileSignatures || addLogicalFileMetadataSignatures || includePublicKey) {
                 try {
                     Pair<X509Certificate, PrivateKey> pair = getCurrentCertificate();
                     if (pair == null) {
