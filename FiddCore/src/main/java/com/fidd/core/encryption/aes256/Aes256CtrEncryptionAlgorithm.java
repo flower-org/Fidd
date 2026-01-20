@@ -147,7 +147,9 @@ public class Aes256CtrEncryptionAlgorithm implements RandomAccessEncryptionAlgor
       }
     } catch (Exception e)
     {
-      throw new RuntimeException(e);
+      if (!allowPartial) {
+        throw new RuntimeException(e);
+      }
     }
 
     return totalBytesWritten;
@@ -172,47 +174,132 @@ public class Aes256CtrEncryptionAlgorithm implements RandomAccessEncryptionAlgor
   }
 
   @Override
-  public byte[] randomAccessDecrypt(byte[] keyData, byte[] ciphertext, long offset, int length)
+  public byte[] randomAccessDecrypt(byte[] keyData,
+                                    byte[] ciphertext,
+                                    long plaintextOffset,
+                                    long plaintextLength)
   {
-    if (offset < 0 || length < 0) throw new IllegalArgumentException("offset/length must be non-negative");
-    if (offset + length > ciphertext.length)
+    if (plaintextOffset < 0 || plaintextLength < 0) {
+      throw new IllegalArgumentException("offset/length must be non-negative");
+    }
+    if (plaintextLength == 0) {
+      return new byte[0];
+    }
+
+    if (plaintextOffset > Integer.MAX_VALUE || plaintextLength > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("offset/length too large for in-memory ciphertext");
+    }
+
+    int offset = (int) plaintextOffset;
+    int length = (int) plaintextLength;
+
+    if ((long) offset + (long) length > ciphertext.length) {
       throw new IllegalArgumentException("Requested range is out of ciphertext bounds");
-    if (length == 0) return new byte[0];
+    }
 
     Aes256KeyAndIv keyAndIv = Aes256KeyAndIv.deserialize(keyData);
     SecretKeySpec key = new SecretKeySpec(keyAndIv.aes256Key(), AES);
 
-    try
-    {
+    try {
       return randomAccessDecryptBytes(key, keyAndIv.aes256Iv(), ciphertext, offset, length);
-    } catch (Exception e)
-    {
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
   public void randomAccessDecrypt(byte[] keyData,
-                                  long offset,
-                                  int length,
+                                  long plaintextOffset,
+                                  long plaintextLength,
                                   InputStream ciphertextAtOffset,
                                   OutputStream plaintext)
   {
-    if (offset < 0 || length < 0) throw new IllegalArgumentException("offset/length must be non-negative");
-    if (length == 0) return;
+    if (plaintextOffset < 0 || plaintextLength < 0) {
+      throw new IllegalArgumentException("offset/length must be non-negative");
+    }
+    if (plaintextLength == 0) return;
 
-    Aes256KeyAndIv keyAndIv = Aes256KeyAndIv.deserialize(keyData);
-    SecretKeySpec key = new SecretKeySpec(keyAndIv.aes256Key(), AES);
+    try (InputStream in = getRandomAccessDecryptedStream(keyData, plaintextOffset, plaintextLength, ciphertextAtOffset)) {
+      byte[] buf = new byte[1024];
+      long remaining = plaintextLength;
 
-    try
-    {
-      randomAccessDecryptStream(key, keyAndIv.aes256Iv(), offset, length, ciphertextAtOffset, plaintext);
-    } catch (Exception e)
-    {
+      while (remaining > 0) {
+        int toRead = (int) Math.min(buf.length, remaining);
+        int r = in.read(buf, 0, toRead);
+        if (r == -1) {
+          throw new IOException("Unexpected end of ciphertext stream");
+        }
+        plaintext.write(buf, 0, r);
+        remaining -= r;
+      }
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
+  @Override
+  public InputStream getRandomAccessDecryptedStream(byte[] keyData,
+                                                    long plaintextOffset,
+                                                    long plaintextLength,
+                                                    InputStream ciphertextAtOffset)
+  {
+    if (plaintextOffset < 0 || plaintextLength < 0) {
+      throw new IllegalArgumentException("offset/length must be non-negative");
+    }
+    if (plaintextLength == 0) {
+      return InputStream.nullInputStream();
+    }
+
+    Aes256KeyAndIv keyAndIv = Aes256KeyAndIv.deserialize(keyData);
+    SecretKeySpec key = new SecretKeySpec(keyAndIv.aes256Key(), AES);
+
+    final long startBlock = plaintextOffset / BLOCK_SIZE;
+    final int startOffsetInBlock = (int) (plaintextOffset % BLOCK_SIZE);
+
+    try {
+      byte[] ivForBlock = addToIv128(keyAndIv.aes256Iv(), startBlock);
+
+      Cipher cipher = Cipher.getInstance(AES_CTR_NO_PADDING);
+      cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(ivForBlock));
+
+      if (startOffsetInBlock > 0) {
+        byte[] skip = new byte[startOffsetInBlock];
+        cipher.update(skip);
+      }
+
+      CipherInputStream cis = new CipherInputStream(ciphertextAtOffset, cipher);
+
+      return new InputStream() {
+        private long remaining = plaintextLength;
+
+        @Override
+        public int read() throws IOException {
+          if (remaining <= 0) return -1;
+          int b = cis.read();
+          if (b == -1) return -1;
+          remaining--;
+          return b;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+          if (remaining <= 0) return -1;
+          int toRead = (int) Math.min(len, remaining);
+          int r = cis.read(b, off, toRead);
+          if (r == -1) return -1;
+          remaining -= r;
+          return r;
+        }
+
+        @Override
+        public void close() throws IOException {
+          cis.close();
+        }
+      };
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
   private static byte[] randomAccessDecryptBytes(SecretKeySpec key,
                                                  byte[] iv,
                                                  byte[] ciphertext,
@@ -262,52 +349,6 @@ public class Aes256CtrEncryptionAlgorithm implements RandomAccessEncryptionAlgor
     return result;
   }
 
-  private static void randomAccessDecryptStream(SecretKeySpec key,
-                                                byte[] iv,
-                                                long offset,
-                                                int length,
-                                                InputStream ciphertextAtOffset,
-                                                OutputStream plaintext) throws Exception
-  {
-    long startBlock = offset / BLOCK_SIZE;
-    int startOffsetInBlock = (int) (offset % BLOCK_SIZE);
-
-    byte[] ivForBlock = addToIv128(iv, startBlock);
-
-    Cipher cipher = Cipher.getInstance(AES_CTR_NO_PADDING);
-    cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(ivForBlock));
-
-    byte[] zeros = new byte[BLOCK_SIZE];
-    byte[] keystreamBlock = new byte[BLOCK_SIZE];
-
-    int remaining = length;
-    int blockInnerOffset = startOffsetInBlock;
-
-    byte[] ctBuf = new byte[BLOCK_SIZE];
-    byte[] ptBuf = new byte[BLOCK_SIZE];
-
-    while (remaining > 0)
-    {
-      cipher.update(zeros, 0, BLOCK_SIZE, keystreamBlock, 0);
-
-      int bytesInThisBlock = Math.min(BLOCK_SIZE - blockInnerOffset, remaining);
-
-      readFully(ciphertextAtOffset, ctBuf, bytesInThisBlock);
-
-      for (int i = 0; i < bytesInThisBlock; i++)
-      {
-        ptBuf[i] = (byte) (
-          (ctBuf[i] & 0xFF) ^
-            (keystreamBlock[blockInnerOffset + i] & 0xFF)
-        );
-      }
-      plaintext.write(ptBuf, 0, bytesInThisBlock);
-
-      remaining -= bytesInThisBlock;
-      blockInnerOffset = 0;
-    }
-  }
-
   private static byte[] addToIv128(byte[] iv, long blockIndex)
   {
     if (iv.length != 16) throw new IllegalArgumentException("IV must be 16 bytes");
@@ -325,16 +366,5 @@ public class Aes256CtrEncryptionAlgorithm implements RandomAccessEncryptionAlgor
 
     if (carry != 0) throw new IllegalArgumentException("Counter overflow");
     return out;
-  }
-
-  private static void readFully(InputStream in, byte[] buf, int len) throws IOException
-  {
-    int readTotal = 0;
-    while (readTotal < len)
-    {
-      int r = in.read(buf, readTotal, len - readTotal);
-      if (r == -1) throw new IOException("Unexpected end of ciphertext stream");
-      readTotal += r;
-    }
   }
 }

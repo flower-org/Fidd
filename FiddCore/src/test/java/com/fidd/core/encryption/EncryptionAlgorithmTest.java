@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class EncryptionAlgorithmTest {
+class EncryptionAlgorithmTest {
     static Stream<Arguments> encryptionAlgorithms() {
         return Stream.of(
                 Arguments.of(new Aes256CbcEncryptionAlgorithm()),
