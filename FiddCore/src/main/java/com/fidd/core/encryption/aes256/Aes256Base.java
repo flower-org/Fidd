@@ -15,6 +15,8 @@ import java.io.OutputStream;
 import java.util.List;
 
 abstract class Aes256Base implements EncryptionAlgorithm {
+    public static final int AES_BUFFER_SIZE = 1024;
+
     abstract String keySpec();
     abstract String transform();
 
@@ -59,7 +61,7 @@ abstract class Aes256Base implements EncryptionAlgorithm {
                 Cipher cipher = Cipher.getInstance(transform());
                 cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, new IvParameterSpec(keyAndIv.aes256Iv()));
                 for (InputStream plaintext : plaintexts) {
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[AES_BUFFER_SIZE];
                     int bytesRead;
 
                     while ((bytesRead = plaintext.read(buffer)) != -1) {
@@ -97,7 +99,7 @@ abstract class Aes256Base implements EncryptionAlgorithm {
                 cipher = Cipher.getInstance(transform());
                 cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(keyAndIv.aes256Iv()));
 
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[AES_BUFFER_SIZE];
                 int bytesRead;
 
                 while ((bytesRead = ciphertext.read(buffer)) != -1) {

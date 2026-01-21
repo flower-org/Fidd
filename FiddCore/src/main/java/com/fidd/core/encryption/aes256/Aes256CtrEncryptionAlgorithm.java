@@ -6,12 +6,13 @@ import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class Aes256CtrEncryptionAlgorithm extends Aes256Base implements RandomAccessEncryptionAlgorithm
-{
+public class Aes256CtrEncryptionAlgorithm extends Aes256Base implements RandomAccessEncryptionAlgorithm {
   public static final String AES = "AES";
   public static final String AES_CTR_NO_PADDING = "AES/CTR/NoPadding";
   private static final int BLOCK_SIZE = 16;
@@ -30,32 +31,14 @@ public class Aes256CtrEncryptionAlgorithm extends Aes256Base implements RandomAc
                                     byte[] ciphertext,
                                     long plaintextOffset,
                                     long plaintextLength) {
-    if (plaintextOffset < 0 || plaintextLength < 0) {
-      throw new IllegalArgumentException("offset/length must be non-negative");
-    }
-    if (plaintextLength == 0) {
-      return new byte[0];
-    }
+    InputStream inputStream = new ByteArrayInputStream(ciphertext,
+            (int)plaintextPosToCiphertextPos(plaintextOffset),
+            (int)plaintextLengthToCiphertextLength(plaintextLength));
 
-    if (plaintextOffset > Integer.MAX_VALUE || plaintextLength > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("offset/length too large for in-memory ciphertext");
-    }
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-    int offset = (int) plaintextOffset;
-    int length = (int) plaintextLength;
-
-    if ((long) offset + (long) length > ciphertext.length) {
-      throw new IllegalArgumentException("Requested range is out of ciphertext bounds");
-    }
-
-    Aes256KeyAndIv keyAndIv = Aes256KeyAndIv.deserialize(keyData);
-    SecretKeySpec key = new SecretKeySpec(keyAndIv.aes256Key(), AES);
-
-    try {
-      return randomAccessDecryptBytes(key, keyAndIv.aes256Iv(), ciphertext, offset, length);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    randomAccessDecrypt(keyData, plaintextOffset, plaintextLength, inputStream, outputStream);
+    return outputStream.toByteArray();
   }
 
   @Override
@@ -69,18 +52,15 @@ public class Aes256CtrEncryptionAlgorithm extends Aes256Base implements RandomAc
     }
     if (plaintextLength == 0) return;
 
-    try (InputStream in = getRandomAccessDecryptedStream(keyData, plaintextOffset, plaintextLength, ciphertextAtOffset)) {
-      byte[] buf = new byte[1024];
-      long remaining = plaintextLength;
+    InputStream decryptedStream = getRandomAccessDecryptedStream(keyData, plaintextOffset, plaintextLength, ciphertextAtOffset);
+    try (InputStream in = new SubInputStream(decryptedStream, 0, plaintextLength);
+         decryptedStream) {
+      byte[] buf = new byte[AES_BUFFER_SIZE];
 
-      while (remaining > 0) {
-        int toRead = (int) Math.min(buf.length, remaining);
-        int r = in.read(buf, 0, toRead);
-        if (r == -1) {
-          throw new IOException("Unexpected end of ciphertext stream");
-        }
+      while (true) {
+        int r = in.read(buf);
+        if (r == -1) { break; }
         plaintext.write(buf, 0, r);
-        remaining -= r;
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -121,52 +101,6 @@ public class Aes256CtrEncryptionAlgorithm extends Aes256Base implements RandomAc
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private static byte[] randomAccessDecryptBytes(SecretKeySpec key,
-                                                 byte[] iv,
-                                                 byte[] ciphertext,
-                                                 long offset,
-                                                 int length) throws Exception {
-    byte[] result = new byte[length];
-
-    long startBlock = offset / BLOCK_SIZE;
-    int startOffsetInBlock = (int) (offset % BLOCK_SIZE);
-
-    byte[] ivForBlock = addToIv128(iv, startBlock);
-
-    Cipher cipher = Cipher.getInstance(AES_CTR_NO_PADDING);
-    cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(ivForBlock)); // CTR: keystream
-
-    byte[] zeros = new byte[BLOCK_SIZE];
-    byte[] keystreamBlock = new byte[BLOCK_SIZE];
-
-    int remaining = length;
-    int outPos = 0;
-    long ctPos = offset;
-    int blockInnerOffset = startOffsetInBlock;
-
-    while (remaining > 0) {
-      // 0 XOR keystream = keystream
-      cipher.update(zeros, 0, BLOCK_SIZE, keystreamBlock, 0);
-
-      int bytesInThisBlock = Math.min(BLOCK_SIZE - blockInnerOffset, remaining);
-
-      for (int i = 0; i < bytesInThisBlock; i++) {
-        int cipherIndex = (int) ctPos + i;
-        result[outPos + i] = (byte) (
-          (ciphertext[cipherIndex] & 0xFF) ^
-            (keystreamBlock[blockInnerOffset + i] & 0xFF)
-        );
-      }
-
-      remaining -= bytesInThisBlock;
-      outPos += bytesInThisBlock;
-      ctPos += bytesInThisBlock;
-      blockInnerOffset = 0;
-    }
-
-    return result;
   }
 
   private static byte[] addToIv128(byte[] iv, long blockIndex) {
