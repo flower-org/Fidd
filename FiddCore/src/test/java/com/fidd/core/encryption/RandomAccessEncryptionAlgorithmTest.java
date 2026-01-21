@@ -1,7 +1,9 @@
 package com.fidd.core.encryption;
 
+import com.fidd.core.encryption.aes256.Aes256CtrEncryptionAlgorithm;
 import com.fidd.core.encryption.unencrypted.NoEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
+import com.fidd.core.random.plain.PlainRandomGeneratorType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -15,9 +17,10 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-public class RandomAccessEncryptionAlgorithmTest {
+class RandomAccessEncryptionAlgorithmTest {
     static Stream<Arguments> randomAccessEncryptionAlgorithms() {
         return Stream.of(
+                Arguments.of(new Aes256CtrEncryptionAlgorithm()),
                 Arguments.of(new XorEncryptionAlgorithm()),
                 Arguments.of(new NoEncryptionAlgorithm())
         );
@@ -26,7 +29,7 @@ public class RandomAccessEncryptionAlgorithmTest {
     @ParameterizedTest
     @MethodSource("randomAccessEncryptionAlgorithms")
     void testRandomAccessDecryptByteArray(RandomAccessEncryptionAlgorithm algo) {
-        byte[] key = "fixed-test-key-1234567890123456".getBytes(); // 32 bytes
+        byte[] key = algo.generateNewKeyData(new PlainRandomGeneratorType());
         byte[] plaintext = "HelloRandomAccessDecryptionWorld!".getBytes();
 
         // Encrypt full plaintext
@@ -47,7 +50,7 @@ public class RandomAccessEncryptionAlgorithmTest {
     @ParameterizedTest
     @MethodSource("randomAccessEncryptionAlgorithms")
     void testRandomAccessDecryptStream(RandomAccessEncryptionAlgorithm algo) {
-        byte[] key = "fixed-test-key-1234567890123456".getBytes(); // 32 bytes
+        byte[] key = algo.generateNewKeyData(new PlainRandomGeneratorType());
         byte[] plaintext = "StreamingRandomAccessDecryptionTest!".getBytes();
 
         // Encrypt full plaintext
@@ -76,7 +79,7 @@ public class RandomAccessEncryptionAlgorithmTest {
     @ParameterizedTest
     @MethodSource("randomAccessEncryptionAlgorithms")
     void testRandomAccessDecryptInputStream(RandomAccessEncryptionAlgorithm algo) throws IOException {
-        byte[] key = "fixed-test-key-1234567890123456".getBytes(); // 32 bytes
+        byte[] key = algo.generateNewKeyData(new PlainRandomGeneratorType());
         byte[] plaintext = "StreamingRandomAccessDecryptionTest!".getBytes();
 
         // Encrypt full plaintext
@@ -102,7 +105,7 @@ public class RandomAccessEncryptionAlgorithmTest {
     @ParameterizedTest
     @MethodSource("randomAccessEncryptionAlgorithms")
     void testRandomAccessDecryptFullRoundTrip(RandomAccessEncryptionAlgorithm algo) {
-        byte[] key = "another-fixed-test-key-1234567890".getBytes(); // 32 bytes
+        byte[] key = algo.generateNewKeyData(new PlainRandomGeneratorType());
         byte[] plaintext = "FullRoundTripVerification".getBytes();
 
         // Encrypt

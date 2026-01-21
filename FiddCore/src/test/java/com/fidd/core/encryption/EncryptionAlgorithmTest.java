@@ -1,9 +1,11 @@
 package com.fidd.core.encryption;
 
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
+import com.fidd.core.encryption.aes256.Aes256CtrEncryptionAlgorithm;
 import com.fidd.core.encryption.unencrypted.NoEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
 import com.fidd.core.random.plain.PlainRandomGeneratorType;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -11,15 +13,17 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class EncryptionAlgorithmTest {
+class EncryptionAlgorithmTest {
     static Stream<Arguments> encryptionAlgorithms() {
         return Stream.of(
                 Arguments.of(new Aes256CbcEncryptionAlgorithm()),
+          Arguments.of(new Aes256CtrEncryptionAlgorithm()),
                 Arguments.of(new XorEncryptionAlgorithm()),
                 Arguments.of(new NoEncryptionAlgorithm())
         );
