@@ -169,7 +169,8 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
     if (m.matches()) {
       fiddName = m.group(1);
       messageNumber = Long.parseLong(m.group(2));
-      filePath = m.group(3);
+      String urlEncodedFilePath = m.group(3);
+      filePath = URLDecoder.decode(urlEncodedFilePath, StandardCharsets.UTF_8);
     } else {
       sendError(ctx, BAD_REQUEST);
       return;

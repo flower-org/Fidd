@@ -58,7 +58,7 @@ public class LogicalFileUtilChunkTest {
 
         // Fake chunk returned by connector
         InputStream encryptedChunk = new ByteArrayInputStream(new byte[]{9,9,9});
-        when(connector.getFiddMessageChunk(77L, 100L + 50L, 500L))
+        when(connector.getFiddMessageChunk(77L, 100L + 50L + 900, 500L))
                 .thenReturn(encryptedChunk);
 
         // Fake decrypted stream
@@ -81,7 +81,7 @@ public class LogicalFileUtilChunkTest {
         // Verify correct parameters
         verify(algorithm).getRandomAccessDecryptedStream(
                 eq(new byte[]{1,2,3}),
-                eq(900L),     // mapped ciphertext offset
+                eq(200L),     // mapped ciphertext offset
                 eq(20L),      // dataLength
                 eq(encryptedChunk)
         );

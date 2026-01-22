@@ -7,6 +7,7 @@ import com.fidd.core.crc.adler32.Adler32Calculator;
 import com.fidd.core.crc.crc32.Crc32Calculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
+import com.fidd.core.encryption.aes256.Aes256CtrEncryptionAlgorithm;
 import com.fidd.core.encryption.unencrypted.NoEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
@@ -42,10 +43,11 @@ public class DefaultBaseRepositories implements BaseRepositories {
     static final Repository<FiddConnectorFactory> FIDD_CONNECTOR_FACTORY_REPO;
 
     static {
+        Aes256CtrEncryptionAlgorithm aes256Ctr = new Aes256CtrEncryptionAlgorithm();
         Aes256CbcEncryptionAlgorithm aes256Cbc = new Aes256CbcEncryptionAlgorithm();
         XorEncryptionAlgorithm xor = new XorEncryptionAlgorithm();
         NoEncryptionAlgorithm noEncryption = new NoEncryptionAlgorithm();
-        ENCRYPTION_ALGORITHM_REPO = new MapRepository<>(aes256Cbc.name(), List.of(aes256Cbc, xor, noEncryption), noEncryption);
+        ENCRYPTION_ALGORITHM_REPO = new MapRepository<>(aes256Ctr.name(), List.of(aes256Ctr, aes256Cbc, xor, noEncryption), noEncryption);
 
         YamlFiddKeySerializer yamlFiddKeySerializer = new YamlFiddKeySerializer();
         FIDD_KEY_FORMAT_REPO = new MapRepository<>(yamlFiddKeySerializer.name(), List.of(yamlFiddKeySerializer));

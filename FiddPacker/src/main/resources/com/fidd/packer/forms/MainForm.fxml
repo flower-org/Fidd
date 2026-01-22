@@ -137,10 +137,10 @@
                                       </rowConstraints>
                                        <children>
                                           <Label text="Sign FiddFile and FiddKey:" />
-                                          <CheckBox fx:id="signFiddFileAndFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" />
-                                          <CheckBox fx:id="signLogicalFileMetadatasCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                          <CheckBox fx:id="signLogicalFilesCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                          <CheckBox fx:id="signFiddFileMetadataCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                          <CheckBox fx:id="signFiddFileAndFiddKeyCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" />
+                                          <CheckBox fx:id="signLogicalFileMetadatasCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                          <CheckBox fx:id="signLogicalFilesCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                          <CheckBox fx:id="signFiddFileMetadataCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                           <Label text="Sign LogicalFiles:" GridPane.rowIndex="2" />
                                           <Label text="Sign LogicalFileMetadatas:" GridPane.rowIndex="3" />
                                           <Label text="Sign FiddFileMetadata:" GridPane.rowIndex="1" />
@@ -157,8 +157,8 @@
                                               <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                             </rowConstraints>
                                              <children>
-                                                <CheckBox fx:id="addProgressiveCrcCheckBox" mnemonicParsing="false" text="file size &gt;=" />
-                                                <TextField fx:id="progressiveCrcMinFileSizeTextField" GridPane.columnIndex="1" />
+                                                <CheckBox fx:id="addProgressiveCrcCheckBox" mnemonicParsing="false" selected="true" text="file size &gt;=" />
+                                                <TextField fx:id="progressiveCrcMinFileSizeTextField" text="1" GridPane.columnIndex="1" />
                                                 <Label text="mb" GridPane.columnIndex="2" />
                                              </children>
                                           </GridPane>
@@ -185,7 +185,7 @@
                                           <Label text="Add CRCs to Fidd Key:" GridPane.rowIndex="2" />
                                           <Label text="CRC Algo:" GridPane.rowIndex="3" />
                                           <ComboBox fx:id="crcCalculatorComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                          <CheckBox fx:id="addCrcsToFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                          <CheckBox fx:id="addCrcsToFiddKeyCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                        </children>
                                     </GridPane>
                                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="3">
@@ -230,7 +230,7 @@
                                              </GridPane.margin>
                                           </TextField>
                                           <Label text="Include Public Key / Cert:" GridPane.rowIndex="1" />
-                                          <CheckBox fx:id="includePublicKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                          <CheckBox fx:id="includePublicKeyCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                        </children>
                                     </GridPane>
                                     <GridPane GridPane.columnIndex="1" GridPane.rowIndex="7">
@@ -248,7 +248,7 @@
                                           <Label text="Message Number:" />
                                           <TextField fx:id="messageNumberTextField" GridPane.columnIndex="1" />
                                           <Label text="Include Creation Time:" GridPane.rowIndex="1" />
-                                          <CheckBox fx:id="includeMessageCreationTimeCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                          <CheckBox fx:id="includeMessageCreationTimeCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                        </children>
                                     </GridPane>
                                     <Label style="-fx-font-weight: bold;" text="Fidd File Metadata:" GridPane.rowIndex="6" />
@@ -378,9 +378,9 @@
                                                    </rowConstraints>
                                                    <children>
                                                       <Label text="Validate FiddFile and FiddKey:" />
-                                                      <CheckBox fx:id="validateFiddFileAndFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" />
+                                                      <CheckBox fx:id="validateFiddFileAndFiddKeyCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" />
                                                       <Label text="Validate CRCs in Fidd Key:" GridPane.rowIndex="1" />
-                                                      <CheckBox fx:id="validateCrcsInFiddKeyCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                      <CheckBox fx:id="validateCrcsInFiddKeyCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                                       <Label text="Author's Public Key:" GridPane.rowIndex="2" />
                                                        <ComboBox fx:id="publicKeySourceComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
                                                          <GridPane.margin>
@@ -400,11 +400,11 @@
                                                    </rowConstraints>
                                                    <children>
                                                       <Label text="Validate LogicalFiles:" GridPane.rowIndex="2" />
-                                                      <CheckBox fx:id="validateLogicalFilesCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                      <CheckBox fx:id="validateLogicalFilesCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                                       <Label text="Validate LogicalFileMetadatas:" GridPane.rowIndex="1" />
-                                                      <CheckBox fx:id="validateLogicalFileMetadatasCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                      <CheckBox fx:id="validateLogicalFileMetadatasCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                                       <Label text="Validate FiddFileMetadata:" />
-                                                      <CheckBox fx:id="validateFiddFileMetadataCheckBox" mnemonicParsing="false" GridPane.columnIndex="1" />
+                                                      <CheckBox fx:id="validateFiddFileMetadataCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" />
                                                    </children>
                                                 </GridPane>
                                                 <GridPane GridPane.columnIndex="1" GridPane.rowIndex="3">

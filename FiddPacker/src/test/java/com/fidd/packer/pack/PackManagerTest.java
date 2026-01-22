@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -48,10 +50,13 @@ public class PackManagerTest {
         assertNotNull(result);
         assertEquals(3, result.size()); // We expect 3 files
 
+        Set<String> paths = result.stream().map(FilePathTuple::relativePath).collect(Collectors.toSet());
+
         // Check relative paths
-        assertEquals("file1.txt", result.get(0).relativePath());
-        assertEquals("file2.txt", result.get(1).relativePath());
-        assertEquals("subDir" + File.separator + "file3.txt", result.get(2).relativePath());
+        assertEquals(3, paths.size());
+        assertTrue(paths.contains("file1.txt"));
+        assertTrue(paths.contains("file2.txt"));
+        assertTrue(paths.contains("subDir" + File.separator + "file3.txt"));
 
         // Additional assertions can be made on file sizes, etc.
         assertTrue(result.stream().anyMatch(tuple -> tuple.file().getName().equals("file1.txt")));
