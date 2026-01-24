@@ -33,8 +33,7 @@ public abstract class BaseDirectoryConnector implements FiddConnector {
     // Regex: fidd.message.<digits>.sign
     public final static Pattern FIDD_MESSAGE_SIGNATURE_PATTERN = Pattern.compile("fidd\\.message\\.(\\d+)\\.sign");
 
-    protected abstract List<String> getSubDirectoryListing(String fiddPath) throws IOException;
-    protected abstract List<String> getFileListing(String fiddPath) throws IOException;
+    protected abstract List<String> getListing(String fiddPath, boolean isDirectory) throws IOException;
     protected abstract String fiddFolderPath();
     protected abstract boolean pathExists(String path);
     protected abstract boolean pathIsRegularFile(String path);
@@ -42,6 +41,14 @@ public abstract class BaseDirectoryConnector implements FiddConnector {
     protected abstract long size(String path) throws IOException;
     protected abstract InputStream getInputStream(String path) throws IOException;
     protected abstract InputStream getSubInpuStream(String path, long offset, long length) throws IOException;
+
+    protected List<String> getSubDirectoryListing(String fiddPath) throws IOException {
+        return getListing(fiddPath, true);
+    }
+
+    protected List<String> getFileListing(String fiddPath) throws IOException {
+        return getListing(fiddPath, false);
+    }
 
     protected TreeMap<Long, Long> getMessagesNumberMap(String fiddPath) {
         return getMessagesNumberMap(fiddPath, (o1, o2) -> Long.compare(o2, o1));

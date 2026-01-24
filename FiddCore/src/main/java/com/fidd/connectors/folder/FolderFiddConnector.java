@@ -44,6 +44,7 @@ public class FolderFiddConnector extends BaseDirectoryConnector implements FiddC
         this.fiddFolderPath = fiddFolder.toAbsolutePath().toString();
     }
 
+    @Override
     protected List<String> getListing(String fiddPath, boolean isDirectory) throws IOException {
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(
                 Path.of(fiddPath), f -> isDirectory ? Files.isDirectory(f) :  Files.isRegularFile(f))) {
@@ -61,16 +62,6 @@ public class FolderFiddConnector extends BaseDirectoryConnector implements FiddC
             System.err.println("Error reading directory: " + e.getMessage());
             throw e;
         }
-    }
-
-    @Override
-    protected List<String> getSubDirectoryListing(String fiddPath) throws IOException {
-        return getListing(fiddPath, true);
-    }
-
-    @Override
-    protected List<String> getFileListing(String fiddPath) throws IOException {
-        return getListing(fiddPath, false);
     }
 
     @Override

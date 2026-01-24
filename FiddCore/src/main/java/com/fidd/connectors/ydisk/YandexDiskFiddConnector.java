@@ -41,13 +41,19 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
     }
 
     @Override
-    protected List<String> getSubDirectoryListing(String fiddPath) throws IOException {
-        ResourcesArgs rootDirSubdirArgs = new ResourcesArgs.Builder().setPath("/").setMediaType("dir").build();
+    protected List<String> getListing(String fiddPath, boolean isDirectory) throws IOException {
+        ResourcesArgs rootDirSubdirArgs = new ResourcesArgs.Builder().setPath("/").build();
         try {
             List<String> result = new ArrayList<>();
             Resource resources = client.getResources(rootDirSubdirArgs);
             for (Resource resource : resources.getResourceList().getItems()) {
-                result.add(resource.getPath().getPath());
+                if (isDirectory && "dir".equals(resource.getType())) {
+                    // Add dir
+                    result.add(resource.getPath().getPath());
+                } else if (!isDirectory && "file".equals(resource.getType())) {
+                    //Add file
+                    result.add(resource.getPath().getPath());
+                }
             }
             return result;
         } catch (ServerIOException e) {
@@ -57,11 +63,6 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
 
     @Override
     protected String fiddFolderPath() { return fiddFolderPath; }
-
-    @Override
-    protected List<String> getFileListing(String fiddPath) throws IOException {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     protected boolean pathExists(String path) {
