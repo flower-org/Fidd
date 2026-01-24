@@ -7,7 +7,6 @@ import com.yandex.disk.rest.ResourcesArgs;
 import com.yandex.disk.rest.RestClient;
 import com.yandex.disk.rest.exceptions.ServerIOException;
 import com.yandex.disk.rest.json.Resource;
-import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,52 +59,37 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
     protected String fiddFolderPath() { return fiddFolderPath; }
 
     @Override
-    public List<byte[]> getFiddKeyCandidates(long messageNumber, byte[] footprint) {
+    protected List<String> getFileListing(String fiddPath) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public @Nullable byte[] getFiddKey(long messageNumber, byte[] key) {
+    protected boolean pathExists(String path) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public @Nullable byte[] getUnencryptedFiddKey(long messageNumber) {
+    protected boolean pathIsRegularFile(String path) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long getFiddMessageSize(long messageNumber) {
+    protected byte[] readAllBytes(String path) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public InputStream getFiddMessage(long messageNumber) {
+    protected long size(String path) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public InputStream getFiddMessageChunk(long messageNumber, long offset, long length) {
+    protected InputStream getInputStream(String path) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int getFiddKeySignatureCount(long messageNumber) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public byte[] getFiddKeySignature(long messageNumber, int index) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getFiddMessageSignatureCount(long messageNumber) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public byte[] getFiddMessageSignature(long messageNumber, int index) {
+    protected InputStream getSubInpuStream(String path, long offset, long length) throws IOException {
         throw new UnsupportedOperationException();
     }
 }

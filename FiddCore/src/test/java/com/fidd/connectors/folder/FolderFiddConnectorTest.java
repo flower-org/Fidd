@@ -125,7 +125,8 @@ public class FolderFiddConnectorTest {
         write(msg.resolve("fidd.key.1.sign"), "b");
         write(msg.resolve("fidd.key.3.sign"), "c");
 
-        int count = FolderFiddConnector.getSignatureCount(msg, FolderFiddConnector.FIDD_KEY_SIGNATURE_PATTERN, 1);
+        FolderFiddConnector folderFiddConnector = new FolderFiddConnector(temp);
+        int count = folderFiddConnector.getSignatureCount(msg.toString(), FolderFiddConnector.FIDD_KEY_SIGNATURE_PATTERN, 1);
 
         assertEquals(4, count); // max index = 3 → count = 4
     }
