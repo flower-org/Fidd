@@ -8,6 +8,7 @@ import com.yandex.disk.rest.RestClient;
 import com.yandex.disk.rest.exceptions.ServerIOException;
 import com.yandex.disk.rest.json.Resource;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -40,6 +41,7 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
         }
     }
 
+    // TODO: listing speed can be improved with sort, offset, limit parameters of the request
     @Override
     protected List<String> getListing(String fiddPath, boolean isDirectory) throws IOException {
         ResourcesArgs rootDirSubdirArgs = new ResourcesArgs.Builder().setPath("/").build();
@@ -64,23 +66,47 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
     @Override
     protected String fiddFolderPath() { return fiddFolderPath; }
 
+    protected List<Resource> getSingleItemResources(String path) throws ServerIOException, IOException {
+        ResourcesArgs singlePathArgs = new ResourcesArgs.Builder().setPath(path).setLimit(1).setFields("name").build();
+        Resource resources = client.getResources(singlePathArgs);
+        return resources.getResourceList().getItems();
+    }
+
+    // TODO: Those methods can be combined into 1 request
     @Override
-    protected boolean pathExists(String path) {
-        throw new UnsupportedOperationException();
+    protected boolean pathExists(String path) throws IOException {
+        try {
+            List<Resource> items = getSingleItemResources(path);
+            return !items.isEmpty();
+        } catch (ServerIOException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override
-    protected boolean pathIsRegularFile(String path) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected byte[] readAllBytes(String path) throws IOException {
-        throw new UnsupportedOperationException();
+    protected boolean pathIsRegularFile(String path) throws IOException {
+        try {
+            List<Resource> items = getSingleItemResources(path);
+            if (items.isEmpty()) { throw new FileNotFoundException(); }
+            return "file".equals(items.get(0).getType());
+        } catch (ServerIOException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override
     protected long size(String path) throws IOException {
+        try {
+            List<Resource> items = getSingleItemResources(path);
+            if (items.isEmpty()) { throw new FileNotFoundException(); }
+            return items.get(0).getSize();
+        } catch (ServerIOException e) {
+            throw new IOException(e);
+        }
+    }
+
+    @Override
+    protected byte[] readAllBytes(String path) throws IOException {
         throw new UnsupportedOperationException();
     }
 

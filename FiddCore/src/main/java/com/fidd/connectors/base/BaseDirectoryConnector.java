@@ -35,8 +35,8 @@ public abstract class BaseDirectoryConnector implements FiddConnector {
 
     protected abstract List<String> getListing(String fiddPath, boolean isDirectory) throws IOException;
     protected abstract String fiddFolderPath();
-    protected abstract boolean pathExists(String path);
-    protected abstract boolean pathIsRegularFile(String path);
+    protected abstract boolean pathExists(String path) throws IOException;
+    protected abstract boolean pathIsRegularFile(String path) throws IOException;
     protected abstract byte[] readAllBytes(String path) throws IOException;
     protected abstract long size(String path) throws IOException;
     protected abstract InputStream getInputStream(String path) throws IOException;
@@ -185,7 +185,7 @@ public abstract class BaseDirectoryConnector implements FiddConnector {
     }
 
     @Override
-    public List<byte[]> getFiddKeyCandidates(long messageNumber, byte[] footprintBytes) {
+    public List<byte[]> getFiddKeyCandidates(long messageNumber, byte[] footprintBytes) throws IOException {
         List<byte[]> result = new ArrayList<>();
         String footprint = new String(footprintBytes, StandardCharsets.UTF_8);
         String keyFolder = keyFolderPath(messageNumber);
@@ -193,25 +193,22 @@ public abstract class BaseDirectoryConnector implements FiddConnector {
             return result;
         }
 
-        try {
-            List<String> sortedFiles = new ArrayList<>();
-            for (String fileName : getFileListing(keyFolder)) {
-                if (footprintStartsWith(footprint, fileName) || keyFileStartsWith(fileName, footprint)) {
-                    sortedFiles.add(fileName);
-                }
+        List<String> sortedFiles = new ArrayList<>();
+        for (String fileName : getFileListing(keyFolder)) {
+            if (footprintStartsWith(footprint, fileName) || keyFileStartsWith(fileName, footprint)) {
+                sortedFiles.add(fileName);
             }
-            // Longest prefix first
-            sortedFiles.sort((fn1, fn2) -> {
-                String fileName1 = getFileNameNoExtensions(fn1);
-                String fileName2 = getFileNameNoExtensions(fn2);
-                return Integer.compare(fileName2.length(), fileName1.length());
-            });
-            for (String fileName : sortedFiles) {
-                result.add(getFileNameNoExtensions(fileName).getBytes(StandardCharsets.UTF_8));
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
+        // Longest prefix first
+        sortedFiles.sort((fn1, fn2) -> {
+            String fileName1 = getFileNameNoExtensions(fn1);
+            String fileName2 = getFileNameNoExtensions(fn2);
+            return Integer.compare(fileName2.length(), fileName1.length());
+        });
+        for (String fileName : sortedFiles) {
+            result.add(getFileNameNoExtensions(fileName).getBytes(StandardCharsets.UTF_8));
+        }
+
         return result;
     }
 

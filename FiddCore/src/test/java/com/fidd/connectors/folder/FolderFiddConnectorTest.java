@@ -386,7 +386,7 @@ public class FolderFiddConnectorTest {
     }
 
     @Test
-    void testGetKeyFile_returnsEmptyListWhenNoMatches() {
+    void testGetKeyFile_returnsEmptyListWhenNoMatches() throws IOException {
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         byte[] subscriberId = "nomatch".getBytes(StandardCharsets.UTF_8);

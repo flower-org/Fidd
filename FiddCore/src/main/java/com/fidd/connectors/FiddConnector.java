@@ -1,6 +1,7 @@
 package com.fidd.connectors;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
@@ -15,7 +16,7 @@ public interface FiddConnector {
 
     /** Returns empty list if subscriber has no key candidates, which can also happen in case
      * when Fidd Key is stored unencrypted */
-    List<byte[]> getFiddKeyCandidates(long messageNumber, byte[] footprint);
+    List<byte[]> getFiddKeyCandidates(long messageNumber, byte[] footprint) throws IOException;
     /** Returns null if the supplied key doesn't exist */
     @Nullable byte[] getFiddKey(long messageNumber, byte[] key);
     /** Returns null if Fidd Keys are stored encrypted */
