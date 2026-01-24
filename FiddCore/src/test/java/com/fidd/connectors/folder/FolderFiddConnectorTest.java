@@ -139,7 +139,8 @@ public class FolderFiddConnectorTest {
         createMessageFolder(11);
         createMessageFolder(12);
 
-        List<Long> tail = FolderFiddConnector.getMessagesTail(temp, null, 2, true);
+        FolderFiddConnector folderFiddConnector = new FolderFiddConnector(temp);
+        List<Long> tail = folderFiddConnector.getMessagesTail(temp.toString(), null, 2, true);
         assertEquals(List.of(12L, 11L), tail);
     }
 
