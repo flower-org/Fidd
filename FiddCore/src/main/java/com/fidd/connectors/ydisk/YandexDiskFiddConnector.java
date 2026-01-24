@@ -21,16 +21,6 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
         FiddConnector connector = new YandexDiskFiddConnector(url);
 
         connector.getMessageNumbersTail(10);
-
-/*        RestClient client = new RestClient(creds);
-
-        DiskInfo diskInfo = client.getDiskInfo();
-        System.out.println(diskInfo);
-
-        ResourcesArgs rootDirSubdirArgs = new ResourcesArgs.Builder().setPath("/").setMediaType("dir").build();
-        Resource resources = client.getResources(rootDirSubdirArgs);
-
-        System.out.println(resources);*/
     }
 
     final String user;
@@ -67,20 +57,7 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
     }
 
     @Override
-    public List<Long> getMessageNumbersTail(int count) {
-        return getMessagesTail(fiddFolderPath, null, count, true);
-    }
-
-    @Override
-    public List<Long> getMessageNumbersBefore(long messageNumber, int count, boolean inclusive) {
-        return getMessagesTail(fiddFolderPath, messageNumber, count, false);
-    }
-
-    @Override
-    public List<Long> getMessageNumbersBetween(long latestMessage, boolean inclusiveLatest,
-                                               long earliestMessage, boolean inclusiveEarliest, int count, boolean getLatest) {
-        return getMessageNumbersBetween(fiddFolderPath, latestMessage, inclusiveLatest, earliestMessage, inclusiveEarliest, count, getLatest);
-    }
+    protected String fiddFolderPath() { return fiddFolderPath; }
 
     @Override
     public List<byte[]> getFiddKeyCandidates(long messageNumber, byte[] footprint) {

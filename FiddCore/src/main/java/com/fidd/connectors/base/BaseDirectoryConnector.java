@@ -1,5 +1,6 @@
 package com.fidd.connectors.base;
 
+import com.fidd.connectors.FiddConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,10 +13,11 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-public abstract class BaseDirectoryConnector {
+public abstract class BaseDirectoryConnector implements FiddConnector {
     final static Logger LOGGER = LoggerFactory.getLogger(BaseDirectoryConnector.class);
 
     protected abstract List<String> getSubDirectoryListing(String fiddPath) throws IOException;
+    protected abstract String fiddFolderPath();
 
     protected TreeMap<Long, Long> getMessagesNumberMap(String fiddPath) {
         return getMessagesNumberMap(fiddPath, (o1, o2) -> Long.compare(o2, o1));
@@ -111,5 +113,21 @@ public abstract class BaseDirectoryConnector {
         }
 
         return result;
+    }
+
+    @Override
+    public List<Long> getMessageNumbersTail(int count) {
+        return getMessagesTail(fiddFolderPath(), null, count, true);
+    }
+
+    @Override
+    public List<Long> getMessageNumbersBefore(long messageNumber, int count, boolean inclusive) {
+        return getMessagesTail(fiddFolderPath(), messageNumber, count, false);
+    }
+
+    @Override
+    public List<Long> getMessageNumbersBetween(long latestMessage, boolean inclusiveLatest,
+                                               long earliestMessage, boolean inclusiveEarliest, int count, boolean getLatest) {
+        return getMessageNumbersBetween(fiddFolderPath(), latestMessage, inclusiveLatest, earliestMessage, inclusiveEarliest, count, getLatest);
     }
 }

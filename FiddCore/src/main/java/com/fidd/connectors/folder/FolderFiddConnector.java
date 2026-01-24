@@ -105,6 +105,9 @@ public class FolderFiddConnector extends BaseDirectoryConnector implements FiddC
         }
     }
 
+    @Override
+    protected String fiddFolderPath() { return fiddFolder.toString(); }
+
 
     protected final String fiddFolderPath;
     protected final Path fiddFolder;
@@ -132,22 +135,6 @@ public class FolderFiddConnector extends BaseDirectoryConnector implements FiddC
     protected Path messageFolderPath(long messageNumber) { return fiddFolder.resolve(Long.toString(messageNumber)); }
     protected Path keyFolderPath(long messageNumber) { return messageFolderPath(messageNumber).resolve(ENCRYPTED_FIDD_KEY_SUBFOLDER); }
     protected Path messageFilePath(long messageNumber) { return messageFolderPath(messageNumber).resolve(FIDD_MESSAGE_FILE_NAME); }
-
-    @Override
-    public List<Long> getMessageNumbersTail(int count) {
-        return getMessagesTail(fiddFolder.toString(), null, count, true);
-    }
-
-    @Override
-    public List<Long> getMessageNumbersBefore(long messageNumber, int count, boolean inclusive) {
-        return getMessagesTail(fiddFolder.toString(), messageNumber, count, false);
-    }
-
-    @Override
-    public List<Long> getMessageNumbersBetween(long latestMessage, boolean inclusiveLatest,
-                                               long earliestMessage, boolean inclusiveEarliest, int count, boolean getLatest) {
-        return getMessageNumbersBetween(fiddFolder.toString(), latestMessage, inclusiveLatest, earliestMessage, inclusiveEarliest, count, getLatest);
-    }
 
     @Override
     public List<byte[]> getFiddKeyCandidates(long messageNumber, byte[] footprintBytes) {
