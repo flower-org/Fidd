@@ -472,21 +472,6 @@ public class FolderFiddConnectorTest {
     }
 
     // ------------------------------------------------------------
-    // getMessageFile
-    // ------------------------------------------------------------
-    @Test
-    void testGetFiddMessage() throws IOException {
-        Path msg = createMessageFolder(1);
-        Path file = msg.resolve("fidd.message");
-        write(file, "xyz");
-
-        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
-        try (InputStream in = fidd.getFiddMessage(1)) {
-            assertEquals("xyz", new String(in.readAllBytes()));
-        }
-    }
-
-    // ------------------------------------------------------------
     // getMessageFileChunk
     // ------------------------------------------------------------
     @Test

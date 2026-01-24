@@ -23,7 +23,6 @@ public interface FiddConnector {
     @Nullable byte[] getUnencryptedFiddKey(long messageNumber);
 
     long getFiddMessageSize(long messageNumber);
-    InputStream getFiddMessage(long messageNumber);
     InputStream getFiddMessageChunk(long messageNumber, long offset, long length);
 
     int getFiddKeySignatureCount(long messageNumber);

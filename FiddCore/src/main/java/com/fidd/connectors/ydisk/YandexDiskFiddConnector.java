@@ -3,14 +3,18 @@ package com.fidd.connectors.ydisk;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.connectors.base.BaseDirectoryConnector;
 import com.yandex.disk.rest.Credentials;
+import com.yandex.disk.rest.DownloadListener;
 import com.yandex.disk.rest.ResourcesArgs;
 import com.yandex.disk.rest.RestClient;
+import com.yandex.disk.rest.exceptions.ServerException;
 import com.yandex.disk.rest.exceptions.ServerIOException;
 import com.yandex.disk.rest.json.Resource;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -107,16 +111,25 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
 
     @Override
     protected byte[] readAllBytes(String path) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected InputStream getInputStream(String path) throws IOException {
-        throw new UnsupportedOperationException();
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            client.downloadFile(path, new DownloadListener() {
+                @Override
+                public OutputStream getOutputStream(boolean append) throws IOException {
+                    return bos;
+                }
+            });
+            return bos.toByteArray();
+        } catch (ServerIOException e) {
+            throw new IOException(e);
+        } catch (ServerException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     protected InputStream getSubInpuStream(String path, long offset, long length) throws IOException {
+        // DownloadListener.getLocalLength looks like offset to me
         throw new UnsupportedOperationException();
     }
 }

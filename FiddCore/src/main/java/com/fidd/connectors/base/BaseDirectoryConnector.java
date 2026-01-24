@@ -39,7 +39,6 @@ public abstract class BaseDirectoryConnector implements FiddConnector {
     protected abstract boolean pathIsRegularFile(String path) throws IOException;
     protected abstract byte[] readAllBytes(String path) throws IOException;
     protected abstract long size(String path) throws IOException;
-    protected abstract InputStream getInputStream(String path) throws IOException;
     protected abstract InputStream getSubInpuStream(String path, long offset, long length) throws IOException;
 
     protected List<String> getSubDirectoryListing(String fiddPath) throws IOException {
@@ -318,19 +317,6 @@ public abstract class BaseDirectoryConnector implements FiddConnector {
             String messageFileSignatureString = String.format(FIDD_MESSAGE_FILE_NAME + ".%d.sign", index);
             String messageFileSignatureFile = messageFolderPath(messageNumber) + PATH_SEPARATOR + messageFileSignatureString;
             return readAllBytes(messageFileSignatureFile);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public InputStream getFiddMessage(long messageNumber) {
-        try {
-            String messageFilePath = messageFilePath(messageNumber);
-            if (!pathExists(messageFilePath) || !pathIsRegularFile(messageFilePath)) {
-                throw new FileNotFoundException("Message file not found: " + messageNumber);
-            }
-            return getInputStream(messageFilePath);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

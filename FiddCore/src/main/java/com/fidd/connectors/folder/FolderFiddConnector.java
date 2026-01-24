@@ -88,11 +88,6 @@ public class FolderFiddConnector extends BaseDirectoryConnector implements FiddC
     }
 
     @Override
-    protected InputStream getInputStream(String path) throws IOException {
-        return Files.newInputStream(Path.of(path), StandardOpenOption.READ);
-    }
-
-    @Override
     protected InputStream getSubInpuStream(String path, long offset, long length) throws IOException {
         return SubFileInputStream.of(Path.of(path).toFile(), offset, length);
     }
