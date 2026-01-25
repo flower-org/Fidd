@@ -31,10 +31,10 @@ public class LogicalFileUtil {
         byte[] keyData = section.encryptionKeyData() == null ? new byte[0] : section.encryptionKeyData();
 
         return checkNotNull(encryptionAlgorithm).getRandomAccessDecryptedStream(keyData,
-                dataOffset, dataLength,
+                encryptionAlgorithm.ciphertextPosToPlaintextPos(fileOffset) + dataOffset, dataLength,
                 fiddConnector.getFiddMessageChunk(messageNumber,
                         section.sectionOffset() + fileOffset + encryptionAlgorithm.plaintextPosToCiphertextPos(dataOffset),
-                        section.sectionLength()));
+                        encryptionAlgorithm.plaintextLengthToCiphertextLength(dataLength)));
     }
 
     public static InputStream getLogicalFileInputStream(BaseRepositories baseRepositories, FiddConnector fiddConnector,
