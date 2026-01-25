@@ -45,11 +45,11 @@ class BufferChainOutputStreamTest2 {
         BufferChainOutputStream out = new BufferChainOutputStream(chain, 3);
 
         out.write(1);
-        out.write(2);
-        out.write(3); // buffer full → flush next write
+        out.write(2); // buffer almost full → flush next write
         assertEquals(0, chain.buffers.size());
-
-        out.write(4); // triggers flush of [1,2,3]
+        out.write(3); // triggers flush of [1,2,3]
+        assertEquals(1, chain.buffers.size());
+        out.write(4);
         assertEquals(1, chain.buffers.size());
         assertArrayEquals(new byte[]{1,2,3}, chain.buffers.get(0));
     }
