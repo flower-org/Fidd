@@ -63,13 +63,20 @@ public class WrapperFiddContentService implements FiddContentService {
                 inclusiveEarliest, count, getLatest);
     }
 
+    protected @Nullable FiddKey loadFiddKey(long messageNumber) throws Exception {
+        byte[] fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector, userCert, userPrivateKey);
+        if (fiddKeyBytes == null) {
+            fiddKeyBytes = FiddKeyUtil.loadDefaultFiddKeyBytes(messageNumber, fiddConnector);
+        }
+        if (fiddKeyBytes == null) { return null; }
+        return FiddKeyUtil.loadFiddKeyFromBytes(baseRepositories, fiddKeyBytes);
+    }
+
     @Override
     public @Nullable FiddFileMetadata getFiddFileMetadata(long messageNumber) {
         try {
             // 1. Load FiddKey
-            byte[] fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector, userCert, userPrivateKey);
-            if (fiddKeyBytes == null) { return null; }
-            FiddKey fiddKey = FiddKeyUtil.loadFiddKeyFromBytes(baseRepositories, fiddKeyBytes);
+            FiddKey fiddKey = loadFiddKey(messageNumber);
             if (fiddKey == null) { return null; }
 
             // 2. Load FiddFileMetadata Section
@@ -88,9 +95,7 @@ public class WrapperFiddContentService implements FiddContentService {
     public @Nullable List<LogicalFileInfo> getLogicalFileInfos(long messageNumber) {
         try {
             // 1. Load FiddKey
-            byte[] fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector, userCert, userPrivateKey);
-            if (fiddKeyBytes == null) { return null; }
-            FiddKey fiddKey = FiddKeyUtil.loadFiddKeyFromBytes(baseRepositories, fiddKeyBytes);
+            FiddKey fiddKey = loadFiddKey(messageNumber);
             if (fiddKey == null) { return null; }
 
             // 2. Load LogicalFileInfo Sections

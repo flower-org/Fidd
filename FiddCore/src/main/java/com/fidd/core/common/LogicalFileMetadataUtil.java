@@ -57,6 +57,7 @@ public class LogicalFileMetadataUtil {
             int totalRead = 0;
             while (totalRead < logicalFileSection.sectionLength()) {
                 int bytesRead = sectionInputStream.read(buffer);
+                if (bytesRead == 0) { continue; }
                 if (bytesRead == -1) {
                     warnAndMaybeThrow("Failed to read metadata", throwOnValidationFailure);
                     return null;

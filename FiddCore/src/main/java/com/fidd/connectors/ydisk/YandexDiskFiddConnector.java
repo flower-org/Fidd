@@ -13,6 +13,7 @@ import com.yandex.disk.rest.ResourcesArgs;
 import com.yandex.disk.rest.RestClient;
 import com.yandex.disk.rest.exceptions.ServerException;
 import com.yandex.disk.rest.exceptions.ServerIOException;
+import com.yandex.disk.rest.exceptions.http.HttpCodeException;
 import com.yandex.disk.rest.json.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,20 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class YandexDiskFiddConnector extends BaseDirectoryConnector implements FiddConnector {
-    public static void main(String[] args) throws IOException {
-        URL url = new URL("https://user:token@ydisk/");
-        FiddConnector connector = new YandexDiskFiddConnector(url);
-
-        connector.getMessageNumbersTail(10);
-
-        byte[] key = connector.getUnencryptedFiddKey(8);
-        System.out.println(new String(key));
-
-        InputStream is = connector.getFiddMessageChunk(8,5,10);
-        byte[] b = is.readAllBytes();
-        System.out.println("---" + new String(b) + "----");
-    }
-
     public final static Logger LOGGER = LoggerFactory.getLogger(YandexDiskFiddConnector.class);
     public static final long BUFFER_SIZE = 1024;
 
@@ -88,7 +75,7 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
     protected String fiddFolderPath() { return fiddFolderPath; }
 
     protected List<Resource> getSingleItemResources(String path) throws ServerIOException, IOException {
-        ResourcesArgs singlePathArgs = new ResourcesArgs.Builder().setPath(path).setLimit(1).setFields("name,type").build();
+        ResourcesArgs singlePathArgs = new ResourcesArgs.Builder().setPath(path).setLimit(1).setFields("name,type,size").build();
         Resource resource = client.getResources(singlePathArgs);
         return List.of(resource);
     }
@@ -99,6 +86,12 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
         try {
             List<Resource> items = getSingleItemResources(path);
             return !items.isEmpty();
+        } catch (HttpCodeException e) {
+            if (e.getCode() == 404) {
+                return false;
+            } else {
+                throw new IOException(e);
+            }
         } catch (ServerIOException e) {
             throw new IOException(e);
         }
