@@ -95,7 +95,7 @@ public class MainForm {
     }
 
     public void showAboutDialog() {
-        Alert alert = new Alert(Alert.AlertType.NONE, "FiddView v 0.2.1", ButtonType.OK);
+        Alert alert = new Alert(Alert.AlertType.NONE, "FiddView v 0.2.2", ButtonType.OK);
         alert.showAndWait();
     }
 
