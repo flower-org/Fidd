@@ -54,7 +54,7 @@ public class BufferChainInputStream extends InputStream {
     private @Nullable byte[] ensureBuffer() {
         // If no current buffer or it's exhausted, fetch next
         while (current == null || position >= current.length) {
-            current = chain.getNextBuffer();
+            current = chain.pollBuffer();
             position = 0;
 
             if (current == null) {

@@ -23,7 +23,7 @@ class BufferChainInputStreamTest {
         }
 
         @Override
-        public byte[] getNextBuffer() {
+        public byte[] pollBuffer() {
             byte[] buffer = buffers.poll();
             if (buffer == null) { return null; }
             available -= buffer.length;

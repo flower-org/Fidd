@@ -16,7 +16,7 @@ class BufferChainOutputStreamTest {
         final List<byte[]> buffers = new ArrayList<>();
 
         @Override
-        public void addNewBuffer(byte[] buffer) {
+        public void addBuffer(byte[] buffer) {
             buffers.add(buffer);
         }
 

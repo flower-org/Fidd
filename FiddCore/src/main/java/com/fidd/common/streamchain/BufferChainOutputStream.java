@@ -40,6 +40,14 @@ public class BufferChainOutputStream extends OutputStream implements OutputBuffe
         }
     }
 
+    protected void tryFlushFullBuffer() {
+        // Flush if the buffer is full
+        int space = bufferSize - position;
+        if (space == 0) {
+            flushBuffer();
+        }
+    }
+
     @Override
     public void write(int b) {
         ensureOpen();
@@ -51,6 +59,7 @@ public class BufferChainOutputStream extends OutputStream implements OutputBuffe
             if (dataLimitBytes != null) { dataLimitBytes--; }
         }
 
+        tryFlushFullBuffer();
         dataLimitTryFinalFlushAndClose();
     }
 
@@ -85,6 +94,7 @@ public class BufferChainOutputStream extends OutputStream implements OutputBuffe
             }
         }
 
+        tryFlushFullBuffer();
         dataLimitTryFinalFlushAndClose();
     }
 
@@ -108,7 +118,7 @@ public class BufferChainOutputStream extends OutputStream implements OutputBuffe
         if (position > 0) {
             byte[] out = new byte[position];
             System.arraycopy(buffer, 0, out, 0, position);
-            chain.addNewBuffer(out);
+            chain.addBuffer(out);
             position = 0;
         }
     }

@@ -5,7 +5,7 @@ public interface OutputBufferChain {
         void flushBuffer();
     }
 
-    void addNewBuffer(byte[] buffer);
+    void addBuffer(byte[] buffer);
     void close();
     void attachBufferFlusher(BufferFlusher flusher);
 }
