@@ -1,5 +1,9 @@
 package com.fidd.connectors.ydisk;
 
+import com.fidd.common.streamchain.BufferChainInputStream;
+import com.fidd.common.streamchain.BufferChainOutputStream;
+import com.fidd.common.streamchain.chain.BufferChain;
+import com.fidd.common.streamchain.chain.ConcurrentBufferChain;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.connectors.base.BaseDirectoryConnector;
 import com.yandex.disk.rest.Credentials;
@@ -26,6 +30,8 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
 
         connector.getMessageNumbersTail(10);
     }
+
+    public static final long BUFFER_SIZE = 1024;
 
     final String user;
     final String token;
@@ -127,10 +133,31 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
         }
     }
 
+    /**
+     * DownloadListener.getLocalLength looks like offset to me
+     * Length (Data limit) can be controlled by throwing an exception from OutputStream
+     */
     @Override
     protected InputStream getSubInpuStream(String path, long offset, long length) throws IOException {
-        // DownloadListener.getLocalLength looks like offset to me
-        // Length can be controlled by throwing an exception from OutputStream
-        throw new UnsupportedOperationException();
+        try {
+            BufferChain chain = new ConcurrentBufferChain();
+            BufferChainInputStream is = new BufferChainInputStream(chain);
+            BufferChainOutputStream os = new BufferChainOutputStream(chain, (int)BUFFER_SIZE, length);
+
+            client.downloadFile(path, new DownloadListener() {
+                @Override
+                public long getLocalLength() { return offset; }
+
+                @Override
+                public OutputStream getOutputStream(boolean append) throws IOException {
+                    return os;
+                }
+            });
+            return is;
+        } catch (ServerIOException e) {
+            throw new IOException(e);
+        } catch (ServerException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
