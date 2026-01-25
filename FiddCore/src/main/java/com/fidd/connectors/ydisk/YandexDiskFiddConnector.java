@@ -130,6 +130,7 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
     @Override
     protected InputStream getSubInpuStream(String path, long offset, long length) throws IOException {
         // DownloadListener.getLocalLength looks like offset to me
+        // Length can be controlled by throwing an exception from OutputStream
         throw new UnsupportedOperationException();
     }
 }
