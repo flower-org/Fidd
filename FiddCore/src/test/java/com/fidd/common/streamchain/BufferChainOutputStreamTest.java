@@ -129,6 +129,6 @@ class BufferChainOutputStreamTest {
         BufferChainOutputStream out = new BufferChainOutputStream(chain, 4);
 
         out.close();
-        assertThrows(IllegalStateException.class, () -> out.write('x'));
+        assertThrows(OutputStreamLimitReachedException.class, () -> out.write('x'));
     }
 }

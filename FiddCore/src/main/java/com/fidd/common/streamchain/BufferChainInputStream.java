@@ -18,6 +18,7 @@ public class BufferChainInputStream extends InputStream {
 
     @Override
     public int read() {
+        // TODO: improve infinite loop?
         while (true) { // This method blocks until input data is available
             byte[] buf = ensureBuffer();
             if (buf == null) { return -1; }

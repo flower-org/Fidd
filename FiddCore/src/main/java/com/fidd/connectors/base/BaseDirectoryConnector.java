@@ -161,7 +161,11 @@ public abstract class BaseDirectoryConnector implements FiddConnector {
         return getMessageNumbersBetween(fiddFolderPath(), latestMessage, inclusiveLatest, earliestMessage, inclusiveEarliest, count, getLatest);
     }
 
-    protected String messageFolderPath(long messageNumber) { return fiddFolderPath() + PATH_SEPARATOR + messageNumber; }
+    protected String messageFolderPath(long messageNumber) {
+        String fiddFolderPath = fiddFolderPath();
+        if (!fiddFolderPath.endsWith(PATH_SEPARATOR)) { fiddFolderPath += PATH_SEPARATOR; }
+        return fiddFolderPath + messageNumber;
+    }
     protected String keyFolderPath(long messageNumber) { return messageFolderPath(messageNumber) + PATH_SEPARATOR + ENCRYPTED_FIDD_KEY_SUBFOLDER; }
     protected String messageFilePath(long messageNumber) { return messageFolderPath(messageNumber) + PATH_SEPARATOR + FIDD_MESSAGE_FILE_NAME; }
 

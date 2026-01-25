@@ -147,8 +147,8 @@ class BufferChainOutputStreamTest2 {
         BufferChainOutputStream out = new BufferChainOutputStream(chain, 5);
 
         out.close();
-        assertThrows(IllegalStateException.class, () -> out.write(1));
-        assertThrows(IllegalStateException.class, () -> out.flush());
+        assertThrows(OutputStreamLimitReachedException.class, () -> out.write(1));
+        assertThrows(OutputStreamLimitReachedException.class, () -> out.flush());
     }
 
     @Test
@@ -164,7 +164,7 @@ class BufferChainOutputStreamTest2 {
 
         // Auto-closed
         assertTrue(chain.closed);
-        assertThrows(IllegalStateException.class, () -> out.write(6));
+        assertThrows(OutputStreamLimitReachedException.class, () -> out.write(6));
     }
 
     @Test

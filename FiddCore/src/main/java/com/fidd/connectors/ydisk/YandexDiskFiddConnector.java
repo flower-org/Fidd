@@ -2,6 +2,7 @@ package com.fidd.connectors.ydisk;
 
 import com.fidd.common.streamchain.BufferChainInputStream;
 import com.fidd.common.streamchain.BufferChainOutputStream;
+import com.fidd.common.streamchain.OutputStreamLimitReachedException;
 import com.fidd.common.streamchain.chain.BufferChain;
 import com.fidd.common.streamchain.chain.ConcurrentBufferChain;
 import com.fidd.connectors.FiddConnector;
@@ -13,6 +14,8 @@ import com.yandex.disk.rest.RestClient;
 import com.yandex.disk.rest.exceptions.ServerException;
 import com.yandex.disk.rest.exceptions.ServerIOException;
 import com.yandex.disk.rest.json.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -29,8 +32,16 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
         FiddConnector connector = new YandexDiskFiddConnector(url);
 
         connector.getMessageNumbersTail(10);
+
+        byte[] key = connector.getUnencryptedFiddKey(8);
+        System.out.println(new String(key));
+
+        InputStream is = connector.getFiddMessageChunk(8,5,10);
+        byte[] b = is.readAllBytes();
+        System.out.println("---" + new String(b) + "----");
     }
 
+    public final static Logger LOGGER = LoggerFactory.getLogger(YandexDiskFiddConnector.class);
     public static final long BUFFER_SIZE = 1024;
 
     final String user;
@@ -77,9 +88,9 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
     protected String fiddFolderPath() { return fiddFolderPath; }
 
     protected List<Resource> getSingleItemResources(String path) throws ServerIOException, IOException {
-        ResourcesArgs singlePathArgs = new ResourcesArgs.Builder().setPath(path).setLimit(1).setFields("name").build();
-        Resource resources = client.getResources(singlePathArgs);
-        return resources.getResourceList().getItems();
+        ResourcesArgs singlePathArgs = new ResourcesArgs.Builder().setPath(path).setLimit(1).setFields("name,type").build();
+        Resource resource = client.getResources(singlePathArgs);
+        return List.of(resource);
     }
 
     // TODO: Those methods can be combined into 1 request
@@ -139,25 +150,30 @@ public class YandexDiskFiddConnector extends BaseDirectoryConnector implements F
      */
     @Override
     protected InputStream getSubInpuStream(String path, long offset, long length) throws IOException {
-        try {
-            BufferChain chain = new ConcurrentBufferChain();
-            BufferChainInputStream is = new BufferChainInputStream(chain);
-            BufferChainOutputStream os = new BufferChainOutputStream(chain, (int)BUFFER_SIZE, length);
+        BufferChain chain = new ConcurrentBufferChain();
+        BufferChainInputStream is = new BufferChainInputStream(chain);
+        BufferChainOutputStream os = new BufferChainOutputStream(chain, (int)BUFFER_SIZE, length);
 
-            client.downloadFile(path, new DownloadListener() {
-                @Override
-                public long getLocalLength() { return offset; }
+        // TODO YaDisk Client is blocking, mb use Scheduler here?
+        new Thread(() -> {
+            try {
+                client.downloadFile(path, new DownloadListener() {
+                    @Override
+                    public long getLocalLength() { return offset; }
 
-                @Override
-                public OutputStream getOutputStream(boolean append) throws IOException {
-                    return os;
-                }
-            });
-            return is;
-        } catch (ServerIOException e) {
-            throw new IOException(e);
-        } catch (ServerException e) {
-            throw new RuntimeException(e);
-        }
+                    @Override
+                    public OutputStream getOutputStream(boolean append) throws IOException {
+                        return os;
+                    }
+                });
+            } catch (OutputStreamLimitReachedException e) {
+                // This is our exception, we already got the chunk, ignore
+                //LOGGER.debug("getSubInputStream", e);
+            } catch (IOException | ServerException e) {
+                LOGGER.debug("getSubInputStream", e);
+            }
+        }).start();
+
+        return is;
     }
 }
