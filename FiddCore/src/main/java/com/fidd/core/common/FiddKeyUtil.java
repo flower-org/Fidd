@@ -48,6 +48,10 @@ public class FiddKeyUtil {
         return null;
     }
 
+    public static @Nullable byte[] loadDefaultFiddKeyBytes(long messageNumber, FiddConnector fiddConnector) throws Exception {
+        return fiddConnector.getUnencryptedFiddKey(messageNumber);
+    }
+
     public static @Nullable FiddKey loadFiddKeyFromBytes(BaseRepositories baseRepositories, byte[] fiddKeyBytes) {
         Repository<FiddKeySerializer> fiddKeyFormatRepo = baseRepositories.fiddKeyFormatRepo();
         LOGGER.info("Detecting FiddKey format.");

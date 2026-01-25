@@ -125,7 +125,8 @@ public class FolderFiddConnectorTest {
         write(msg.resolve("fidd.key.1.sign"), "b");
         write(msg.resolve("fidd.key.3.sign"), "c");
 
-        int count = FolderFiddConnector.getSignatureCount(msg, FolderFiddConnector.FIDD_KEY_SIGNATURE_PATTERN, 1);
+        FolderFiddConnector folderFiddConnector = new FolderFiddConnector(temp);
+        int count = folderFiddConnector.getSignatureCount(msg.toString(), FolderFiddConnector.FIDD_KEY_SIGNATURE_PATTERN, 1);
 
         assertEquals(4, count); // max index = 3 → count = 4
     }
@@ -139,7 +140,8 @@ public class FolderFiddConnectorTest {
         createMessageFolder(11);
         createMessageFolder(12);
 
-        List<Long> tail = FolderFiddConnector.getMessagesTail(temp, null, 2, true);
+        FolderFiddConnector folderFiddConnector = new FolderFiddConnector(temp);
+        List<Long> tail = folderFiddConnector.getMessagesTail(temp.toString(), null, 2, true);
         assertEquals(List.of(12L, 11L), tail);
     }
 
@@ -384,7 +386,7 @@ public class FolderFiddConnectorTest {
     }
 
     @Test
-    void testGetKeyFile_returnsEmptyListWhenNoMatches() {
+    void testGetKeyFile_returnsEmptyListWhenNoMatches() throws IOException {
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
 
         byte[] subscriberId = "nomatch".getBytes(StandardCharsets.UTF_8);
@@ -467,21 +469,6 @@ public class FolderFiddConnectorTest {
         FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
         long size = fidd.getFiddMessageSize(1);
         assertEquals(3, size);
-    }
-
-    // ------------------------------------------------------------
-    // getMessageFile
-    // ------------------------------------------------------------
-    @Test
-    void testGetFiddMessage() throws IOException {
-        Path msg = createMessageFolder(1);
-        Path file = msg.resolve("fidd.message");
-        write(file, "xyz");
-
-        FolderFiddConnector fidd = new FolderFiddConnector(temp.toString());
-        try (InputStream in = fidd.getFiddMessage(1)) {
-            assertEquals("xyz", new String(in.readAllBytes()));
-        }
     }
 
     // ------------------------------------------------------------

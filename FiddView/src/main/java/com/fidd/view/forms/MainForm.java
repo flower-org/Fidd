@@ -2,7 +2,6 @@ package com.fidd.view.forms;
 
 import com.fidd.base.BaseRepositories;
 import com.fidd.base.DefaultBaseRepositories;
-import com.fidd.connectors.DefaultFiddConnectorFactory;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.connectors.FiddConnectorFactory;
 import com.fidd.core.connection.FiddConnection;
@@ -72,7 +71,6 @@ public class MainForm {
     final static FileChooser.ExtensionFilter ENCRYPTED_FIDD_CONNECTION_LIST_EXTENSION_FILTER =
             new FileChooser.ExtensionFilter("Fidd Connection List (*" + ENCRYPTED_FIDD_CONNECTION_LIST_EXT + ")",
                     "*" + ENCRYPTED_FIDD_CONNECTION_LIST_EXT);
-    final static FiddConnectorFactory FIDD_CONNECTOR_FACTORY = new DefaultFiddConnectorFactory();
     final static BaseRepositories BASE_REPOSITORIES = new DefaultBaseRepositories();
     final static int DEFAULT_HTTP_PORT = 80;
 
@@ -174,7 +172,8 @@ public class MainForm {
             X509Certificate certificate = ((RsaKeyContext) keyContext).certificate();
             PrivateKey key = ((RsaKeyContext) keyContext).privateKey();
 
-            FiddConnector fiddConnector = FIDD_CONNECTOR_FACTORY.createConnector(fiddConnection.url());
+            FiddConnectorFactory fiddConnectorFactory = BASE_REPOSITORIES.fiddConnectorFactoryRepo().get(fiddConnection.connectorType());
+            FiddConnector fiddConnector = fiddConnectorFactory.createConnector(fiddConnection.url());
             FiddContentService fiddContentService = new WrapperFiddContentService(BASE_REPOSITORIES, fiddConnector, certificate, key);
 
             FiddViewForm fiddViewForm = new FiddViewForm(fiddConnection.name(), fiddContentService, checkNotNull(fiddApiHost), fiddApiPort);

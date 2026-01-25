@@ -2,6 +2,7 @@ package com.fidd.base;
 
 import com.fidd.connectors.FiddConnectorFactory;
 import com.fidd.connectors.folder.FolderFiddConnectorFactory;
+import com.fidd.connectors.ydisk.YandexDiskConnectorFactory;
 import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.crc.adler32.Adler32Calculator;
 import com.fidd.core.crc.crc32.Crc32Calculator;
@@ -79,7 +80,8 @@ public class DefaultBaseRepositories implements BaseRepositories {
         CRC_CALCULATOR_REPO = new MapRepository<>(adler32Calculator.name(), List.of(adler32Calculator, crc32Calculator));
 
         FolderFiddConnectorFactory folderFiddConnectorFactory = new FolderFiddConnectorFactory();
-        FIDD_CONNECTOR_FACTORY_REPO = new MapRepository<>(folderFiddConnectorFactory.name(), List.of(folderFiddConnectorFactory));
+        YandexDiskConnectorFactory yandexDiskConnectorFactory = new YandexDiskConnectorFactory();
+        FIDD_CONNECTOR_FACTORY_REPO = new MapRepository<>(folderFiddConnectorFactory.name(), List.of(folderFiddConnectorFactory, yandexDiskConnectorFactory));
     }
 
     @Override
