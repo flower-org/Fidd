@@ -166,32 +166,47 @@ public class MainForm {
         if (keyProvider == null) {
             throw new RuntimeException("Key Provider not found.");
         }
-        KeyContext keyContext = keyProvider.getKeyContext();
 
-        if (keyContext instanceof RsaKeyContext) {
-            X509Certificate certificate = ((RsaKeyContext) keyContext).certificate();
-            PrivateKey key = ((RsaKeyContext) keyContext).privateKey();
-
-            FiddConnectorFactory fiddConnectorFactory = BASE_REPOSITORIES.fiddConnectorFactoryRepo().get(fiddConnection.connectorType());
-            FiddConnector fiddConnector = fiddConnectorFactory.createConnector(fiddConnection.url());
-            FiddContentService fiddContentService = new WrapperFiddContentService(BASE_REPOSITORIES, fiddConnector, certificate, key);
-
-            FiddViewForm fiddViewForm = new FiddViewForm(fiddConnection.name(), fiddContentService, checkNotNull(fiddApiHost), fiddApiPort);
-            fiddViewForm.setStage(checkNotNull(mainStage));
-            final Tab tab = new Tab(fiddConnection.name(), fiddViewForm);
-            tab.setClosable(true);
-
-            if (!checkNotNull(fiddContentServiceCache).addServiceIfAbsent(fiddConnection.name(), fiddContentService)) {
-                JavaFxUtils.showMessage("Fidd Connection with name '" + fiddConnection.name() + "' is already opened.");
+        X509Certificate certificate;
+        PrivateKey key;
+        KeyContext keyContext = null;
+        try {
+            keyContext = keyProvider.getKeyContext();
+        } catch (Exception e) {
+            if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog(e.getMessage() + "\nContinue without certificate?")) {
                 return;
             }
-
-            tab.onClosedProperty().set(event -> checkNotNull(fiddContentServiceCache).removeService(fiddConnection.name()));
-
-            addTab(tab);
-        } else {
-            throw new RuntimeException("Unsupported Key Context: " + keyContext.getClass());
         }
+        if (keyContext == null) {
+            // No cert - will only show messages with unencrypted keys
+            certificate = null;
+            key = null;
+        } else {
+            if (keyContext instanceof RsaKeyContext) {
+                certificate = ((RsaKeyContext) keyContext).certificate();
+                key = ((RsaKeyContext) keyContext).privateKey();
+            } else {
+                throw new RuntimeException("Unsupported Key Context: " + keyContext.getClass());
+            }
+        }
+
+        FiddConnectorFactory fiddConnectorFactory = BASE_REPOSITORIES.fiddConnectorFactoryRepo().get(fiddConnection.connectorType());
+        FiddConnector fiddConnector = fiddConnectorFactory.createConnector(fiddConnection.url());
+        FiddContentService fiddContentService = new WrapperFiddContentService(BASE_REPOSITORIES, fiddConnector, certificate, key);
+
+        FiddViewForm fiddViewForm = new FiddViewForm(fiddConnection.name(), fiddContentService, checkNotNull(fiddApiHost), fiddApiPort);
+        fiddViewForm.setStage(checkNotNull(mainStage));
+        final Tab tab = new Tab(fiddConnection.name(), fiddViewForm);
+        tab.setClosable(true);
+
+        if (!checkNotNull(fiddContentServiceCache).addServiceIfAbsent(fiddConnection.name(), fiddContentService)) {
+            JavaFxUtils.showMessage("Fidd Connection with name '" + fiddConnection.name() + "' is already opened.");
+            return;
+        }
+
+        tab.onClosedProperty().set(event -> checkNotNull(fiddContentServiceCache).removeService(fiddConnection.name()));
+
+        addTab(tab);
     }
 
     void addTab(Tab tab) {

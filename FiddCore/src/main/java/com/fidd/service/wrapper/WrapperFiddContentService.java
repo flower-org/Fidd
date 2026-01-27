@@ -35,11 +35,11 @@ public class WrapperFiddContentService implements FiddContentService {
 
     protected final BaseRepositories baseRepositories;
     protected final FiddConnector fiddConnector;
-    protected final X509Certificate userCert;
-    protected final PrivateKey userPrivateKey;
+    protected final @Nullable X509Certificate userCert;
+    protected final @Nullable PrivateKey userPrivateKey;
 
     public WrapperFiddContentService(BaseRepositories baseRepositories, FiddConnector fiddConnector,
-                                     X509Certificate userCert, PrivateKey userPrivateKey) {
+                                     @Nullable X509Certificate userCert, @Nullable PrivateKey userPrivateKey) {
         this.baseRepositories = baseRepositories;
         this.fiddConnector = fiddConnector;
         this.userCert = userCert;
@@ -64,7 +64,10 @@ public class WrapperFiddContentService implements FiddContentService {
     }
 
     protected @Nullable FiddKey loadFiddKey(long messageNumber) throws Exception {
-        byte[] fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector, userCert, userPrivateKey);
+        byte[] fiddKeyBytes = null;
+        if (userCert != null) {
+            fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector, userCert, checkNotNull(userPrivateKey));
+        }
         if (fiddKeyBytes == null) {
             fiddKeyBytes = FiddKeyUtil.loadDefaultFiddKeyBytes(messageNumber, fiddConnector);
         }
