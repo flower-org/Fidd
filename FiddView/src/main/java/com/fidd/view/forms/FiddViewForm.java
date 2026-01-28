@@ -240,21 +240,20 @@ public class FiddViewForm extends AnchorPane  {
             }
         });
         fiddStructureTreeView.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            boolean isFile = false;
+            boolean isDirectory = false;
             if (newSel != null) {
                 FiddTreeNode value = newSel.getValue();
                 if (value instanceof FiddFileNode) {
-                    checkNotNull(saveFileButton).setDisable(false);
-                    checkNotNull(getFileUrlButton).setDisable(false);
-                    return;
+                    isFile = true;
                 } else if (value instanceof FiddFolderNode || value instanceof FiddMessageNode) {
-                    checkNotNull(getPlaylistUrlButton).setDisable(false);
-                    return;
+                    isDirectory = true;
                 }
             }
 
-            checkNotNull(saveFileButton).setDisable(true);
-            checkNotNull(getFileUrlButton).setDisable(true);
-            checkNotNull(getPlaylistUrlButton).setDisable(true);
+            checkNotNull(saveFileButton).setDisable(!isFile);
+            checkNotNull(getFileUrlButton).setDisable(!isFile);
+            checkNotNull(getPlaylistUrlButton).setDisable(!isDirectory);
         });
 
         loadNextBatch(0);
