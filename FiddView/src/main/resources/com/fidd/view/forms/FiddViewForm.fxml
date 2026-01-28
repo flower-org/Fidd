@@ -15,6 +15,7 @@
                     <items>
                         <Button fx:id="saveFileButton" disable="true" mnemonicParsing="false" onAction="#saveFile" text="Save File to Disk" />
                         <Button fx:id="getFileUrlButton" disable="true" mnemonicParsing="false" onAction="#getFileUrl" text="Get File URL" />
+                     <Button fx:id="getPlaylistUrlButton" disable="true" mnemonicParsing="false" onAction="#getPlaylistUrl" text="Get Playlist URL" />
                     </items>
                 </ToolBar>
             </children>

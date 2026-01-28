@@ -46,16 +46,22 @@ import org.slf4j.LoggerFactory;
 
 import javax.activation.MimetypesFileTypeMap;
 import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -127,6 +133,57 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
 
   public static final AtomicInteger TRANSFERS = new AtomicInteger();
 
+  // Comparator for numeric filename prefix
+  public static class NumericPrefixComparator implements Comparator<String> {
+    final boolean isAscending;
+
+    public NumericPrefixComparator(boolean isAscending) {
+        this.isAscending = isAscending;
+    }
+
+    @Override
+    public int compare(String filename1, String filename2) {
+      Integer prefix1 = getNumericPrefix(filename1);
+      Integer prefix2 = getNumericPrefix(filename2);
+
+      // Compare numeric prefixes
+      int comparison = isAscending ? prefix1.compareTo(prefix2) : prefix2.compareTo(prefix1);
+      if (comparison != 0) {
+        return comparison;
+      }
+      // If prefixes are equal, fall back to alphabetical sort
+      return isAscending ? filename1.compareTo(filename2) : filename2.compareTo(filename1);
+    }
+
+    // Helper method to extract numeric prefix
+    private static Integer getNumericPrefix(String filename) {
+      Pattern pattern = Pattern.compile("^\\d+");
+      Matcher matcher = pattern.matcher(filename);
+      return matcher.find() ? Integer.parseInt(matcher.group()) : Integer.MAX_VALUE;
+    }
+  }
+
+  // Comparator for alphabetical sorting
+  public static class AlphabeticalComparator implements Comparator<String> {
+    final boolean isAscending;
+
+    public AlphabeticalComparator(boolean isAscending) {
+      this.isAscending = isAscending;
+    }
+
+    public int compare(String filename1, String filename2) {
+      return isAscending ? filename1.compareTo(filename2) : filename2.compareTo(filename1);
+    }
+  }
+
+  enum Sort {
+    NONE,
+    NUMERICAL_ASC,
+    NUMERICAL_DESC,
+    ALPHABETICAL_ASC,
+    ALPHABETICAL_DESC
+  }
+
   @Nullable
   private FullHttpRequest request;
 
@@ -154,8 +211,10 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
     // TODO: for now just setting to false to minimize hanging connections
     //final boolean keepAlive = HttpUtil.isKeepAlive(request);
     final boolean keepAlive = false;
-    final String uri = request.uri();
-    final String path = sanitizeUri(uri);
+    final String uriString = request.uri();
+    URI uri = new URI("http://localhost" + uriString); // Adding a base to create a valid URI
+    final String path = uri.getPath();
+
     if (path == null) {
       sendError(ctx, BAD_REQUEST);
       return;
@@ -165,7 +224,7 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
     long messageNumber;
     String filePath;
 
-    Matcher m = URI_PATTERN.matcher(uri);
+    Matcher m = URI_PATTERN.matcher(path);
     if (m.matches()) {
       fiddName = m.group(1);
       messageNumber = Long.parseLong(m.group(2));
@@ -182,6 +241,135 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
       return;
     }
 
+    // -----------------------------------------------
+    // Playlist generation logic
+    // -----------------------------------------------
+    Map<String, List<String>> queryParams = getQueryParams(uri);
+    if (queryParams.containsKey("list")) {
+      String listType = queryParams.get("list").get(0);
+      if (!"m3u".equalsIgnoreCase(listType)) {
+        // Unknown list type
+        sendError(ctx, BAD_REQUEST);
+        return;
+      }
+
+      // Get other parameters
+      List<String> filterIn = queryParams.containsKey("filterIn") ? queryParams.get("filterIn") : List.of();
+      List<String> filterOut = queryParams.containsKey("filterOut") ? queryParams.get("filterOut") : List.of();
+      String sortStr = queryParams.containsKey("sort") ? queryParams.get("sort").get(0) : null;
+      Sort sort = StringUtils.isBlank(sortStr) ? Sort.NUMERICAL_ASC : Sort.valueOf(sortStr);
+      String includeSubfoldersStr = queryParams.containsKey("includeSubfolders") ? queryParams.get("includeSubfolders").get(0) : null;
+      boolean includeSubfolders = StringUtils.isBlank(includeSubfoldersStr) ? false : Boolean.parseBoolean(includeSubfoldersStr);
+
+      List<LogicalFileInfo> logicalFileInfos = fiddService.getLogicalFileInfos(messageNumber);
+      if (logicalFileInfos == null) {
+        sendError(ctx, NOT_FOUND);
+        return;
+      }
+
+      List<String> filteredLogicalFileNames = new ArrayList<>();
+      for (LogicalFileInfo candidateLogicalFileInfo : logicalFileInfos) {
+        // 1. The file should be under our folder
+        if (candidateLogicalFileInfo.metadata().filePath().startsWith(filePath)) {
+          String remainderPath = candidateLogicalFileInfo.metadata().filePath().substring(filePath.length());
+
+          // 2. Include subfolder content only if `includeSubfolders` flag is set
+          if (!includeSubfolders && remainderPath.contains("/")) {
+            continue;
+          }
+
+          File file = new File(remainderPath);
+          String filename = file.getName();
+          // 3. FilterIn - allow matching files only
+          if (!filterIn.isEmpty()) {
+            boolean match = false;
+            for (String filter : filterIn) {
+              if (match(filename, filter)) {
+                match = true;
+                break;
+              }
+            }
+            if (!match) {
+              continue;
+            }
+          }
+
+          // 4. FilterOut - disallow all matching files
+          if (!filterOut.isEmpty()) {
+            boolean match = false;
+            for (String filter : filterIn) {
+              if (match(filename, filter)) {
+                match = true;
+                break;
+              }
+            }
+            if (match) {
+              continue;
+            }
+          }
+
+          // 5. Now we can add file to the result
+          // This works with and without URLEncode in Celluloid and VLC, but URLEncode messes up the filenames
+          filteredLogicalFileNames.add(filename);
+        }
+      }
+
+      // 6. If custom sorting is requested, sort
+      Comparator<String> comparator = null;
+      switch (sort) {
+        case ALPHABETICAL_DESC: { comparator = new AlphabeticalComparator(false); break; }
+        case ALPHABETICAL_ASC: { comparator = new AlphabeticalComparator(true); break; }
+        case NUMERICAL_DESC: { comparator = new NumericPrefixComparator(false); break; }
+        case NUMERICAL_ASC: { comparator = new NumericPrefixComparator(true); break; }
+      }
+
+      // TODO: this sorting doesn't play with subfolders too well, we might want files and subfolders in separate groups
+      if (comparator != null) {
+        filteredLogicalFileNames.sort(comparator);
+      }
+
+      String m3uPlaylist = M3uFileCreator.createM3UPlaylist(filteredLogicalFileNames);
+
+      // TODO: DRY this
+      {
+        HttpResponse response;
+        ByteArrayInputStream m3uListStream = new ByteArrayInputStream(m3uPlaylist.getBytes(StandardCharsets.UTF_8));
+
+        response = new DefaultHttpResponse(HTTP_1_1, OK);
+        HttpUtil.setContentLength(response, m3uListStream.available());
+
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain");
+        setDateAndCacheHeaders(response, new Date());
+
+        if (!keepAlive) {
+          response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+        } else if (request.protocolVersion().equals(HTTP_1_0)) {
+          response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+        }
+
+        String m3uFilename = path.replace('/', '_') + ".m3u";
+        response.headers().set(HttpHeaderNames.CONTENT_DISPOSITION, "attachment; filename=\"" + m3uFilename + "\"");
+
+        // Write the initial line and the header.
+        ctx.write(response);
+
+        // Always chunked now, because InputStream cannot be zero-copy
+        ChannelFuture sendFileFuture = ctx.writeAndFlush(
+                new HttpChunkedInput(new ChunkedStream(m3uListStream, 8192)),
+                ctx.newProgressivePromise()
+        );
+
+        // Decide whether to close the connection or not.
+        if (!keepAlive) {
+          // Close the connection when the whole content is written out.
+          sendFileFuture.addListener(ChannelFutureListener.CLOSE);
+        }
+      }
+    }
+
+    // -----------------------------------------------
+    // File download/stream logic
+    // -----------------------------------------------
     LogicalFileInfo logicalFileInfo = null;
     List<LogicalFileInfo> logicalFileInfos = fiddService.getLogicalFileInfos(messageNumber);
     if (logicalFileInfos == null) {
@@ -337,27 +525,6 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
     }
   }
 
-  @Nullable
-  private static String sanitizeUri(String uri) {
-    // Decode the path.
-      uri = URLDecoder.decode(uri, StandardCharsets.UTF_8);
-
-      if (uri.isEmpty() || uri.charAt(0) != '/') {
-      return null;
-    }
-
-    // Simplistic dumb security check.
-    // You will have to do something serious in the production environment.
-    if (uri.contains(File.separator + '.') ||
-      uri.contains('.' + File.separator) ||
-      uri.charAt(0) == '.' || uri.charAt(uri.length() - 1) == '.' ||
-      INSECURE_URI.matcher(uri).matches()) {
-      return null;
-    }
-
-    return uri;
-  }
-
   private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
     FullHttpResponse response = new DefaultFullHttpResponse(
       HTTP_1_1, status, Unpooled.copiedBuffer("Failure: " + status + "\r\n", CharsetUtil.UTF_8));
@@ -455,5 +622,37 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
 
     MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap();
     response.headers().set(HttpHeaderNames.CONTENT_TYPE, mimeTypesMap.getContentType(filePath));
+  }
+
+  public static Map<String, List<String>> getQueryParams(URI uri) {
+    Map<String, List<String>> params = new LinkedHashMap<>();
+    String query = uri.getQuery();
+    if (query == null || query.isEmpty()) {
+      return params;
+    }
+
+    for (String pair : query.split("&")) {
+      String[] parts = pair.split("=", 2);
+      String key = URLDecoder.decode(parts[0], StandardCharsets.UTF_8);
+      String value = parts.length > 1 ? URLDecoder.decode(parts[1], StandardCharsets.UTF_8) : "";
+
+      // e.g. https://example.com/search?id=1&id=2&id=3
+      params.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
+    }
+    return params;
+  }
+
+  public boolean match(String filename, String filter) {
+    // TODO: m.b. LRU cache of patterns?
+    // Escape regex special characters except for the wildcard '*'
+    String regex = filter.replace(".", "\\.")  // Escape dot
+            .replace("?", ".")    // Replace '?' with regex for any single character
+            .replace("*", ".*");   // Replace '*' with regex for zero or more characters
+
+    // Compile the regex pattern to match the filename
+    Pattern pattern = Pattern.compile(regex);
+
+    // Return true if the filename matches the pattern, otherwise false
+    return pattern.matcher(filename).matches();
   }
 }

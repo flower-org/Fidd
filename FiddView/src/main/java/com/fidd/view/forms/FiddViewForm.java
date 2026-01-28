@@ -9,6 +9,9 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
@@ -30,6 +33,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -124,6 +128,7 @@ public class FiddViewForm extends AnchorPane  {
     @Nullable @FXML TreeView<FiddTreeNode> fiddStructureTreeView;
     @Nullable @FXML Button saveFileButton;
     @Nullable @FXML Button getFileUrlButton;
+    @Nullable @FXML Button getPlaylistUrlButton;
 
     protected final String fiddName;
     protected final String fiddApiServerAndPort;
@@ -146,6 +151,59 @@ public class FiddViewForm extends AnchorPane  {
         this.fiddName = fiddName;
         this.fiddApiServerAndPort = fiddApiHost + (fiddApiPort != null ? (":" + fiddApiPort) : "");
         this.fiddContentService = fiddContentService;
+
+        // Attach context menu to tree cells
+        checkNotNull(fiddStructureTreeView).setCellFactory(tv -> {
+            TreeCell<FiddTreeNode> cell = new TreeCell<>() {
+                @Override
+                protected void updateItem(FiddTreeNode item, boolean empty) {
+                    super.updateItem(item, empty);
+
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        setText(item.toString());
+                        setGraphic(item.getImage());
+                    }
+                }
+            };
+
+            // Create ContextMenu for the cell
+            ContextMenu contextMenu = new ContextMenu();
+            MenuItem getPlaylistItem = new MenuItem("Get Playlist URL");
+            getPlaylistItem.setOnAction(e -> {
+                TreeItem<FiddTreeNode> treeItem = cell.getTreeItem();
+                String path = getPlaylistUrl(treeItem);
+
+                if (path != null) {
+                    copyToClipboard(path);
+                    JavaFxUtils.showMessage("Copied Playlist URL to clipboard", "Playlist URL copied to clipboard:\n" + path);
+                } else {
+                    JavaFxUtils.showMessage("Can't copy to clipboard", "Playlist URL wasn't copied to clipboard", "Path is NLL");
+                }
+            });
+            contextMenu.getItems().addAll(getPlaylistItem);
+
+            // Show context menu only if cell is not empty
+            cell.emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
+                boolean set = false;
+                if (!isNowEmpty) {
+                    FiddTreeNode value = cell.itemProperty().getValue();
+                    if (value != null) {
+                        if (value instanceof FiddFolderNode || value instanceof FiddMessageNode) {
+                            cell.setContextMenu(contextMenu);
+                            set = true;
+                        }
+                    }
+                }
+                if (!set) {
+                    cell.setContextMenu(null);
+                }
+            });
+
+            return cell;
+        });
 
         FiddTreeNode rootNode = new FiddRootNode(fiddName);
         rootItem = new TreeItem<>(rootNode, rootNode.getImage());
@@ -182,17 +240,20 @@ public class FiddViewForm extends AnchorPane  {
             }
         });
         fiddStructureTreeView.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            boolean isFile = false;
+            boolean isDirectory = false;
             if (newSel != null) {
                 FiddTreeNode value = newSel.getValue();
                 if (value instanceof FiddFileNode) {
-                    checkNotNull(saveFileButton).setDisable(false);
-                    checkNotNull(getFileUrlButton).setDisable(false);
-                    return;
+                    isFile = true;
+                } else if (value instanceof FiddFolderNode || value instanceof FiddMessageNode) {
+                    isDirectory = true;
                 }
             }
 
-            checkNotNull(saveFileButton).setDisable(true);
-            checkNotNull(getFileUrlButton).setDisable(true);
+            checkNotNull(saveFileButton).setDisable(!isFile);
+            checkNotNull(getFileUrlButton).setDisable(!isFile);
+            checkNotNull(getPlaylistUrlButton).setDisable(!isDirectory);
         });
 
         loadNextBatch(0);
@@ -412,5 +473,55 @@ public class FiddViewForm extends AnchorPane  {
                 JavaFxUtils.showMessage("Copied URL to clipboard", "URL copied to clipboard:\n" + path);
             }
         }
+    }
+
+    public void getPlaylistUrl() {
+        TreeItem<FiddTreeNode> treeItem = checkNotNull(fiddStructureTreeView).getSelectionModel().getSelectedItem();
+        if (treeItem != null) {
+            String path = getPlaylistUrl(treeItem);
+            if (path != null) {
+                copyToClipboard(path);
+                JavaFxUtils.showMessage("Copied Playlist URL to clipboard", "Playlist URL copied to clipboard:\n" + path);
+            } else {
+                JavaFxUtils.showMessage("Can't copy to clipboard", "Playlist URL wasn't copied to clipboard", "Path is NLL");
+            }
+        }
+    }
+
+    public @Nullable String getPlaylistUrl(TreeItem<FiddTreeNode> treeItem) {
+        // TODO: Options for playlist
+        //  ?list=m3u&filterIn=...&filterOut=...&sort=...&includeSubfolders=...
+        String path = null;
+        FiddTreeNode value = treeItem.getValue();
+        if (value instanceof FiddFolderNode) {
+            Stack<String> pathStack = new Stack<>();
+
+            TreeItem<FiddTreeNode> cursor = treeItem;
+            while (true) {
+                value = cursor.getValue();
+                if (value instanceof FiddFolderNode folderNode) {
+                    pathStack.push(folderNode.folderName);
+                } else if (value instanceof FiddMessageNode messageNode) {
+                    pathStack.push(Long.toString(messageNode.messageNumber));
+                    break;
+                } else {
+                    break;
+                }
+                cursor = cursor.getParent();
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.append("http://");
+            while (!pathStack.isEmpty()) {
+                builder.append(pathStack.pop()).append("/");
+            }
+            builder.append("?list=m3u");
+
+            path = builder.toString();
+        } else if (value instanceof FiddMessageNode messageNode) {
+            long messageNumber = messageNode.messageNumber;
+            path = String.format("http://%s/%s/%d/?list=m3u", fiddApiServerAndPort, fiddName, messageNumber);
+        }
+        return path;
     }
 }
