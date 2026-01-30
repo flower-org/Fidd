@@ -512,6 +512,8 @@ public class FiddViewForm extends AnchorPane  {
 
             StringBuilder builder = new StringBuilder();
             builder.append("http://");
+            builder.append(fiddApiServerAndPort).append("/");
+            builder.append(fiddName).append("/");
             while (!pathStack.isEmpty()) {
                 builder.append(pathStack.pop()).append("/");
             }
@@ -523,5 +525,11 @@ public class FiddViewForm extends AnchorPane  {
             path = String.format("http://%s/%s/%d/?list=m3u", fiddApiServerAndPort, fiddName, messageNumber);
         }
         return path;
+    }
+
+    public void showPlaylistSettings() {
+        //
+
+        //
     }
 }
