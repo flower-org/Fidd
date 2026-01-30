@@ -39,9 +39,9 @@
                </children>
             </GridPane>
             <ComboBox fx:id="sortingComboBox" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-            <CheckBox fx:id="filterInCheckBox" mnemonicParsing="false" text="Filter In:" />
-            <CheckBox fx:id="filterOutCheckBox" mnemonicParsing="false" text="Filter Out:" GridPane.rowIndex="1" />
-            <CheckBox fx:id="sortingCheckBox" mnemonicParsing="false" text="Sorting:" GridPane.rowIndex="2" />
+            <CheckBox fx:id="filterInCheckBox" mnemonicParsing="false" onAction="#filterInChecked" text="Filter In:" />
+            <CheckBox fx:id="filterOutCheckBox" mnemonicParsing="false" onAction="#filterOutChecked" text="Filter Out:" GridPane.rowIndex="1" />
+            <CheckBox fx:id="sortingCheckBox" mnemonicParsing="false" onAction="#sortingChecked" text="Sorting:" GridPane.rowIndex="2" />
             <CheckBox fx:id="includeSubfoldersCheckBox" mnemonicParsing="false" text="Include subfolders:" GridPane.rowIndex="3">
                <GridPane.margin>
                   <Insets right="15.0" />

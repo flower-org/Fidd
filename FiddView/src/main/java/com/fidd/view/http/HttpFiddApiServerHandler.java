@@ -20,6 +20,7 @@ import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.encryption.RandomAccessEncryptionAlgorithm;
 import com.fidd.service.FiddContentService;
 import com.fidd.service.LogicalFileInfo;
+import com.fidd.view.common.PlaylistSort;
 import com.fidd.view.serviceCache.FiddContentServiceCache;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -176,14 +177,6 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
     }
   }
 
-  enum Sort {
-    NONE,
-    NUMERICAL_ASC,
-    NUMERICAL_DESC,
-    ALPHABETICAL_ASC,
-    ALPHABETICAL_DESC
-  }
-
   @Nullable
   private FullHttpRequest request;
 
@@ -257,7 +250,7 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
       List<String> filterIn = queryParams.containsKey("filterIn") ? queryParams.get("filterIn") : List.of();
       List<String> filterOut = queryParams.containsKey("filterOut") ? queryParams.get("filterOut") : List.of();
       String sortStr = queryParams.containsKey("sort") ? queryParams.get("sort").get(0) : null;
-      Sort sort = StringUtils.isBlank(sortStr) ? Sort.NUMERICAL_ASC : Sort.valueOf(sortStr);
+      PlaylistSort sort = StringUtils.isBlank(sortStr) ? PlaylistSort.NUMERICAL_ASC : PlaylistSort.valueOf(sortStr);
       String includeSubfoldersStr = queryParams.containsKey("includeSubfolders") ? queryParams.get("includeSubfolders").get(0) : null;
       boolean includeSubfolders = StringUtils.isBlank(includeSubfoldersStr) ? false : Boolean.parseBoolean(includeSubfoldersStr);
 
@@ -297,7 +290,7 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
           // 4. FilterOut - disallow all matching files
           if (!filterOut.isEmpty()) {
             boolean match = false;
-            for (String filter : filterIn) {
+            for (String filter : filterOut) {
               if (match(filename, filter)) {
                 match = true;
                 break;
@@ -310,7 +303,7 @@ public class HttpFiddApiServerHandler extends SimpleChannelInboundHandler<FullHt
 
           // 5. Now we can add file to the result
           // This works with and without URLEncode in Celluloid and VLC, but URLEncode messes up the filenames
-          filteredLogicalFileNames.add(filename);
+          filteredLogicalFileNames.add(remainderPath);
         }
       }
 

@@ -3,12 +3,16 @@ package com.fidd.view.forms;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.service.FiddContentService;
 import com.fidd.service.LogicalFileInfo;
+import com.fidd.view.common.PlaylistSettings;
 import com.flower.fxutils.JavaFxUtils;
+import com.flower.fxutils.ModalWindow;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TreeCell;
@@ -31,6 +35,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -51,6 +57,8 @@ public class FiddViewForm extends AnchorPane  {
     static final Image FILE_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/file.png")));
     static final Image DOWN_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/down.png")));
     static final Image UP_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/up-arrow.png")));
+
+    PlaylistSettings playlistSettings = new PlaylistSettings();
 
     public interface FiddTreeNode {
         @Nullable ImageView getImage();
@@ -524,12 +532,49 @@ public class FiddViewForm extends AnchorPane  {
             long messageNumber = messageNode.messageNumber;
             path = String.format("http://%s/%s/%d/?list=m3u", fiddApiServerAndPort, fiddName, messageNumber);
         }
-        return path;
+        return path + formPlaylistSettings(playlistSettings);
+    }
+
+    public String formPlaylistSettings(PlaylistSettings playlistSettings) {
+        StringBuilder builder = new StringBuilder();
+
+        for (String in : playlistSettings.filterIn()) {
+            builder.append("&filterIn=").append(URLEncoder.encode(in, StandardCharsets.UTF_8));
+        }
+        for (String out : playlistSettings.filterOut()) {
+            builder.append("&filterOut=").append(URLEncoder.encode(out, StandardCharsets.UTF_8));
+        }
+        builder.append("&sort=").append(playlistSettings.sort());
+        builder.append("&includeSubfolders=").append(playlistSettings.includeSubfolders());
+
+        return builder.toString();
     }
 
     public void showPlaylistSettings() {
-        //
+        try {
+            PlaylistSettingsDialog playlistSettingsDialog = new PlaylistSettingsDialog(playlistSettings);
+            Stage workspaceStage = ModalWindow.showModal(checkNotNull(stage),
+                stage -> { playlistSettingsDialog.setStage(stage); return playlistSettingsDialog; },
+                "Edit PlayList Settings");
 
-        //
+            workspaceStage.setOnHidden(
+                ev -> {
+                    try {
+                        PlaylistSettings newPlaylistSettings = playlistSettingsDialog.getPlaylistSettings();
+                        if (newPlaylistSettings != null) {
+                            playlistSettings = newPlaylistSettings;
+                        }
+                    } catch (Exception e) {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Error changing PlayList settings: " + e, ButtonType.OK);
+                        LOGGER.error("Error changing PlayList settings: ", e);
+                        alert.showAndWait();
+                    }
+                }
+            );
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error changing PlayList settings: " + e, ButtonType.OK);
+            LOGGER.error("Error changing PlayList settings: ", e);
+            alert.showAndWait();
+        }
     }
 }
