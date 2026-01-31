@@ -58,7 +58,7 @@ public class FiddViewForm extends AnchorPane  {
 
     // https://iconscout.com/free-icon-pack/free-free-user-interface-icons-set-icon-pack_37661 - source
     // https://iconscout.com/icon-pack/arrow-and-navigation-icon-pack_66887 - nice folder icon, but costs money
-    static final Image MESSAGE_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/doc.png")));
+    static final Image MESSAGE_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/message.png")));
     static final Image FOLDER_ICON_ = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/folder.png")));
     static final Image FILE_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/file.png")));
     static final Image DOWN_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/down.png")));
