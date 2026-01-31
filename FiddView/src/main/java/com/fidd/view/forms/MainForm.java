@@ -13,6 +13,7 @@ import com.fidd.view.serviceCache.FiddContentServiceCache;
 import com.flower.crypt.HybridAesEncryptor;
 import com.flower.crypt.keys.KeyContext;
 import com.flower.crypt.keys.RsaKeyContext;
+import com.flower.crypt.keys.UserPreferencesManager;
 import com.flower.crypt.keys.forms.MultiKeyProvider;
 import com.flower.crypt.keys.forms.RsaFileKeyProvider;
 import com.flower.crypt.keys.forms.RsaPkcs11KeyProvider;
@@ -53,6 +54,7 @@ import java.nio.file.Files;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.prefs.Preferences;
 
 import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_EXT;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -73,6 +75,9 @@ public class MainForm {
                     "*" + ENCRYPTED_FIDD_CONNECTION_LIST_EXT);
     final static BaseRepositories BASE_REPOSITORIES = new DefaultBaseRepositories();
     final static int DEFAULT_HTTP_PORT = 80;
+
+    static final String FIDD_VIEW_FIDD_CONNECTIONS_FILE = "FIDD_VIEW_FIDD_CONNECTIONS_FILE";
+    static final String FIDD_VIEW_ENCRYPT_DECRYPT = "FIDD_VIEW_ENCRYPT_DECRYPT";
 
     @Nullable Stage mainStage;
     @Nullable BaseRepositories repositories;
@@ -119,6 +124,20 @@ public class MainForm {
 
         fiddConnections = FXCollections.observableArrayList();
         checkNotNull(fiddConnectionTableView).itemsProperty().set(fiddConnections);
+
+        String fiddConnectionsFileStr = UserPreferencesManager.getUserPreference(FIDD_VIEW_FIDD_CONNECTIONS_FILE);
+        String encryptDecryptFileStr = UserPreferencesManager.getUserPreference(FIDD_VIEW_ENCRYPT_DECRYPT);
+        try {
+            boolean encryptDecryptFile = Boolean.parseBoolean(encryptDecryptFileStr);
+            checkNotNull(encryptDecryptFiddConnectionsCheckBox).selectedProperty().set(encryptDecryptFile);
+        } catch (Exception e) { }
+
+        if (!StringUtils.isBlank(fiddConnectionsFileStr)) {
+            checkNotNull(fiddConnectionsFileTextField).textProperty().set(fiddConnectionsFileStr);
+            loadFiddConnections(false);
+        }
+        checkNotNull(fiddConnectionsFileTextField).textProperty().addListener(
+                (observableValue, s, t1) -> fiddConnectionsFileChanged());
     }
 
     private static TabKeyProvider buildMainKeyProvider(Stage mainStage) {
@@ -440,10 +459,10 @@ public class MainForm {
             return;
         }
 
-        loadFiddConnections();
+        loadFiddConnections(true);
     }
 
-    public void loadFiddConnections() {
+    public void loadFiddConnections(boolean showAlerts) {
         if (!checkNotNull(fiddConnections).isEmpty()) {
             if (JavaFxUtils.YesNo.NO ==
                     JavaFxUtils.showYesNoDialog("Load Fidd Connections File",
@@ -456,10 +475,12 @@ public class MainForm {
             String fiddConnectionListFilePath = checkNotNull(fiddConnectionsFileTextField).textProperty().get();
             File fiddConnectionListFile = new File(fiddConnectionListFilePath);
             if (!fiddConnectionListFile.exists()) {
-                Alert alert = new Alert(Alert.AlertType.ERROR,
-                        "Error loading Fidd Connections file - file doesn't exist: " + fiddConnectionListFilePath, ButtonType.OK);
                 LOGGER.warn("Error loading fidd Connections file - file doesn't exist: {}", fiddConnectionListFilePath);
-                alert.showAndWait();
+                if (showAlerts) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR,
+                            "Error loading Fidd Connections file - file doesn't exist: " + fiddConnectionListFilePath, ButtonType.OK);
+                    alert.showAndWait();
+                }
             } else {
                 boolean decrypt = checkNotNull(encryptDecryptFiddConnectionsCheckBox).isSelected();
                 byte[] fiddConnectionListBytes;
@@ -494,16 +515,21 @@ public class MainForm {
                 checkNotNull(fiddConnectionTableView).refresh();
             }
         } catch (Exception e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR, "Error loading Fidd Connections file: " + e, ButtonType.OK);
             LOGGER.error("Error loading Fidd Connections file: ", e);
-            alert.showAndWait();
+            if (showAlerts) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Error loading Fidd Connections file: " + e, ButtonType.OK);
+                alert.showAndWait();
+            }
         }
     }
 
+    // a.k.a. checkBox updated
     public void updateFiddConnectionsFileExtension() {
+        boolean selected = checkNotNull(encryptDecryptFiddConnectionsCheckBox).selectedProperty().get();
+        UserPreferencesManager.updateUserPreference(Preferences.userRoot(), FIDD_VIEW_ENCRYPT_DECRYPT, Boolean.toString(selected));
+
         String fiddConnectionsFilePath = checkNotNull(fiddConnectionsFileTextField).textProperty().get();
         if (!StringUtils.isBlank(fiddConnectionsFilePath)) {
-            boolean selected = checkNotNull(encryptDecryptFiddConnectionsCheckBox).selectedProperty().get();
             if (selected) {
                 if (!fiddConnectionsFilePath.endsWith(ENCRYPTED_EXT)) {
                     fiddConnectionsFilePath += ENCRYPTED_EXT;
@@ -516,5 +542,11 @@ public class MainForm {
                 }
             }
         }
+    }
+
+    public void fiddConnectionsFileChanged() {
+        String fiddConnectionsFilePath = checkNotNull(fiddConnectionsFileTextField).textProperty().get();
+        fiddConnectionsFilePath = StringUtils.defaultIfBlank(fiddConnectionsFilePath, "");
+        UserPreferencesManager.updateUserPreference(Preferences.userRoot(), FIDD_VIEW_FIDD_CONNECTIONS_FILE, fiddConnectionsFilePath);
     }
 }

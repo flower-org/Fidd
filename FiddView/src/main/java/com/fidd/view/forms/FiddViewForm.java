@@ -1,9 +1,12 @@
 package com.fidd.view.forms;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.service.FiddContentService;
 import com.fidd.service.LogicalFileInfo;
 import com.fidd.view.common.PlaylistSettings;
+import com.flower.crypt.keys.UserPreferencesManager;
 import com.flower.fxutils.JavaFxUtils;
 import com.flower.fxutils.ModalWindow;
 import javafx.application.Platform;
@@ -41,11 +44,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.prefs.Preferences;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class FiddViewForm extends AnchorPane  {
     final static Logger LOGGER = LoggerFactory.getLogger(FiddViewForm.class);
+
+    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     static final int MESSAGE_LOAD_BATCH_SIZE = 5;
     static final int FILE_SAVE_BUFFER_SIZE = 8192;
@@ -58,7 +64,9 @@ public class FiddViewForm extends AnchorPane  {
     static final Image DOWN_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/down.png")));
     static final Image UP_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/up-arrow.png")));
 
-    PlaylistSettings playlistSettings = new PlaylistSettings();
+    static final String FIDD_VIEW_PLAYLIST_SETTINGS = "FIDD_VIEW_PLAYLIST_SETTINGS";
+
+    PlaylistSettings playlistSettings;
 
     public interface FiddTreeNode {
         @Nullable ImageView getImage();
@@ -154,6 +162,13 @@ public class FiddViewForm extends AnchorPane  {
             fxmlLoader.load();
         } catch (IOException exception) {
             throw new RuntimeException(exception);
+        }
+
+        String playlistStr = UserPreferencesManager.getUserPreference(FIDD_VIEW_PLAYLIST_SETTINGS);
+        try {
+            this.playlistSettings = OBJECT_MAPPER.readValue(playlistStr, PlaylistSettings.class);
+        } catch (JsonProcessingException e) {
+            this.playlistSettings = new PlaylistSettings();
         }
 
         this.fiddName = fiddName;
@@ -563,6 +578,8 @@ public class FiddViewForm extends AnchorPane  {
                         PlaylistSettings newPlaylistSettings = playlistSettingsDialog.getPlaylistSettings();
                         if (newPlaylistSettings != null) {
                             playlistSettings = newPlaylistSettings;
+                            String playlistSettingsJson = OBJECT_MAPPER.writeValueAsString(playlistSettings);
+                            UserPreferencesManager.updateUserPreference(Preferences.userRoot(), FIDD_VIEW_PLAYLIST_SETTINGS, playlistSettingsJson);
                         }
                     } catch (Exception e) {
                         Alert alert = new Alert(Alert.AlertType.ERROR, "Error changing PlayList settings: " + e, ButtonType.OK);
