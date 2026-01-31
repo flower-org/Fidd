@@ -8,7 +8,7 @@ plugins {
 }
 
 group 'com.fidd.view'
-version '0.2.3-amd64'
+version '0.2.4-amd64'
 
 repositories {
     mavenCentral()
