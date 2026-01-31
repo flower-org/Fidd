@@ -30,7 +30,7 @@
                                      </padding></AnchorPane>
                              </content>
                          </Tab>
-                         <Tab closable="false" text="Fidd Connections">
+                         <Tab fx:id="fiddConnectionsTab" closable="false" text="Fidd Connections">
                              <content>
                                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                      <children>

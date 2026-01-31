@@ -86,6 +86,7 @@ public class MainForm {
     @Nullable Integer fiddApiPort;
 
     @FXML @Nullable TabPane mainTabPane;
+    @FXML @Nullable Tab fiddConnectionsTab;
     @FXML @Nullable AnchorPane topPane;
     @FXML @Nullable TableView<FiddConnection> fiddConnectionTableView;
     @FXML @Nullable CheckBox encryptDecryptFiddConnectionsCheckBox;
@@ -128,16 +129,23 @@ public class MainForm {
         String fiddConnectionsFileStr = UserPreferencesManager.getUserPreference(FIDD_VIEW_FIDD_CONNECTIONS_FILE);
         String encryptDecryptFileStr = UserPreferencesManager.getUserPreference(FIDD_VIEW_ENCRYPT_DECRYPT);
         try {
-            boolean encryptDecryptFile = Boolean.parseBoolean(encryptDecryptFileStr);
-            checkNotNull(encryptDecryptFiddConnectionsCheckBox).selectedProperty().set(encryptDecryptFile);
+            if (!StringUtils.isBlank(encryptDecryptFileStr)) {
+                boolean encryptDecryptFile = Boolean.parseBoolean(encryptDecryptFileStr);
+                checkNotNull(encryptDecryptFiddConnectionsCheckBox).selectedProperty().set(encryptDecryptFile);
+            }
         } catch (Exception e) { }
 
         if (!StringUtils.isBlank(fiddConnectionsFileStr)) {
             checkNotNull(fiddConnectionsFileTextField).textProperty().set(fiddConnectionsFileStr);
-            loadFiddConnections(false);
         }
         checkNotNull(fiddConnectionsFileTextField).textProperty().addListener(
                 (observableValue, s, t1) -> fiddConnectionsFileChanged());
+
+        checkNotNull(mainTabPane).getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
+            if (newTab == fiddConnectionsTab && checkNotNull(fiddConnections).isEmpty()) {
+                loadFiddConnections(false);
+            }
+        });
     }
 
     private static TabKeyProvider buildMainKeyProvider(Stage mainStage) {
@@ -463,7 +471,7 @@ public class MainForm {
     }
 
     public void loadFiddConnections(boolean showAlerts) {
-        if (!checkNotNull(fiddConnections).isEmpty()) {
+        if (showAlerts && !checkNotNull(fiddConnections).isEmpty()) {
             if (JavaFxUtils.YesNo.NO ==
                     JavaFxUtils.showYesNoDialog("Load Fidd Connections File",
                             "Current Fidd Connections will be lost. Continue?")) {
@@ -487,8 +495,10 @@ public class MainForm {
                 if (decrypt) {
                     Pair<X509Certificate, PrivateKey> pair = getCurrentCertificate();
                     if (pair == null) {
-                        JavaFxUtils.showMessage("Certificate load error",
-                                "Certificate load error. If you do not plan to use a certificate, uncheck \"Decrypt / Encrypt\" checkbox.");
+                        if (showAlerts) {
+                            JavaFxUtils.showMessage("Certificate load error",
+                                    "Certificate load error. If you do not plan to use a certificate, uncheck \"Decrypt / Encrypt\" checkbox.");
+                        }
                         return;
                     }
 
