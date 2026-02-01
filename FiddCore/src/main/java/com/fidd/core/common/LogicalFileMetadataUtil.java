@@ -51,9 +51,9 @@ public class LogicalFileMetadataUtil {
                            boolean throwOnValidationFailure) throws IOException {
         MetadataContainerSerializer.MetadataContainerAndLength metadataContainerAndLength = null;
         InputStream sectionInputStream;
-        if (fiddConnector instanceof FiddCacheConnector) {
+        if (fiddConnector instanceof FiddCacheConnector && logicalFileSection.headerLength() != null) {
             sectionInputStream = ((FiddCacheConnector)fiddConnector).getFiddMessageChunk(messageNumber,
-                logicalFileSection.sectionOffset(), logicalFileSection.sectionLength(), tryCache);
+                logicalFileSection.sectionOffset(), logicalFileSection.headerLength(), tryCache);
         } else {
             sectionInputStream = fiddConnector.getFiddMessageChunk(messageNumber,
                     logicalFileSection.sectionOffset(), logicalFileSection.sectionLength());

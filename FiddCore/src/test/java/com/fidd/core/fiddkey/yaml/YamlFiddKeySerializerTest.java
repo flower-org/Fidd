@@ -32,7 +32,7 @@ public class YamlFiddKeySerializerTest {
                 .encryptionAlgorithm("AES-256")
                 .encryptionKeyData(new byte[] { 1,2,3,4,5 })
                 .crcs(List.of(FiddSignature.of("Adler32", new byte[] { 6,7,8,9,10 })))
-                .headerSize(765L)
+                .headerLength(765)
                 .build()
         );
 
