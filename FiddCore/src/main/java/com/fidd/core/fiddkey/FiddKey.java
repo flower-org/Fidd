@@ -27,6 +27,9 @@ public interface FiddKey {
         @Nullable byte[] encryptionKeyData();
 
         @Nullable List<FiddSignature> crcs();
+
+        /** If there's a header in section, its size may be specified (v1.1) */
+        @Nullable Long headerSize();
     }
 
     Section fiddFileMetadata();
