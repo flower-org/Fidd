@@ -1,6 +1,7 @@
 package com.fidd.core.common;
 
 import com.fidd.base.BaseRepositories;
+import com.fidd.connectors.FiddCacheConnector;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddkey.FiddKey;
@@ -27,7 +28,7 @@ public class LogicalFileMetadataUtil {
     final static String METADATA_CONTAINER_SERIALIZER_FORMAT = "BLOBS";
 
     public static @Nullable Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength>
-    getLogicalFileMetadata(BaseRepositories baseRepositories, FiddConnector fiddConnector, long messageNumber,
+    getLogicalFileMetadata(BaseRepositories baseRepositories, FiddConnector fiddConnector, boolean tryCache, long messageNumber,
                            FiddKey.Section logicalFileSection) throws IOException {
         String encryptionAlgorithmName = logicalFileSection.encryptionAlgorithm();
         EncryptionAlgorithm encryptionAlgorithm = baseRepositories.encryptionAlgorithmRepo().get(encryptionAlgorithmName);
@@ -38,19 +39,27 @@ public class LogicalFileMetadataUtil {
         MetadataContainerSerializer metadataContainerSerializer =
                 checkNotNull(baseRepositories.metadataContainerFormatRepo().get(METADATA_CONTAINER_SERIALIZER_FORMAT));
 
-        return getLogicalFileMetadata(baseRepositories, encryptionAlgorithm, fiddConnector,
+        return getLogicalFileMetadata(baseRepositories, encryptionAlgorithm, fiddConnector, tryCache,
                 messageNumber, logicalFileSection, metadataContainerSerializer, true);
     }
 
     public static @Nullable Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength>
     getLogicalFileMetadata(BaseRepositories baseRepositories,
-                           EncryptionAlgorithm encryptionAlgorithm, FiddConnector fiddConnector,
+                           EncryptionAlgorithm encryptionAlgorithm, FiddConnector fiddConnector, boolean tryCache,
                            long messageNumber, FiddKey.Section logicalFileSection,
                            MetadataContainerSerializer metadataContainerSerializer,
                            boolean throwOnValidationFailure) throws IOException {
         MetadataContainerSerializer.MetadataContainerAndLength metadataContainerAndLength = null;
-        try (InputStream sectionInputStream = fiddConnector.getFiddMessageChunk(messageNumber,
-                logicalFileSection.sectionOffset(), logicalFileSection.sectionLength())) {
+        InputStream sectionInputStream;
+        if (fiddConnector instanceof FiddCacheConnector) {
+            sectionInputStream = ((FiddCacheConnector)fiddConnector).getFiddMessageChunk(messageNumber,
+                logicalFileSection.sectionOffset(), logicalFileSection.sectionLength(), tryCache);
+        } else {
+            sectionInputStream = fiddConnector.getFiddMessageChunk(messageNumber,
+                    logicalFileSection.sectionOffset(), logicalFileSection.sectionLength());
+        }
+
+        try (sectionInputStream) {
             byte[] cumul = new byte[0];
             int bufferSize = (int)Math.min(4096L, logicalFileSection.sectionLength());
             byte[] buffer = new byte[bufferSize];

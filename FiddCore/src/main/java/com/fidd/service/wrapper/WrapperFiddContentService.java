@@ -1,7 +1,9 @@
 package com.fidd.service.wrapper;
 
 import com.fidd.base.BaseRepositories;
+import com.fidd.connectors.FiddCacheConnector;
 import com.fidd.connectors.FiddConnector;
+import com.fidd.connectors.base.BaseNoOpCacheConnector;
 import com.fidd.core.common.FiddKeyUtil;
 import com.fidd.core.common.LogicalFileMetadataUtil;
 import com.fidd.core.fiddfile.FiddFileMetadata;
@@ -34,14 +36,18 @@ public class WrapperFiddContentService implements FiddContentService {
     final static String METADATA_CONTAINER_SERIALIZER_FORMAT = "BLOBS";
 
     protected final BaseRepositories baseRepositories;
-    protected final FiddConnector fiddConnector;
+    protected final FiddCacheConnector fiddConnector;
     protected final @Nullable X509Certificate userCert;
     protected final @Nullable PrivateKey userPrivateKey;
 
     public WrapperFiddContentService(BaseRepositories baseRepositories, FiddConnector fiddConnector,
                                      @Nullable X509Certificate userCert, @Nullable PrivateKey userPrivateKey) {
         this.baseRepositories = baseRepositories;
-        this.fiddConnector = fiddConnector;
+        if (fiddConnector instanceof FiddCacheConnector) {
+            this.fiddConnector = (FiddCacheConnector) fiddConnector;
+        } else {
+            this.fiddConnector = new BaseNoOpCacheConnector(fiddConnector);
+        }
         this.userCert = userCert;
         this.userPrivateKey = userPrivateKey;
     }
@@ -85,7 +91,7 @@ public class WrapperFiddContentService implements FiddContentService {
             // 2. Load FiddFileMetadata Section
             FiddKey.Section fiddFileMetadataSection = fiddKey.fiddFileMetadata();
             Pair<FiddFileMetadata, MetadataContainer> fiddFileMetadataAndContainer =
-                    loadFiddFileMetadata(baseRepositories, fiddConnector, messageNumber,
+                    loadFiddFileMetadata(baseRepositories, fiddConnector, true, messageNumber,
                         fiddFileMetadataSection, METADATA_CONTAINER_SERIALIZER_FORMAT);
 
             return fiddFileMetadataAndContainer.getLeft();
@@ -108,7 +114,7 @@ public class WrapperFiddContentService implements FiddContentService {
                 FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
                 Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength> logicalFileMetadataAndContainer =
                      LogicalFileMetadataUtil.getLogicalFileMetadata(baseRepositories,
-                            fiddConnector, messageNumber,
+                            fiddConnector, true, messageNumber,
                             logicalFileSection);
 
                 logicalFileInfo.add(LogicalFileInfo.of(checkNotNull(logicalFileMetadataAndContainer).getLeft(),

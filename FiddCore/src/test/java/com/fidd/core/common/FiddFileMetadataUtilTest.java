@@ -81,7 +81,7 @@ public class FiddFileMetadataUtilTest {
 
         Pair<FiddFileMetadata, MetadataContainer> result =
                 FiddFileMetadataUtil.loadFiddFileMetadata(
-                        baseRepositories, fiddConnector, messageNumber, section, "json"
+                        baseRepositories, fiddConnector, false, messageNumber, section, "json"
                 );
 
         assertEquals(fiddFileMetadata, result.getLeft());
@@ -132,7 +132,7 @@ public class FiddFileMetadataUtilTest {
 
         Pair<FiddFileMetadata, MetadataContainer> result =
                 FiddFileMetadataUtil.loadFiddFileMetadata(
-                        baseRepositories, fiddConnector, messageNumber, section, "json"
+                        baseRepositories, fiddConnector, false, messageNumber, section, "json"
                 );
 
         assertEquals(fiddFileMetadata, result.getLeft());
@@ -151,7 +151,7 @@ public class FiddFileMetadataUtilTest {
 
         assertThrows(RuntimeException.class, () ->
                 FiddFileMetadataUtil.loadFiddFileMetadata(
-                        baseRepositories, fiddConnector, 1L, section, "json"
+                        baseRepositories, fiddConnector, false, 1L, section, "json"
                 )
         );
     }
@@ -163,7 +163,7 @@ public class FiddFileMetadataUtilTest {
 
         assertThrows(NullPointerException.class, () ->
                 FiddFileMetadataUtil.loadFiddFileMetadata(
-                        baseRepositories, fiddConnector, 1L, section, "json"
+                        baseRepositories, fiddConnector, false, 1L, section, "json"
                 )
         );
     }
@@ -200,7 +200,7 @@ public class FiddFileMetadataUtilTest {
 
         assertThrows(RuntimeException.class, () ->
                 FiddFileMetadataUtil.loadFiddFileMetadata(
-                        baseRepositories, fiddConnector, 1L, section, "json"
+                        baseRepositories, fiddConnector, false, 1L, section, "json"
                 )
         );
     }
@@ -219,7 +219,7 @@ public class FiddFileMetadataUtilTest {
 
         assertThrows(RuntimeException.class, () ->
                 FiddFileMetadataUtil.loadFiddFileMetadata(
-                        baseRepositories, fiddConnector, 1L, section, "json"
+                        baseRepositories, fiddConnector, false, 1L, section, "json"
                 )
         );
     }
