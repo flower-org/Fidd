@@ -54,7 +54,9 @@ public class LogicalFileUtilChunkTest {
         when(section.sectionLength()).thenReturn(500L);
 
         // Fake ciphertext offset mapping
+        when(algorithm.ciphertextPosToPlaintextPos(200L)).thenReturn(100L);
         when(algorithm.plaintextPosToCiphertextPos(200L)).thenReturn(900L);
+        when(algorithm.plaintextLengthToCiphertextLength(20L)).thenReturn(500L);
 
         // Fake chunk returned by connector
         InputStream encryptedChunk = new ByteArrayInputStream(new byte[]{9,9,9});
@@ -103,7 +105,9 @@ public class LogicalFileUtilChunkTest {
         when(section.sectionOffset()).thenReturn(0L);
         when(section.sectionLength()).thenReturn(10L);
 
+        when(algorithm.ciphertextPosToPlaintextPos(0L)).thenReturn(0L);
         when(algorithm.plaintextPosToCiphertextPos(0L)).thenReturn(0L);
+        when(algorithm.plaintextLengthToCiphertextLength(1L)).thenReturn(10L);
 
         InputStream encrypted = new ByteArrayInputStream(new byte[]{1});
         when(connector.getFiddMessageChunk(5L, 0L, 10L)).thenReturn(encrypted);
