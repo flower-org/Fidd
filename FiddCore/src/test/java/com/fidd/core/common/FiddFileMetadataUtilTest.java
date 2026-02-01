@@ -5,7 +5,7 @@ import com.fidd.connectors.FiddConnector;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
-import com.fidd.core.fiddkey.FiddKey;
+import com.fidd.core.fiddkey.Section;
 import com.fidd.core.metadata.MetadataContainer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,7 +21,7 @@ public class FiddFileMetadataUtilTest {
 
     BaseRepositories baseRepositories;
     FiddConnector fiddConnector;
-    FiddKey.Section section;
+    Section section;
     MetadataContainerSerializer metadataContainerSerializer;
     FiddFileMetadataSerializer fiddFileMetadataSerializer;
     EncryptionAlgorithm encryptionAlgorithm;
@@ -30,7 +30,7 @@ public class FiddFileMetadataUtilTest {
     void setup() {
         baseRepositories = mock(BaseRepositories.class, RETURNS_DEEP_STUBS);
         fiddConnector = mock(FiddConnector.class);
-        section = mock(FiddKey.Section.class);
+        section = mock(Section.class);
         metadataContainerSerializer = mock(MetadataContainerSerializer.class);
         fiddFileMetadataSerializer = mock(FiddFileMetadataSerializer.class);
         encryptionAlgorithm = mock(EncryptionAlgorithm.class);

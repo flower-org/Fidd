@@ -12,6 +12,7 @@ import com.fidd.core.crc.ProgressiveCrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.core.fiddkey.FiddKey;
+import com.fidd.core.fiddkey.Section;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
 import com.fidd.core.metadata.MetadataContainer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
@@ -99,7 +100,7 @@ public class FiddUnpackManager {
         } else {
             progressCallback.log("2. Validating Section CRC (from FiddKey)");
             boolean hasCrcs = hasCrcs(checkNotNull(fiddKey).fiddFileMetadata());
-            for (FiddKey.Section logicalFileSection : fiddKey.logicalFiles()) {
+            for (Section logicalFileSection : fiddKey.logicalFiles()) {
                 hasCrcs = hasCrcs || hasCrcs(logicalFileSection);
             }
 
@@ -109,7 +110,7 @@ public class FiddUnpackManager {
                 validateCrcs(fiddFile, baseRepositories, 0, fiddKey.fiddFileMetadata(),
                     progressCallback, throwOnValidationFailure);
                 for (int i = 0; i < fiddKey.logicalFiles().size(); i++) {
-                    FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
+                    Section logicalFileSection = fiddKey.logicalFiles().get(i);
                     validateCrcs(fiddFile, baseRepositories, i+1, logicalFileSection,
                             progressCallback, throwOnValidationFailure);
                 }
@@ -219,7 +220,7 @@ public class FiddUnpackManager {
         progressCallback.log("8. Loading and Materializing Logical Files");
 
         for (int i = 0; i < fiddKey.logicalFiles().size(); i++) {
-            FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
+            Section logicalFileSection = fiddKey.logicalFiles().get(i);
             validateAndMaterializeLogicalFile(i, baseRepositories, fiddConnector, messageNumber, logicalFileSection,
                     METADATA_CONTAINER_SERIALIZER_FORMAT, outputFolder, progressCallback, currentCert, throwOnValidationFailure,
                     validateLogicalFileMetadatas, validateLogicalFiles, true);
@@ -228,7 +229,7 @@ public class FiddUnpackManager {
 
     private static void validateAndMaterializeLogicalFile(int logicalFileIndex, BaseRepositories baseRepositories,
                                                           FiddConnector fiddConnector,
-                                                          long messageNumber, FiddKey.Section logicalFileSection,
+                                                          long messageNumber, Section logicalFileSection,
                                                           String metadataContainerSerializerFormat,
                                                           File outputFolder, ProgressCallback progressCallback,
                                                           @Nullable X509Certificate publicKey,
@@ -509,7 +510,7 @@ public class FiddUnpackManager {
         }
     }
 
-    private static boolean hasCrcs(FiddKey.Section section) {
+    private static boolean hasCrcs(Section section) {
         return section.crcs() != null && !section.crcs().isEmpty();
     }
 
@@ -520,7 +521,7 @@ public class FiddUnpackManager {
     private static void validateCrcs(File fiddFile,
                                        BaseRepositories baseRepositories,
                                        int sectionNumber,
-                                       FiddKey.Section section,
+                                       Section section,
                                        ProgressCallback progressCallback,
                                        boolean throwOnValidationFailure) throws IOException {
         if (!hasCrcs(section)) {

@@ -6,7 +6,7 @@ import com.fidd.connectors.FiddConnector;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
-import com.fidd.core.fiddkey.FiddKey;
+import com.fidd.core.fiddkey.Section;
 import com.fidd.core.metadata.MetadataContainer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.metadata.NotEnoughBytesException;
@@ -26,7 +26,7 @@ public class FiddFileMetadataUtil {
                                                                                  FiddConnector fiddConnector,
                                                                                  boolean tryCache,
                                                                                  long messageNumber,
-                                                                                 FiddKey.Section fiddFileMetadataSection,
+                                                                                 Section fiddFileMetadataSection,
                                                                                  String metadataContainerSerializerFormat
     ) throws IOException, NotEnoughBytesException {
         MetadataContainerSerializer metadataContainerSerializer =

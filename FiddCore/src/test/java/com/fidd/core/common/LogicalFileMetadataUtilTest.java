@@ -4,7 +4,7 @@ import com.fidd.base.BaseRepositories;
 import com.fidd.base.Repository;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.encryption.EncryptionAlgorithm;
-import com.fidd.core.fiddkey.FiddKey;
+import com.fidd.core.fiddkey.Section;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.metadata.MetadataContainer;
@@ -32,7 +32,7 @@ public class LogicalFileMetadataUtilTest {
         LogicalFileMetadataSerializer metadataSerializer = mock(LogicalFileMetadataSerializer.class);
 
         // Section
-        FiddKey.Section section = mock(FiddKey.Section.class);
+        Section section = mock(Section.class);
         when(section.sectionOffset()).thenReturn(0L);
         when(section.sectionLength()).thenReturn(10L);
         when(section.encryptionAlgorithm()).thenReturn("AES");
@@ -97,7 +97,7 @@ public class LogicalFileMetadataUtilTest {
         EncryptionAlgorithm encryption = mock(EncryptionAlgorithm.class);
         MetadataContainerSerializer containerSerializer = mock(MetadataContainerSerializer.class);
 
-        FiddKey.Section section = mock(FiddKey.Section.class);
+        Section section = mock(Section.class);
         when(section.sectionOffset()).thenReturn(0L);
         when(section.sectionLength()).thenReturn(10000L);
         when(section.encryptionAlgorithm()).thenReturn("AES");
@@ -154,7 +154,7 @@ public class LogicalFileMetadataUtilTest {
     void testGetLogicalFileMetadata_unsupportedEncryptionAlgorithm() {
         BaseRepositories repos = mock(BaseRepositories.class);
         FiddConnector connector = mock(FiddConnector.class);
-        FiddKey.Section section = mock(FiddKey.Section.class);
+        Section section = mock(Section.class);
 
         when(section.encryptionAlgorithm()).thenReturn("BAD");
         Repository<EncryptionAlgorithm> encryptionAlgorithmRepo = mock(Repository.class);
@@ -175,7 +175,7 @@ public class LogicalFileMetadataUtilTest {
         EncryptionAlgorithm encryption = mock(EncryptionAlgorithm.class);
         MetadataContainerSerializer containerSerializer = mock(MetadataContainerSerializer.class);
 
-        FiddKey.Section section = mock(FiddKey.Section.class);
+        Section section = mock(Section.class);
         when(section.sectionOffset()).thenReturn(0L);
         when(section.sectionLength()).thenReturn(5L);
         when(section.encryptionAlgorithm()).thenReturn("AES");

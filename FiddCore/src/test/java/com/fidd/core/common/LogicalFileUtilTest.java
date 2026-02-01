@@ -4,7 +4,7 @@ import com.fidd.base.BaseRepositories;
 import com.fidd.base.Repository;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.encryption.EncryptionAlgorithm;
-import com.fidd.core.fiddkey.FiddKey;
+import com.fidd.core.fiddkey.Section;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
@@ -67,7 +67,7 @@ public class LogicalFileUtilTest {
         when(encRepo.get("AES")).thenReturn(algorithm);
 
         // Fake section
-        FiddKey.Section section = mock(FiddKey.Section.class);
+        Section section = mock(Section.class);
         when(section.encryptionAlgorithm()).thenReturn("AES");
         when(section.encryptionKeyData()).thenReturn(new byte[]{9,9});
         when(section.sectionOffset()).thenReturn(100L);
@@ -106,7 +106,7 @@ public class LogicalFileUtilTest {
         when(repos.encryptionAlgorithmRepo()).thenReturn(encRepo);
         when(encRepo.get("AES")).thenReturn(algorithm);
 
-        FiddKey.Section section = mock(FiddKey.Section.class);
+        Section section = mock(Section.class);
         when(section.encryptionAlgorithm()).thenReturn("AES");
         when(section.encryptionKeyData()).thenReturn(null);
         when(section.sectionOffset()).thenReturn(0L);

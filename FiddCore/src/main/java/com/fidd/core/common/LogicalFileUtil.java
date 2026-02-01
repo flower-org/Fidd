@@ -4,7 +4,7 @@ import com.fidd.base.BaseRepositories;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.encryption.RandomAccessEncryptionAlgorithm;
-import com.fidd.core.fiddkey.FiddKey;
+import com.fidd.core.fiddkey.Section;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -21,7 +21,7 @@ public class LogicalFileUtil {
      * that would only cover this functionality partially, making it be confusing and hard to understand.
      */
     public static InputStream getLogicalFileInputStreamChunk(BaseRepositories baseRepositories, FiddConnector fiddConnector,
-                                                        long messageNumber, FiddKey.Section section, long fileOffset, long dataOffset, long dataLength) throws InvalidAlgorithmParameterException {
+                                                             long messageNumber, Section section, long fileOffset, long dataOffset, long dataLength) throws InvalidAlgorithmParameterException {
         EncryptionAlgorithm baseEncryptionAlgorithm =
                 baseRepositories.encryptionAlgorithmRepo().get(section.encryptionAlgorithm());
         if (!(baseEncryptionAlgorithm instanceof RandomAccessEncryptionAlgorithm encryptionAlgorithm)) {
@@ -38,7 +38,7 @@ public class LogicalFileUtil {
     }
 
     public static InputStream getLogicalFileInputStream(BaseRepositories baseRepositories, FiddConnector fiddConnector,
-                                                 long messageNumber, FiddKey.Section section, long fileOffset) throws IOException {
+                                                 long messageNumber, Section section, long fileOffset) throws IOException {
         EncryptionAlgorithm encryptionAlgorithm =
                 baseRepositories.encryptionAlgorithmRepo().get(section.encryptionAlgorithm());
         byte[] keyData = section.encryptionKeyData() == null ? new byte[0] : section.encryptionKeyData();

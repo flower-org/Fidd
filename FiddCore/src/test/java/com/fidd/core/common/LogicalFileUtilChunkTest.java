@@ -5,7 +5,7 @@ import com.fidd.base.Repository;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.encryption.RandomAccessEncryptionAlgorithm;
-import com.fidd.core.fiddkey.FiddKey;
+import com.fidd.core.fiddkey.Section;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -23,7 +23,7 @@ public class LogicalFileUtilChunkTest {
         Repository encRepo = mock(Repository.class);
         EncryptionAlgorithm nonRandom = mock(EncryptionAlgorithm.class);
         FiddConnector connector = mock(FiddConnector.class);
-        FiddKey.Section section = mock(FiddKey.Section.class);
+        Section section = mock(Section.class);
 
         when(repos.encryptionAlgorithmRepo()).thenReturn(encRepo);
         when(encRepo.get("AES")).thenReturn(nonRandom);
@@ -43,7 +43,7 @@ public class LogicalFileUtilChunkTest {
         Repository encRepo = mock(Repository.class);
         RandomAccessEncryptionAlgorithm algorithm = mock(RandomAccessEncryptionAlgorithm.class);
         FiddConnector connector = mock(FiddConnector.class);
-        FiddKey.Section section = mock(FiddKey.Section.class);
+        Section section = mock(Section.class);
 
         when(repos.encryptionAlgorithmRepo()).thenReturn(encRepo);
         when(encRepo.get("AES")).thenReturn(algorithm);
@@ -93,7 +93,7 @@ public class LogicalFileUtilChunkTest {
         Repository encRepo = mock(Repository.class);
         RandomAccessEncryptionAlgorithm algorithm = mock(RandomAccessEncryptionAlgorithm.class);
         FiddConnector connector = mock(FiddConnector.class);
-        FiddKey.Section section = mock(FiddKey.Section.class);
+        Section section = mock(Section.class);
 
         when(repos.encryptionAlgorithmRepo()).thenReturn(encRepo);
         when(encRepo.get("AES")).thenReturn(algorithm);

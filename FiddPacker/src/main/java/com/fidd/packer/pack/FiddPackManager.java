@@ -13,6 +13,7 @@ import com.fidd.core.fiddkey.FiddKey;
 import com.fidd.core.fiddkey.FiddKeySerializer;
 import com.fidd.core.fiddkey.ImmutableFiddKey;
 import com.fidd.core.fiddkey.ImmutableSection;
+import com.fidd.core.fiddkey.Section;
 import com.fidd.core.logicalfile.ImmutableLogicalFileMetadata;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
@@ -133,8 +134,8 @@ public class FiddPackManager {
                                 List<CrcCalculator> progressiveCrcCalculators
     ) throws IOException {
         // Fidd Key parts will be populated as we go
-        FiddKey.Section fiddFileMetadataSection = null;
-        List<FiddKey.Section> logicalFilesSections = new ArrayList<>();
+        Section fiddFileMetadataSection = null;
+        List<Section> logicalFilesSections = new ArrayList<>();
 
         // 0. Sanity checks
         if (minGapSize > maxGapSize) {
@@ -207,7 +208,7 @@ public class FiddPackManager {
                     position += logicalFileSectionLengthAndCrc.length();
 
                     // 3.2.2.2 Form corresponding Section descriptor for FiddKey
-                    FiddKey.Section logicalFileSection = createFiddKeySection(logicalFileSectionOffset,
+                    Section logicalFileSection = createFiddKeySection(logicalFileSectionOffset,
                             position - logicalFileSectionOffset, encryptionAlgorithm,
                             logicalFileSectionKey, addCrcsToFiddKey,
                             crcCalculators, logicalFileSectionLengthAndCrc.crcs());
@@ -276,10 +277,10 @@ public class FiddPackManager {
         }
     }
 
-    public static FiddKey.Section createFiddKeySection(long sectionOffset, long sectionLength,
-                                                       EncryptionAlgorithm encryptionAlgorithm, byte[] sectionKey,
-                                                       boolean addCrcsToFiddKey, List<CrcCalculator> crcCalculators,
-                                                       @Nullable List<byte[]> crcs
+    public static Section createFiddKeySection(long sectionOffset, long sectionLength,
+                                               EncryptionAlgorithm encryptionAlgorithm, byte[] sectionKey,
+                                               boolean addCrcsToFiddKey, List<CrcCalculator> crcCalculators,
+                                               @Nullable List<byte[]> crcs
                                                        ) {
         ImmutableSection.Builder sectionBuilder = ImmutableSection.builder()
                 .sectionOffset(sectionOffset)

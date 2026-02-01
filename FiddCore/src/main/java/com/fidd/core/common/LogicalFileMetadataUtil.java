@@ -4,7 +4,7 @@ import com.fidd.base.BaseRepositories;
 import com.fidd.connectors.FiddCacheConnector;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.encryption.EncryptionAlgorithm;
-import com.fidd.core.fiddkey.FiddKey;
+import com.fidd.core.fiddkey.Section;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
@@ -29,7 +29,7 @@ public class LogicalFileMetadataUtil {
 
     public static @Nullable Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength>
     getLogicalFileMetadata(BaseRepositories baseRepositories, FiddConnector fiddConnector, boolean tryCache, long messageNumber,
-                           FiddKey.Section logicalFileSection) throws IOException {
+                           Section logicalFileSection) throws IOException {
         String encryptionAlgorithmName = logicalFileSection.encryptionAlgorithm();
         EncryptionAlgorithm encryptionAlgorithm = baseRepositories.encryptionAlgorithmRepo().get(encryptionAlgorithmName);
         if (encryptionAlgorithm == null) {
@@ -46,7 +46,7 @@ public class LogicalFileMetadataUtil {
     public static @Nullable Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength>
     getLogicalFileMetadata(BaseRepositories baseRepositories,
                            EncryptionAlgorithm encryptionAlgorithm, FiddConnector fiddConnector, boolean tryCache,
-                           long messageNumber, FiddKey.Section logicalFileSection,
+                           long messageNumber, Section logicalFileSection,
                            MetadataContainerSerializer metadataContainerSerializer,
                            boolean throwOnValidationFailure) throws IOException {
         MetadataContainerSerializer.MetadataContainerAndLength metadataContainerAndLength = null;

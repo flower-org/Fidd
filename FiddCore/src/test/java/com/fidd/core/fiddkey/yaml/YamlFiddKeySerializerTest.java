@@ -4,6 +4,7 @@ import com.fidd.core.common.FiddSignature;
 import com.fidd.core.fiddkey.FiddKey;
 import com.fidd.core.fiddkey.ImmutableFiddKey;
 import com.fidd.core.fiddkey.ImmutableSection;
+import com.fidd.core.fiddkey.Section;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class YamlFiddKeySerializerTest {
     @Test
     public void testSerializeAndDeserialize() {
-        FiddKey.Section fiddFileMetadata = ImmutableSection.builder()
+        Section fiddFileMetadata = ImmutableSection.builder()
                 .sectionOffset(100)
                 .sectionLength(1000)
                 .encryptionAlgorithm("AES-256")
@@ -26,7 +27,7 @@ public class YamlFiddKeySerializerTest {
                 .crcs(List.of(FiddSignature.of("Adler32", new byte[] { 6,7,8,9,10 })))
                 .build();
 
-        List<FiddKey.Section> logicalFiles = List.of(ImmutableSection.builder()
+        List<Section> logicalFiles = List.of(ImmutableSection.builder()
                 .sectionOffset(100)
                 .sectionLength(1000)
                 .encryptionAlgorithm("AES-256")

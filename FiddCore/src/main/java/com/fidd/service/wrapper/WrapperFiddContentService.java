@@ -8,6 +8,7 @@ import com.fidd.core.common.FiddKeyUtil;
 import com.fidd.core.common.LogicalFileMetadataUtil;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.core.fiddkey.FiddKey;
+import com.fidd.core.fiddkey.Section;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
 import com.fidd.core.metadata.MetadataContainer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
@@ -89,7 +90,7 @@ public class WrapperFiddContentService implements FiddContentService {
             if (fiddKey == null) { return null; }
 
             // 2. Load FiddFileMetadata Section
-            FiddKey.Section fiddFileMetadataSection = fiddKey.fiddFileMetadata();
+            Section fiddFileMetadataSection = fiddKey.fiddFileMetadata();
             Pair<FiddFileMetadata, MetadataContainer> fiddFileMetadataAndContainer =
                     loadFiddFileMetadata(baseRepositories, fiddConnector, true, messageNumber,
                         fiddFileMetadataSection, METADATA_CONTAINER_SERIALIZER_FORMAT);
@@ -111,7 +112,7 @@ public class WrapperFiddContentService implements FiddContentService {
             List<LogicalFileInfo> logicalFileInfo = new ArrayList<>();
             for (int i = 0; i < fiddKey.logicalFiles().size(); i++) {
                 LOGGER.info("Getting LogicalFileMetadata for Section #" + (i+1) + " (Logical File #" + i + ")");
-                FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
+                Section logicalFileSection = fiddKey.logicalFiles().get(i);
                 Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength> logicalFileMetadataAndContainer =
                      LogicalFileMetadataUtil.getLogicalFileMetadata(baseRepositories,
                             fiddConnector, true, messageNumber,

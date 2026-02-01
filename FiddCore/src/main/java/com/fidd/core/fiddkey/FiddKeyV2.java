@@ -8,10 +8,11 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableFiddKey.class)
-@JsonDeserialize(as = ImmutableFiddKey.class)
+@JsonSerialize(as = ImmutableFiddKeyV2.class)
+@JsonDeserialize(as = ImmutableFiddKeyV2.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public interface FiddKey {
+public interface FiddKeyV2 {
     Section fiddFileMetadata();
+    List<Section> logicalFileMetadatas();
     List<Section> logicalFiles();
 }
