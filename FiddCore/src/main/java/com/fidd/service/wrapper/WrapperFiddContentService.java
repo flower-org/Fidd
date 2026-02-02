@@ -3,7 +3,7 @@ package com.fidd.service.wrapper;
 import com.fidd.base.BaseRepositories;
 import com.fidd.connectors.FiddCacheConnector;
 import com.fidd.connectors.FiddConnector;
-import com.fidd.connectors.base.BaseNoOpCacheConnector;
+import com.fidd.connectors.cache.base.BaseNoOpCacheConnector;
 import com.fidd.core.common.FiddKeyUtil;
 import com.fidd.core.common.LogicalFileMetadataUtil;
 import com.fidd.core.fiddfile.FiddFileMetadata;

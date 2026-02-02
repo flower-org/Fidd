@@ -1,4 +1,4 @@
-package com.fidd.connectors.base;
+package com.fidd.connectors.cache.base;
 
 import com.fidd.connectors.FiddCacheConnector;
 import com.fidd.connectors.FiddConnector;
@@ -9,16 +9,10 @@ import java.io.InputStream;
 import java.util.List;
 
 public class BaseNoOpCacheConnector implements FiddCacheConnector {
-    final FiddConnector fiddConnector;
+    protected final FiddConnector fiddConnector;
 
     public BaseNoOpCacheConnector(FiddConnector fiddConnector) {
         this.fiddConnector = fiddConnector;
-    }
-
-    @Override
-    public InputStream getFiddMessageChunk(long messageNumber, long offset, long length, boolean cache) {
-        // no-op ignores tryCache parameter
-        return getFiddMessageChunk(messageNumber, offset, length);
     }
 
     @Override
@@ -79,5 +73,57 @@ public class BaseNoOpCacheConnector implements FiddCacheConnector {
     @Override
     public byte[] getFiddMessageSignature(long messageNumber, int index) {
         return fiddConnector.getFiddMessageSignature(messageNumber, index);
+    }
+
+
+
+    @Override
+    public InputStream getFiddMessageChunk(long messageNumber, long offset, long length, boolean tryCache) {
+        // no-op ignores tryCache parameter
+        return getFiddMessageChunk(messageNumber, offset, length);
+    }
+
+    @Override
+    public List<byte[]> getFiddKeyCandidates(long messageNumber, byte[] footprint, boolean tryCache) throws IOException {
+        // no-op ignores tryCache parameter
+        return getFiddKeyCandidates(messageNumber, footprint);
+    }
+    @Override
+    public @Nullable byte[] getFiddKey(long messageNumber, byte[] key, boolean tryCache) {
+        // no-op ignores tryCache parameter
+        return getFiddKey(messageNumber, key);
+    }
+    @Override
+    public @Nullable byte[] getUnencryptedFiddKey(long messageNumber, boolean tryCache) {
+        // no-op ignores tryCache parameter
+        return getUnencryptedFiddKey(messageNumber);
+    }
+
+    @Override
+    public long getFiddMessageSize(long messageNumber, boolean tryCache) {
+        // no-op ignores tryCache parameter
+        return getFiddMessageSize(messageNumber);
+    }
+
+    @Override
+    public int getFiddKeySignatureCount(long messageNumber, boolean tryCache) {
+        // no-op ignores tryCache parameter
+        return getFiddKeySignatureCount(messageNumber);
+    }
+    @Override
+    public byte[] getFiddKeySignature(long messageNumber, int index, boolean tryCache) {
+        // no-op ignores tryCache parameter
+        return getFiddKeySignature(messageNumber, index);
+    }
+
+    @Override
+    public int getFiddMessageSignatureCount(long messageNumber, boolean tryCache) {
+        // no-op ignores tryCache parameter
+        return getFiddMessageSignatureCount(messageNumber);
+    }
+    @Override
+    public byte[] getFiddMessageSignature(long messageNumber, int index, boolean tryCache) {
+        // no-op ignores tryCache parameter
+        return getFiddMessageSignature(messageNumber, index);
     }
 }
