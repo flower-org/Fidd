@@ -119,6 +119,7 @@ public class FiddPackManager {
                                 boolean addFiddFileMetadataSignature,
                                 boolean addLogicalFileSignatures,
                                 boolean addLogicalFileMetadataSignatures,
+                                boolean addLogicalFileHeaderLengthToFiddKey,
 
                                 boolean includePublicKey,
                                 PublicKeySerializer publicKeySerializer,
@@ -210,7 +211,8 @@ public class FiddPackManager {
                     FiddKey.Section logicalFileSection = createFiddKeySection(logicalFileSectionOffset,
                             position - logicalFileSectionOffset, encryptionAlgorithm,
                             logicalFileSectionKey, addCrcsToFiddKey,
-                            crcCalculators, logicalFileSectionLengthAndCrc.crcs());
+                            crcCalculators, logicalFileSectionLengthAndCrc.crcs(), addLogicalFileHeaderLengthToFiddKey,
+                            logicalFileSectionLengthAndCrc.headerLength());
                     logicalFilesSections.add(logicalFileSection);
 
                     // 3.2.1.2 Add gap after LogicalFile Section
@@ -234,7 +236,7 @@ public class FiddPackManager {
                     fiddFileMetadataSection = createFiddKeySection(fiddFileMetadataSectionOffset,
                             position - fiddFileMetadataSectionOffset, encryptionAlgorithm,
                             fiddFileMetadataSectionKey, addCrcsToFiddKey,
-                            crcCalculators, fiddFileMetadataSectionLengthAndCrc.crcs());
+                            crcCalculators, fiddFileMetadataSectionLengthAndCrc.crcs(), false, null);
 
                     // 3.2.2.3 Add gap after FiddFile Metadata Section
                     position += appendGap(outputStream, minGapSize, maxGapSize, randomGenerator.generator());
@@ -279,7 +281,8 @@ public class FiddPackManager {
     public static FiddKey.Section createFiddKeySection(long sectionOffset, long sectionLength,
                                                        EncryptionAlgorithm encryptionAlgorithm, byte[] sectionKey,
                                                        boolean addCrcsToFiddKey, List<CrcCalculator> crcCalculators,
-                                                       @Nullable List<byte[]> crcs
+                                                       @Nullable List<byte[]> crcs,
+                                                       boolean addHeaderLengthToSection, @Nullable Integer headerLength
                                                        ) {
         ImmutableSection.Builder sectionBuilder = ImmutableSection.builder()
                 .sectionOffset(sectionOffset)
@@ -301,6 +304,12 @@ public class FiddPackManager {
             }
 
             sectionBuilder.crcs(crcList);
+        }
+
+        if (addHeaderLengthToSection) {
+            if (headerLength != null) {
+                sectionBuilder.headerLength(headerLength);
+            }
         }
 
         return sectionBuilder.build();
@@ -458,7 +467,7 @@ public class FiddPackManager {
             }
         }
 
-        return LengthAndCrcs.of(length, crcs);
+        return LengthAndCrcs.of(length, crcs, metadataContainerBytes.length);
     }
 
     @Nullable

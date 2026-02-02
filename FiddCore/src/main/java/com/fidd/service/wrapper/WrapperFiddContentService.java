@@ -1,7 +1,9 @@
 package com.fidd.service.wrapper;
 
 import com.fidd.base.BaseRepositories;
+import com.fidd.connectors.FiddCacheConnector;
 import com.fidd.connectors.FiddConnector;
+import com.fidd.connectors.cache.ram.RamCacheConnector;
 import com.fidd.core.common.FiddKeyUtil;
 import com.fidd.core.common.LogicalFileMetadataUtil;
 import com.fidd.core.fiddfile.FiddFileMetadata;
@@ -34,14 +36,19 @@ public class WrapperFiddContentService implements FiddContentService {
     final static String METADATA_CONTAINER_SERIALIZER_FORMAT = "BLOBS";
 
     protected final BaseRepositories baseRepositories;
-    protected final FiddConnector fiddConnector;
+    protected final FiddCacheConnector fiddConnector;
     protected final @Nullable X509Certificate userCert;
     protected final @Nullable PrivateKey userPrivateKey;
 
     public WrapperFiddContentService(BaseRepositories baseRepositories, FiddConnector fiddConnector,
                                      @Nullable X509Certificate userCert, @Nullable PrivateKey userPrivateKey) {
         this.baseRepositories = baseRepositories;
-        this.fiddConnector = fiddConnector;
+        if (fiddConnector instanceof FiddCacheConnector) {
+            this.fiddConnector = (FiddCacheConnector) fiddConnector;
+        } else {
+            this.fiddConnector = new RamCacheConnector(fiddConnector, 1024, 100024,
+                    1024, 1024, 1024, 1024);
+        }
         this.userCert = userCert;
         this.userPrivateKey = userPrivateKey;
     }
@@ -64,6 +71,7 @@ public class WrapperFiddContentService implements FiddContentService {
     }
 
     protected @Nullable FiddKey loadFiddKey(long messageNumber) throws Exception {
+        LOGGER.info("Loading FiddKey for message #" + messageNumber);
         byte[] fiddKeyBytes = null;
         if (userCert != null) {
             fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector, userCert, checkNotNull(userPrivateKey));
@@ -78,6 +86,8 @@ public class WrapperFiddContentService implements FiddContentService {
     @Override
     public @Nullable FiddFileMetadata getFiddFileMetadata(long messageNumber) {
         try {
+            LOGGER.info("Getting FiddFileMetadata for message #" + messageNumber);
+
             // 1. Load FiddKey
             FiddKey fiddKey = loadFiddKey(messageNumber);
             if (fiddKey == null) { return null; }
@@ -85,7 +95,7 @@ public class WrapperFiddContentService implements FiddContentService {
             // 2. Load FiddFileMetadata Section
             FiddKey.Section fiddFileMetadataSection = fiddKey.fiddFileMetadata();
             Pair<FiddFileMetadata, MetadataContainer> fiddFileMetadataAndContainer =
-                    loadFiddFileMetadata(baseRepositories, fiddConnector, messageNumber,
+                    loadFiddFileMetadata(baseRepositories, fiddConnector, true, messageNumber,
                         fiddFileMetadataSection, METADATA_CONTAINER_SERIALIZER_FORMAT);
 
             return fiddFileMetadataAndContainer.getLeft();
@@ -108,7 +118,7 @@ public class WrapperFiddContentService implements FiddContentService {
                 FiddKey.Section logicalFileSection = fiddKey.logicalFiles().get(i);
                 Pair<LogicalFileMetadata, MetadataContainerSerializer.MetadataContainerAndLength> logicalFileMetadataAndContainer =
                      LogicalFileMetadataUtil.getLogicalFileMetadata(baseRepositories,
-                            fiddConnector, messageNumber,
+                            fiddConnector, true, messageNumber,
                             logicalFileSection);
 
                 logicalFileInfo.add(LogicalFileInfo.of(checkNotNull(logicalFileMetadataAndContainer).getLeft(),
@@ -126,6 +136,7 @@ public class WrapperFiddContentService implements FiddContentService {
     @Override
     public @Nullable InputStream readLogicalFile(long messageNumber, LogicalFileInfo LogicalFileInfo) {
         try {
+            LOGGER.info("Getting LogicalFile " + messageNumber + " / " + LogicalFileInfo.metadata().filePath());
             return getLogicalFileInputStream(baseRepositories, fiddConnector,
                     messageNumber, LogicalFileInfo.section(), LogicalFileInfo.fileOffset());
         } catch (Exception e) {
@@ -136,6 +147,8 @@ public class WrapperFiddContentService implements FiddContentService {
     @Override
     public @Nullable InputStream readLogicalFileChunk(long messageNumber, LogicalFileInfo LogicalFileInfo, long offset, long length) {
         try {
+            LOGGER.info("Getting LogicalFileChunk " + messageNumber + " / " + LogicalFileInfo.metadata().filePath() +
+                    " from: " + offset + " size: " + length);
             return getLogicalFileInputStreamChunk(baseRepositories, fiddConnector,
                     messageNumber, LogicalFileInfo.section(), LogicalFileInfo.fileOffset(), offset, length);
         } catch (Exception e) {
