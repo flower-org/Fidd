@@ -1,14 +1,24 @@
 package com.fidd.view.forms;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fidd.core.fiddfile.FiddFileMetadata;
 import com.fidd.service.FiddContentService;
 import com.fidd.service.LogicalFileInfo;
+import com.fidd.view.common.PlaylistSettings;
+import com.flower.crypt.keys.UserPreferencesManager;
 import com.flower.fxutils.JavaFxUtils;
+import com.flower.fxutils.ModalWindow;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.image.Image;
@@ -28,25 +38,35 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.prefs.Preferences;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class FiddViewForm extends AnchorPane  {
     final static Logger LOGGER = LoggerFactory.getLogger(FiddViewForm.class);
 
+    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     static final int MESSAGE_LOAD_BATCH_SIZE = 5;
     static final int FILE_SAVE_BUFFER_SIZE = 8192;
 
     // https://iconscout.com/free-icon-pack/free-free-user-interface-icons-set-icon-pack_37661 - source
     // https://iconscout.com/icon-pack/arrow-and-navigation-icon-pack_66887 - nice folder icon, but costs money
-    static final Image MESSAGE_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/doc.png")));
+    static final Image MESSAGE_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/message.png")));
     static final Image FOLDER_ICON_ = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/folder.png")));
     static final Image FILE_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/file.png")));
     static final Image DOWN_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/down.png")));
     static final Image UP_ICON = new Image(checkNotNull(FiddViewForm.class.getResourceAsStream("/icons/up-arrow.png")));
+
+    static final String FIDD_VIEW_PLAYLIST_SETTINGS = "FIDD_VIEW_PLAYLIST_SETTINGS";
+
+    PlaylistSettings playlistSettings;
 
     public interface FiddTreeNode {
         @Nullable ImageView getImage();
@@ -124,6 +144,7 @@ public class FiddViewForm extends AnchorPane  {
     @Nullable @FXML TreeView<FiddTreeNode> fiddStructureTreeView;
     @Nullable @FXML Button saveFileButton;
     @Nullable @FXML Button getFileUrlButton;
+    @Nullable @FXML Button getPlaylistUrlButton;
 
     protected final String fiddName;
     protected final String fiddApiServerAndPort;
@@ -143,9 +164,69 @@ public class FiddViewForm extends AnchorPane  {
             throw new RuntimeException(exception);
         }
 
+        String playlistStr = UserPreferencesManager.getUserPreference(FIDD_VIEW_PLAYLIST_SETTINGS);
+        try {
+            this.playlistSettings = OBJECT_MAPPER.readValue(playlistStr, PlaylistSettings.class);
+        } catch (JsonProcessingException e) {
+            this.playlistSettings = new PlaylistSettings();
+        }
+
         this.fiddName = fiddName;
         this.fiddApiServerAndPort = fiddApiHost + (fiddApiPort != null ? (":" + fiddApiPort) : "");
         this.fiddContentService = fiddContentService;
+
+        // Attach context menu to tree cells
+        checkNotNull(fiddStructureTreeView).setCellFactory(tv -> {
+            TreeCell<FiddTreeNode> cell = new TreeCell<>() {
+                @Override
+                protected void updateItem(FiddTreeNode item, boolean empty) {
+                    super.updateItem(item, empty);
+
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        setText(item.toString());
+                        setGraphic(item.getImage());
+                    }
+                }
+            };
+
+            // Create ContextMenu for the cell
+            ContextMenu contextMenu = new ContextMenu();
+            MenuItem getPlaylistItem = new MenuItem("Get Playlist URL");
+            getPlaylistItem.setOnAction(e -> {
+                TreeItem<FiddTreeNode> treeItem = cell.getTreeItem();
+                String path = getPlaylistUrl(treeItem);
+
+                if (path != null) {
+                    copyToClipboard(path);
+                    JavaFxUtils.showMessage("Copied Playlist URL to clipboard", "Playlist URL copied to clipboard:\n" + path);
+                } else {
+                    JavaFxUtils.showMessage("Can't copy to clipboard", "Playlist URL wasn't copied to clipboard", "Path is NLL");
+                }
+            });
+            contextMenu.getItems().addAll(getPlaylistItem);
+
+            // Show context menu only if cell is not empty
+            cell.emptyProperty().addListener((obs, wasEmpty, isNowEmpty) -> {
+                boolean set = false;
+                if (!isNowEmpty) {
+                    FiddTreeNode value = cell.itemProperty().getValue();
+                    if (value != null) {
+                        if (value instanceof FiddFolderNode || value instanceof FiddMessageNode) {
+                            cell.setContextMenu(contextMenu);
+                            set = true;
+                        }
+                    }
+                }
+                if (!set) {
+                    cell.setContextMenu(null);
+                }
+            });
+
+            return cell;
+        });
 
         FiddTreeNode rootNode = new FiddRootNode(fiddName);
         rootItem = new TreeItem<>(rootNode, rootNode.getImage());
@@ -182,17 +263,20 @@ public class FiddViewForm extends AnchorPane  {
             }
         });
         fiddStructureTreeView.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            boolean isFile = false;
+            boolean isDirectory = false;
             if (newSel != null) {
                 FiddTreeNode value = newSel.getValue();
                 if (value instanceof FiddFileNode) {
-                    checkNotNull(saveFileButton).setDisable(false);
-                    checkNotNull(getFileUrlButton).setDisable(false);
-                    return;
+                    isFile = true;
+                } else if (value instanceof FiddFolderNode || value instanceof FiddMessageNode) {
+                    isDirectory = true;
                 }
             }
 
-            checkNotNull(saveFileButton).setDisable(true);
-            checkNotNull(getFileUrlButton).setDisable(true);
+            checkNotNull(saveFileButton).setDisable(!isFile);
+            checkNotNull(getFileUrlButton).setDisable(!isFile);
+            checkNotNull(getPlaylistUrlButton).setDisable(!isDirectory);
         });
 
         loadNextBatch(0);
@@ -411,6 +495,103 @@ public class FiddViewForm extends AnchorPane  {
                 copyToClipboard(path);
                 JavaFxUtils.showMessage("Copied URL to clipboard", "URL copied to clipboard:\n" + path);
             }
+        }
+    }
+
+    public void getPlaylistUrl() {
+        TreeItem<FiddTreeNode> treeItem = checkNotNull(fiddStructureTreeView).getSelectionModel().getSelectedItem();
+        if (treeItem != null) {
+            String path = getPlaylistUrl(treeItem);
+            if (path != null) {
+                copyToClipboard(path);
+                JavaFxUtils.showMessage("Copied Playlist URL to clipboard", "Playlist URL copied to clipboard:\n" + path);
+            } else {
+                JavaFxUtils.showMessage("Can't copy to clipboard", "Playlist URL wasn't copied to clipboard", "Path is NLL");
+            }
+        }
+    }
+
+    public @Nullable String getPlaylistUrl(TreeItem<FiddTreeNode> treeItem) {
+        // TODO: Options for playlist
+        //  ?list=m3u&filterIn=...&filterOut=...&sort=...&includeSubfolders=...
+        String path = null;
+        FiddTreeNode value = treeItem.getValue();
+        if (value instanceof FiddFolderNode) {
+            Stack<String> pathStack = new Stack<>();
+
+            TreeItem<FiddTreeNode> cursor = treeItem;
+            while (true) {
+                value = cursor.getValue();
+                if (value instanceof FiddFolderNode folderNode) {
+                    pathStack.push(folderNode.folderName);
+                } else if (value instanceof FiddMessageNode messageNode) {
+                    pathStack.push(Long.toString(messageNode.messageNumber));
+                    break;
+                } else {
+                    break;
+                }
+                cursor = cursor.getParent();
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.append("http://");
+            builder.append(fiddApiServerAndPort).append("/");
+            builder.append(fiddName).append("/");
+            while (!pathStack.isEmpty()) {
+                builder.append(pathStack.pop()).append("/");
+            }
+            builder.append("?list=m3u");
+
+            path = builder.toString();
+        } else if (value instanceof FiddMessageNode messageNode) {
+            long messageNumber = messageNode.messageNumber;
+            path = String.format("http://%s/%s/%d/?list=m3u", fiddApiServerAndPort, fiddName, messageNumber);
+        }
+        return path + formPlaylistSettings(playlistSettings);
+    }
+
+    public String formPlaylistSettings(PlaylistSettings playlistSettings) {
+        StringBuilder builder = new StringBuilder();
+
+        for (String in : playlistSettings.filterIn()) {
+            builder.append("&filterIn=").append(URLEncoder.encode(in, StandardCharsets.UTF_8));
+        }
+        for (String out : playlistSettings.filterOut()) {
+            builder.append("&filterOut=").append(URLEncoder.encode(out, StandardCharsets.UTF_8));
+        }
+        builder.append("&sort=").append(playlistSettings.sort());
+        builder.append("&includeSubfolders=").append(playlistSettings.includeSubfolders());
+
+        return builder.toString();
+    }
+
+    public void showPlaylistSettings() {
+        try {
+            PlaylistSettingsDialog playlistSettingsDialog = new PlaylistSettingsDialog(playlistSettings);
+            Stage workspaceStage = ModalWindow.showModal(checkNotNull(stage),
+                stage -> { playlistSettingsDialog.setStage(stage); return playlistSettingsDialog; },
+                "Edit PlayList Settings");
+
+            workspaceStage.setOnHidden(
+                ev -> {
+                    try {
+                        PlaylistSettings newPlaylistSettings = playlistSettingsDialog.getPlaylistSettings();
+                        if (newPlaylistSettings != null) {
+                            playlistSettings = newPlaylistSettings;
+                            String playlistSettingsJson = OBJECT_MAPPER.writeValueAsString(playlistSettings);
+                            UserPreferencesManager.updateUserPreference(Preferences.userRoot(), FIDD_VIEW_PLAYLIST_SETTINGS, playlistSettingsJson);
+                        }
+                    } catch (Exception e) {
+                        Alert alert = new Alert(Alert.AlertType.ERROR, "Error changing PlayList settings: " + e, ButtonType.OK);
+                        LOGGER.error("Error changing PlayList settings: ", e);
+                        alert.showAndWait();
+                    }
+                }
+            );
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Error changing PlayList settings: " + e, ButtonType.OK);
+            LOGGER.error("Error changing PlayList settings: ", e);
+            alert.showAndWait();
         }
     }
 }

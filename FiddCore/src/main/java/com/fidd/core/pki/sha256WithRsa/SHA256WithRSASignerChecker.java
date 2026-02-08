@@ -15,7 +15,7 @@ public class SHA256WithRSASignerChecker implements SignerChecker {
     @Override
     public byte[] signData(byte[] data, PrivateKey privateKey) {
         try {
-            return PkiUtil.signData(data, privateKey);
+            return PkiUtil.signDataQuick(data, privateKey);
         } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException e) {
             throw new RuntimeException(e);
         }
@@ -33,7 +33,7 @@ public class SHA256WithRSASignerChecker implements SignerChecker {
     @Override
     public byte[] signData(InputStream data, PrivateKey privateKey) {
         try {
-            return PkiUtil.signData(data, privateKey);
+            return PkiUtil.signDataQuick(data, privateKey);
         } catch (NoSuchAlgorithmException | SignatureException | InvalidKeyException | IOException e) {
             throw new RuntimeException(e);
         }

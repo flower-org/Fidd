@@ -603,6 +603,8 @@ public class MainForm {
             boolean addFiddFileMetadataSignature = checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().get();
             boolean addLogicalFileSignatures = checkNotNull(signLogicalFilesCheckBox).selectedProperty().get();
             boolean addLogicalFileMetadataSignatures = checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().get();
+            // TODO: add UI control for setting `addLogicalFileHeaderLengthToFiddKey`
+            boolean addLogicalFileHeaderLengthToFiddKey = true;
             boolean includePublicKey = checkNotNull(includePublicKeyCheckBox).selectedProperty().get();
 
             PublicKeySerializer publicKeySerializer = getComboBoxSelectionFromRepo(baseRepositories.publicKeyFormatRepo(), publicKeyFormatComboBox);
@@ -693,6 +695,7 @@ public class MainForm {
                     addFiddFileMetadataSignature,
                     addLogicalFileSignatures,
                     addLogicalFileMetadataSignatures,
+                    addLogicalFileHeaderLengthToFiddKey,
 
                     includePublicKey,
                     publicKeySerializer,
