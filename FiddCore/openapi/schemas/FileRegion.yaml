@@ -17,6 +17,9 @@ properties:
     type: string
   resourceDescriptorType:
     type: string
+    enum:
+      - URL
+      # - MAGNET_LINK
     description: Type of resource descriptor
   resourceDescriptor:
     type: string

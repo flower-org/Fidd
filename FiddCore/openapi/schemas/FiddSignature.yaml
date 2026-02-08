@@ -1,13 +1,15 @@
 type: object
 description: A signature or checksum
 required:
-  - algorithm
-  - value
+  - format
+  - bytes
 properties:
-  algorithm:
+  format:
     type: string
     example: CRC32
-  value:
+  bytes:
     type: string
-    description: Hex-encoded signature/checksum value
+    format: byte
+    description: Base64-encoded signature/checksum bytes
+
 

@@ -16,26 +16,21 @@ properties:
   createdAt:
     type: integer
     format: int64
-    nullable: true
     description: Unix timestamp in milliseconds when the file was created
   updatedAt:
     type: integer
     format: int64
-    nullable: true
     description: Unix timestamp in milliseconds when the file was last updated
   authorsFileSignatures:
     type: array
-    nullable: true
     items:
       $ref: './FiddSignature.yaml'
   progressiveCrcs:
     type: array
-    nullable: true
     items:
       $ref: './ProgressiveCrc.yaml'
   externalLinks:
     type: array
-    nullable: true
     items:
       $ref: './ExternalResource.yaml'
 
