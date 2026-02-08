@@ -1,0 +1,27 @@
+type: object
+description: Describes a logical file within a message
+properties:
+  id:
+    type: string
+    description: Stable identifier used in content path
+  path:
+    type: string
+    description: Logical file path or name
+  sizeBytes:
+    type: integer
+    format: int64
+  mediaType:
+    type: string
+    description: Optional MIME type
+  checksum:
+    type: object
+    required: [algorithm, value]
+    properties:
+      algorithm:
+        type: string
+        example: CRC32
+      value:
+        type: string
+        description: Hex-encoded checksum
+required: [id, path, sizeBytes]
+

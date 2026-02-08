@@ -1,0 +1,14 @@
+type: object
+description: Metadata for a message in the Fidd file system
+properties:
+  messageNumber:
+    $ref: '../schemas/MessageNumber.yaml'
+  createdAt:
+    type: string
+    format: date-time
+  attributes:
+    type: object
+    additionalProperties:
+      type: string
+additionalProperties: true
+

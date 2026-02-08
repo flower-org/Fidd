@@ -1,0 +1,274 @@
+openapi: 3.0.3
+info:
+  title: Fidd Content API
+  version: 1.0.0
+  description: REST wrapper over FiddContentService
+
+servers:
+  - url: http://localhost:8080
+
+tags:
+  - name: messages
+  - name: logical-files
+
+paths:
+  /messages/tail:
+    get:
+      tags: [messages]
+      summary: Get latest N message numbers (descending)
+      parameters:
+        - name: count
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: Number of message numbers to return
+      responses:
+        '200':
+          description: Message numbers in descending order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas/MessageNumber.yaml'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /messages/{messageNumber}/before:
+    get:
+      tags: [messages]
+      summary: Get N message numbers before a given message (descending)
+      parameters:
+        - $ref: '#/components/parameters/MessageNumberPath'
+        - name: count
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: inclusive
+          in: query
+          required: true
+          schema:
+            type: boolean
+          description: Include the given messageNumber if true
+      responses:
+        '200':
+          description: Message numbers in descending order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas/MessageNumber.yaml'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /messages/range:
+    get:
+      tags: [messages]
+      summary: Get N message numbers between two bounds (descending)
+      description: Returns results in descending order. Use getLatest to select which side to favor when count is smaller than the range.
+      parameters:
+        - name: latestMessage
+          in: query
+          required: true
+          schema:
+            $ref: './schemas/MessageNumber.yaml'
+        - name: inclusiveLatest
+          in: query
+          required: true
+          schema:
+            type: boolean
+        - name: earliestMessage
+          in: query
+          required: true
+          schema:
+            $ref: './schemas/MessageNumber.yaml'
+        - name: inclusiveEarliest
+          in: query
+          required: true
+          schema:
+            type: boolean
+        - name: count
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+        - name: getLatest
+          in: query
+          required: true
+          schema:
+            type: boolean
+          description: If true, prefer newer messages when trimming to count
+      responses:
+        '200':
+          description: Message numbers in descending order within the range
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas/MessageNumber.yaml'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /messages/{messageNumber}/metadata:
+    get:
+      tags: [messages]
+      summary: Get Fidd file metadata for a message
+      parameters:
+        - $ref: '#/components/parameters/MessageNumberPath'
+      responses:
+        '200':
+          description: Metadata found
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/FiddFileMetadata.yaml'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /messages/{messageNumber}/logical-files:
+    get:
+      tags: [logical-files]
+      summary: List logical files for a message
+      parameters:
+        - $ref: '#/components/parameters/MessageNumberPath'
+      responses:
+        '200':
+          description: Logical files found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas/LogicalFileInfo.yaml'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /messages/{messageNumber}/logical-files/{logicalFileId}/content:
+    get:
+      tags: [logical-files]
+      summary: Read logical file content (full or partial via Range header)
+      description: |
+        Supports HTTP Range requests for partial content retrieval.
+        Use the standard `Range` header (e.g., `Range: bytes=0-1023`) to request specific byte ranges.
+      parameters:
+        - $ref: '#/components/parameters/MessageNumberPath'
+        - name: logicalFileId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Logical file path in Fidd message
+        - name: Range
+          in: header
+          required: false
+          schema:
+            type: string
+          description: 'HTTP Range header for partial content (e.g., "bytes=0-1023", "bytes=500-", "bytes=-500")'
+          example: "bytes=0-1023"
+      responses:
+        '200':
+          description: Full file content (when no Range header provided)
+          headers:
+            Accept-Ranges:
+              schema:
+                type: string
+                enum: [bytes]
+              description: Indicates that byte-range requests are supported
+            Content-Length:
+              schema:
+                type: integer
+              description: Total size of the file in bytes
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: Partial content (when Range header is provided)
+          headers:
+            Accept-Ranges:
+              schema:
+                type: string
+                enum: [bytes]
+            Content-Range:
+              schema:
+                type: string
+              description: 'Byte range returned (e.g., "bytes 0-1023/5000")'
+              example: "bytes 0-1023/5000"
+            Content-Length:
+              schema:
+                type: integer
+              description: Size of the returned content in bytes
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '416':
+          description: Range not satisfiable (requested range is outside the file bounds)
+          headers:
+            Content-Range:
+              schema:
+                type: string
+              description: 'Indicates the total file size (e.g., "bytes */5000")'
+              example: "bytes */5000"
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/Error.yaml'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    MessageNumberPath:
+      name: messageNumber
+      in: path
+      required: true
+      schema:
+        $ref: './schemas/MessageNumber.yaml'
+
+  responses:
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: './schemas/Error.yaml'
+    BadRequestError:
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: './schemas/Error.yaml'
+    InternalServerError:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            $ref: './schemas/Error.yaml'
+
+  schemas: {}
