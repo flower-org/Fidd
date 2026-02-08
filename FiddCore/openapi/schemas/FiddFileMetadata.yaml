@@ -1,14 +1,57 @@
 type: object
 description: Metadata for a message in the Fidd file system
+required:
+  - messageNumber
+  - originalMessageNumber
+  - postId
+  - versionNumber
+  - isNewOrSquash
+  - isDelete
 properties:
   messageNumber:
     $ref: '../schemas/MessageNumber.yaml'
-  createdAt:
+  originalMessageNumber:
+    allOf:
+      - $ref: '../schemas/MessageNumber.yaml'
+      - description: Post originally published as msg number
+  previousMessageNumber:
+    allOf:
+      - $ref: '../schemas/MessageNumber.yaml'
+    nullable: true
+  postId:
     type: string
-    format: date-time
-  attributes:
-    type: object
-    additionalProperties:
+  versionNumber:
+    type: integer
+  isNewOrSquash:
+    type: boolean
+  isDelete:
+    type: boolean
+  originalMessageCreationTime:
+    type: integer
+    format: int64
+    nullable: true
+    description: Unix timestamp in milliseconds
+  messageCreationTime:
+    type: integer
+    format: int64
+    nullable: true
+    description: Unix timestamp in milliseconds
+  authorsPublicKeyFormat:
+    type: string
+    nullable: true
+  authorsPublicKey:
+    type: string
+    format: byte
+    nullable: true
+    description: Base64-encoded public key
+  authorsFiddFileSignatureFormats:
+    type: array
+    items:
       type: string
-additionalProperties: true
+    nullable: true
+  authorsFiddKeyFileSignatureFormats:
+    type: array
+    items:
+      type: string
+    nullable: true
 

@@ -1,0 +1,30 @@
+type: object
+description: Section information from FiddKey
+required:
+  - sectionOffset
+  - sectionLength
+properties:
+  sectionOffset:
+    type: integer
+    format: int64
+  sectionLength:
+    type: integer
+    format: int64
+  encryptionAlgorithm:
+    type: string
+    nullable: true
+  encryptionKeyData:
+    type: string
+    format: byte
+    nullable: true
+    description: Base64-encoded encryption key data (algorithm-specific, may include key + IV)
+  crcs:
+    type: array
+    nullable: true
+    items:
+      $ref: './FiddSignature.yaml'
+  headerLength:
+    type: integer
+    nullable: true
+    description: Size of header in section (v1.1)
+

@@ -1,0 +1,11 @@
+type: object
+description: Progressive CRC checksum for streaming verification
+properties:
+  algorithm:
+    type: string
+  value:
+    type: string
+  offset:
+    type: integer
+    format: int64
+

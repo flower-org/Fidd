@@ -1,0 +1,25 @@
+type: object
+description: Region of a file in an external resource
+required:
+  - offset
+  - length
+  - regionFileName
+  - resourceDescriptorType
+  - resourceDescriptor
+properties:
+  offset:
+    type: integer
+    format: int64
+  length:
+    type: integer
+    format: int64
+  regionFileName:
+    type: string
+  resourceDescriptorType:
+    type: string
+    description: Type of resource descriptor
+  resourceDescriptor:
+    type: string
+    format: byte
+    description: Base64-encoded resource descriptor
+

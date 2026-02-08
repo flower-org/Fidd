@@ -1,0 +1,13 @@
+type: object
+description: A signature or checksum
+required:
+  - algorithm
+  - value
+properties:
+  algorithm:
+    type: string
+    example: CRC32
+  value:
+    type: string
+    description: Hex-encoded signature/checksum value
+
