@@ -177,12 +177,12 @@ paths:
       parameters:
         - $ref: '#/components/parameters/FiddId'
         - $ref: '#/components/parameters/MessageNumber'
-        - name: logicalFileId
+        - name: logicalFilePath
           in: path
           required: true
           schema:
             type: string
-          description: Logical file path in Fidd message
+          description: Logical file path in Fidd message (URL-encoded)
         - name: Range
           in: header
           required: false
@@ -190,24 +190,99 @@ paths:
             type: string
           description: 'HTTP Range header for partial content (e.g., "bytes=0-1023", "bytes=500-", "bytes=-500")'
           example: "bytes=0-1023"
+        - name: list
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [m3u]
+          description: |
+            When set to "m3u", returns an M3U playlist of files under the specified folder path
+            instead of file content. The logicalFilePath should be a folder path in this case.
+        - name: filterIn
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          description: |
+            For m3u playlist: Only include files matching these glob patterns (e.g., "*.mp4", "*.mkv").
+            Supports wildcards: * (zero or more chars), ? (single char).
+        - name: filterOut
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          description: |
+            For m3u playlist: Exclude files matching these glob patterns. Higher priority than filterIn.
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [NUMERICAL_ASC, NUMERICAL_DESC, ALPHABETICAL_ASC, ALPHABETICAL_DESC]
+            default: NUMERICAL_ASC
+          description: |
+            For m3u playlist: Sorting order for playlist entries.
+            NUMERICAL sorts by numeric prefix in filenames.
+        - name: includeSubfolders
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: |
+            For m3u playlist: If true, include files from subfolders recursively.
       responses:
         '200':
-          description: Full file content (when no Range header provided)
+          description: |
+            File content, or M3U playlist (when list=m3u).
+            
+            For file downloads:
+            - Returns binary content with appropriate Content-Type based on file extension
+            - Includes caching headers (Last-Modified, Expires, Cache-Control)
+            
+            For M3U playlists:
+            - Returns text/plain content with Content-Disposition attachment header
           headers:
             Accept-Ranges:
               schema:
                 type: string
                 enum: [bytes]
-              description: Indicates that byte-range requests are supported
+              description: Indicates that byte-range requests are supported (file download only)
             Content-Length:
               schema:
                 type: integer
-              description: Total size of the file in bytes
+              description: Total size of the file or m3u list in bytes
+            Content-Disposition:
+              schema:
+                type: string
+              description: 'Attachment header for M3U playlist download (e.g., "attachment; filename=\"playlist.m3u\"")'
+            Last-Modified:
+              schema:
+                type: string
+              description: Last modification date of the file (HTTP date format)
+            Cache-Control:
+              schema:
+                type: string
+              description: Cache control directives
+            Expires:
+              schema:
+                type: string
+              description: Expiration date for caching
           content:
             application/octet-stream:
               schema:
                 type: string
                 format: binary
+              description: File content
+            text/plain:
+              schema:
+                type: string
+              description: File content or M3U playlist content (when list=m3u parameter is used)
         '206':
           description: Partial content (when Range header is provided)
           headers:
