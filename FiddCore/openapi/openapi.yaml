@@ -278,11 +278,9 @@ paths:
               schema:
                 type: string
                 format: binary
-              description: File content
             text/plain:
               schema:
                 type: string
-              description: File content or M3U playlist content (when list=m3u parameter is used)
         '206':
           description: Partial content (when Range header is provided)
           headers:
