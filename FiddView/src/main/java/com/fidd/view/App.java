@@ -42,9 +42,9 @@ public class App extends Application {
 
             // Deploy the generated Vert.x/Netty HTTP server verticle
             vertx.deployVerticle(new FiddHttpServerVerticle("openapi.yaml"))
-                    .onSuccess(id -> System.out.println("Vert.x/Netty server started successfully. Deployment ID: " + id))
+                    .onSuccess(id -> LOGGER.info("Vert.x/Netty server started successfully. Deployment ID: " + id))
                     .onFailure(err -> {
-                        System.err.println("Failed to start server: " + err.getMessage());
+                        LOGGER.error("Failed to start HTTP server", err);
                         err.printStackTrace();
                         vertx.close();
                     });
@@ -60,7 +60,8 @@ public class App extends Application {
             //Close all threads when we close JavaFX windows.
             mainStage.setOnHidden(event -> {
                 try {
-                    vertx.close();
+                    vertx.close().result();
+                    LOGGER.info("Vert.x/Netty server stopped.");
                 } catch (Exception e) {
                     LOGGER.error("Error stopping HTTP server", e);
                 } finally {
