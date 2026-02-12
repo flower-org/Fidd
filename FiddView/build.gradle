@@ -71,14 +71,16 @@ openApiGenerate {
     configOptions = [
             dateLibrary            : 'java8',
             serializableModel      : 'true',
-            hideGenerationTimestamp: 'false'
+            hideGenerationTimestamp: 'false',
     ]
+    typeMappings = [ "file": "InputStream" ]
+    importMappings = [ "InputStream": "java.io.InputStream" ]
 }
 
 // TODO: find a more robust way to clean generated service on build
 tasks.named('openApiGenerate') {
     doFirst {
-        delete("$buildDir/generated/src/main/java/com/fidd/service/api")
+        delete("$buildDir/generated/src")
     }
 }
 
@@ -95,8 +97,10 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-guava:2.20.1'
 
     implementation "org.immutables:value-annotations:2.9.2"
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 
-    implementation 'javax.activation:activation:1.1' // Use the latest version
+    implementation 'javax.activation:activation:1.1'
 
     implementation 'org.apache.logging.log4j:log4j-api:2.25.3'
     implementation 'org.apache.logging.log4j:log4j-core:2.25.3'
@@ -169,7 +173,10 @@ tasks.withType(JavaCompile) {
     if (!name.toLowerCase().contains("test") && !name.toLowerCase().contains("build")) {
         options.errorprone {
             //Exclude Immutables generated code
-            excludedPaths.set(".*[\\\\/]generated[\\\\/].*")
+            excludedPaths.set(
+                    ".*[\\\\/]generated[\\\\/].*" +
+                    "|.*DownloadCustomApiHandler.*"
+            )
             check("NullAway", CheckSeverity.ERROR)
             option("NullAway:AnnotatedPackages", "com.fidd.view")
         }

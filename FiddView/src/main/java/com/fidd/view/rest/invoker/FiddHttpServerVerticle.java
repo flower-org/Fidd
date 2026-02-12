@@ -19,8 +19,8 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
         this.specFile = specFile;
     }
 
-    private final LogicalFilesApiHandler logicalFilesHandler = new LogicalFilesApiHandler(new LogicalFilesApiCustomImpl());
-    private final MessagesApiHandler messagesHandler = new MessagesApiHandler(new MessagesApiCustomImpl());
+    private final DownloadCustomApiHandler downloadApiHandler = new DownloadCustomApiHandler(new DownloadCustomApi(null));
+    //private final MessagesApiHandler messagesHandler = new MessagesApiHandler(new MessagesApiCustomImpl());
 
     @Override
     public void start(Promise<Void> startPromise) {
@@ -30,9 +30,9 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
                   // For production use case, you need to enable this flag and provide the proper security handler
                   .setRequireSecurityHandlers(false)
               );
-              
-              logicalFilesHandler.mount(builder);
-              messagesHandler.mount(builder);
+
+              downloadApiHandler.mount(builder);
+              //messagesHandler.mount(builder);
 
               Router router = builder.createRouter();
               router.errorHandler(400, this::validationFailureHandler);

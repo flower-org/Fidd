@@ -153,7 +153,7 @@ paths:
   /{fiddId}/messages/{messageNumber}/logical-files:
     get:
       operationId: getLogicalFileInfos
-      tags: [logical-files]
+      tags: [messages]
       summary: List logical files for a message
       parameters:
         - $ref: '#/components/parameters/FiddId'
@@ -175,7 +175,7 @@ paths:
   /{fiddId}/{messageNumber}/{logicalFilePath}:
     get:
       operationId: readLogicalFile
-      tags: [logical-files]
+      tags: [download]
       summary: Read logical file content (full or partial via Range header)
       description: |
         Supports HTTP Range requests for partial content retrieval.
