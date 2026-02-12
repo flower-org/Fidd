@@ -7,8 +7,13 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.openapi.RouterBuilder;
 import io.vertx.ext.web.openapi.RouterBuilderOptions;
+import io.vertx.ext.web.validation.RequestParameter;
+import io.vertx.ext.web.validation.ValidationHandler;
+import io.vertx.ext.web.validation.impl.RequestParametersImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 public class FiddHttpServerVerticle extends AbstractVerticle {
 
@@ -35,6 +40,29 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
               //messagesHandler.mount(builder);
 
               Router router = builder.createRouter();
+              // Custom router for file download
+              router.routeWithRegex("/([^/]+)/([^/]+)/(.+)")
+                  .handler(rc -> {
+                      String fullPath = rc.request().path().substring(1); // remove leading slash
+                      String[] parts = fullPath.split("/", 3);
+
+                      String fiddId = parts[0];
+                      Long messageNumber = Long.valueOf(parts[1]);
+                      String logicalFilePath = parts[2]; // includes slashes
+
+                      // Build RequestParameters so your handler receives them normally
+                      RequestParametersImpl params = new RequestParametersImpl();
+                      params.setPathParameters(Map.of("fiddId", RequestParameter.create(fiddId),
+                              "messageNumber", RequestParameter.create(messageNumber),
+                              "logicalFilePath", RequestParameter.create(logicalFilePath)));
+
+                      // TODO: also add query parameters for playlists
+
+                      // Inject into routing context so your handler sees it
+                      rc.put(ValidationHandler.REQUEST_CONTEXT_KEY, params);
+
+                      downloadApiHandler.readLogicalFile(rc);
+                  });
               router.errorHandler(400, this::validationFailureHandler);
 
               return router;

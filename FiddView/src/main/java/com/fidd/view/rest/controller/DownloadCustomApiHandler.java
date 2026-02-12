@@ -36,7 +36,7 @@ public class DownloadCustomApiHandler extends DownloadApiHandler {
         builder.operation("readLogicalFile").handler(this::readLogicalFile);
     }
 
-    private void readLogicalFile(RoutingContext routingContext) {
+    public void readLogicalFile(RoutingContext routingContext) {
         logger.info("readLogicalFile()");
 
         // Param extraction
