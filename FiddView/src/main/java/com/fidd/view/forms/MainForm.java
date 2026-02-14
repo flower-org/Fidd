@@ -21,6 +21,7 @@ import com.flower.crypt.keys.forms.RsaRawKeyProvider;
 import com.flower.crypt.keys.forms.TabKeyProvider;
 import com.flower.fxutils.JavaFxUtils;
 import com.flower.fxutils.ModalWindow;
+import com.google.common.base.Supplier;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -79,6 +80,35 @@ public class MainForm {
     static final String FIDD_VIEW_FIDD_CONNECTIONS_FILE = "FIDD_VIEW_FIDD_CONNECTIONS_FILE";
     static final String FIDD_VIEW_ENCRYPT_DECRYPT = "FIDD_VIEW_ENCRYPT_DECRYPT";
 
+    public static class KeySupplier implements Supplier<Pair<X509Certificate, PrivateKey>> {
+        public final TabKeyProvider keyProvider;
+        public KeySupplier(TabKeyProvider keyProvider) {
+            this.keyProvider = keyProvider;
+        }
+
+        @Override
+        public @Nullable Pair<X509Certificate, PrivateKey> get() {
+            KeyContext keyContext = null;
+            try {
+                keyContext = keyProvider.getKeyContext();
+            } catch (Exception e) {
+                return null;
+            }
+            if (keyContext == null) {
+                // No cert - will only show messages with unencrypted keys
+                return null;
+            } else {
+                if (keyContext instanceof RsaKeyContext) {
+                    X509Certificate certificate = ((RsaKeyContext) keyContext).certificate();
+                    PrivateKey key = ((RsaKeyContext) keyContext).privateKey();
+                    return Pair.of(certificate, key);
+                } else {
+                    throw new RuntimeException("Unsupported Key Context: " + keyContext.getClass());
+                }
+            }
+        }
+    }
+
     @Nullable Stage mainStage;
     @Nullable BaseRepositories repositories;
     @Nullable FiddContentServiceCache fiddContentServiceCache;
@@ -94,6 +124,7 @@ public class MainForm {
 
     @Nullable TabKeyProvider keyProvider;
     @Nullable ObservableList<FiddConnection> fiddConnections;
+    @Nullable public KeySupplier keySupplier;
 
     public MainForm() {
         //This form is created automatically.
@@ -122,6 +153,8 @@ public class MainForm {
         AnchorPane.setRightAnchor(keyProviderForm, 0.0);
 
         keyProvider.initPreferences();
+
+        keySupplier = new KeySupplier(keyProvider);
 
         fiddConnections = FXCollections.observableArrayList();
         checkNotNull(fiddConnectionTableView).itemsProperty().set(fiddConnections);
@@ -194,44 +227,11 @@ public class MainForm {
             throw new RuntimeException("Key Provider not found.");
         }
 
-        X509Certificate certificate;
-        PrivateKey key;
-        KeyContext keyContext = null;
-        try {
-            keyContext = keyProvider.getKeyContext();
-        } catch (Exception e) {
-            if (JavaFxUtils.YesNo.NO == JavaFxUtils.showYesNoDialog(e.getMessage() + "\nContinue without certificate?")) {
-                return;
-            }
-        }
-        if (keyContext == null) {
-            // No cert - will only show messages with unencrypted keys
-            certificate = null;
-            key = null;
-        } else {
-            if (keyContext instanceof RsaKeyContext) {
-                certificate = ((RsaKeyContext) keyContext).certificate();
-                key = ((RsaKeyContext) keyContext).privateKey();
-            } else {
-                throw new RuntimeException("Unsupported Key Context: " + keyContext.getClass());
-            }
-        }
-
-        FiddConnectorFactory fiddConnectorFactory = BASE_REPOSITORIES.fiddConnectorFactoryRepo().get(fiddConnection.connectorType());
-        FiddConnector fiddConnector = fiddConnectorFactory.createConnector(fiddConnection.url());
-        FiddContentService fiddContentService = new WrapperFiddContentService(BASE_REPOSITORIES, fiddConnector, certificate, key);
-
-        FiddViewForm fiddViewForm = new FiddViewForm(fiddConnection.name(), fiddContentService, checkNotNull(fiddApiHost), fiddApiPort);
+        FiddContentService fiddContentService = checkNotNull(fiddContentServiceCache).getService(fiddConnection.name());
+        FiddViewForm fiddViewForm = new FiddViewForm(fiddConnection.name(), checkNotNull(fiddContentService), checkNotNull(fiddApiHost), fiddApiPort);
         fiddViewForm.setStage(checkNotNull(mainStage));
         final Tab tab = new Tab(fiddConnection.name(), fiddViewForm);
         tab.setClosable(true);
-
-        if (!checkNotNull(fiddContentServiceCache).addServiceIfAbsent(fiddConnection.name(), fiddContentService)) {
-            JavaFxUtils.showMessage("Fidd Connection with name '" + fiddConnection.name() + "' is already opened.");
-            return;
-        }
-
-        tab.onClosedProperty().set(event -> checkNotNull(fiddContentServiceCache).removeService(fiddConnection.name()));
 
         addTab(tab);
     }
@@ -241,9 +241,16 @@ public class MainForm {
         mainTabPane.getSelectionModel().select(tab);
     }
 
+    FiddContentService getFiddContentServiceForConnection(FiddConnection fiddConnection) {
+        FiddConnectorFactory fiddConnectorFactory = BASE_REPOSITORIES.fiddConnectorFactoryRepo().get(fiddConnection.connectorType());
+        FiddConnector fiddConnector = checkNotNull(fiddConnectorFactory).createConnector(fiddConnection.url());
+        return new WrapperFiddContentService(BASE_REPOSITORIES, fiddConnector, keySupplier);
+    }
+
     protected void addFiddConnection(FiddConnection fiddConnection) {
         Platform.runLater(() -> {
             checkNotNull(fiddConnections).add(fiddConnection);
+            checkNotNull(fiddContentServiceCache).addServiceIfAbsent(fiddConnection.name(), getFiddContentServiceForConnection(fiddConnection));
             checkNotNull(fiddConnectionTableView).refresh();
         });
     }
@@ -282,6 +289,7 @@ public class MainForm {
             if (selectedFiddConnection != null) {
                 checkNotNull(fiddConnections).remove(selectedFiddConnection);
                 checkNotNull(fiddConnectionTableView).refresh();
+                checkNotNull(fiddContentServiceCache).removeService(selectedFiddConnection.name());
             }
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR, "Error Removing Fidd connection: " + e, ButtonType.OK);
@@ -308,8 +316,12 @@ public class MainForm {
                             try {
                                 FiddConnection fiddConnection = fiddConnectionAddDialog.getFiddConnection();
                                 if (fiddConnection != null) {
-                                    checkNotNull(fiddConnections).remove(selectedIndex);
+                                    FiddConnection oldFiddConnection = checkNotNull(fiddConnections).remove(selectedIndex);
                                     checkNotNull(fiddConnections).add(selectedIndex, fiddConnection);
+
+                                    checkNotNull(fiddContentServiceCache).removeService(oldFiddConnection.name());
+                                    checkNotNull(fiddContentServiceCache).addServiceIfAbsent(fiddConnection.name(), getFiddContentServiceForConnection(fiddConnection));
+
                                     checkNotNull(fiddConnectionTableView).refresh();
                                 }
                             } catch (Exception e) {
@@ -523,6 +535,11 @@ public class MainForm {
                 checkNotNull(fiddConnections).clear();
                 checkNotNull(fiddConnections).addAll(fiddConnectionList.fiddConnectionList());
                 checkNotNull(fiddConnectionTableView).refresh();
+
+                checkNotNull(fiddContentServiceCache).clear();
+                for (FiddConnection fiddConnection : fiddConnectionList.fiddConnectionList()) {
+                    checkNotNull(fiddContentServiceCache).addServiceIfAbsent(fiddConnection.name(), getFiddContentServiceForConnection(fiddConnection));
+                }
             }
         } catch (Exception e) {
             LOGGER.error("Error loading Fidd Connections file: ", e);

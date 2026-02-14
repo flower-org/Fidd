@@ -9,4 +9,5 @@ public interface FiddContentServiceCache {
     boolean addServiceIfAbsent(String serviceName, FiddContentService service);
     void removeService(String serviceName);
     boolean containsService(String serviceName);
+    void clear();
 }
