@@ -3,7 +3,7 @@ package com.fidd.core.encryption;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import com.fidd.core.encryption.aes256.Aes256CtrEncryptionAlgorithm;
-import com.fidd.core.encryption.aes256.KuznechikCtrEncryptionAlgorithm;
+import com.fidd.core.encryption.aes256.KuznechikCtrEcbEncryptionAlgorithm;
 import com.fidd.core.encryption.unencrypted.NoEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
 import com.fidd.core.random.plain.PlainRandomGeneratorType;
@@ -18,10 +18,18 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class RandomAccessEncryptionAlgorithmTest {
+  private static byte[] deterministicPayload(int size) {
+    byte[] out = new byte[size];
+    for (int i = 0; i < size; i++) {
+      out[i] = (byte) ((31 * i + 7) & 0xFF);
+    }
+    return out;
+  }
+
   static Stream<Arguments> randomAccessEncryptionAlgorithms() {
     return Stream.of(
         Arguments.of(new Aes256CtrEncryptionAlgorithm()),
-        Arguments.of(new KuznechikCtrEncryptionAlgorithm()),
+        Arguments.of(new KuznechikCtrEcbEncryptionAlgorithm()),
         Arguments.of(new XorEncryptionAlgorithm()),
         Arguments.of(new NoEncryptionAlgorithm()));
   }
@@ -51,15 +59,16 @@ class RandomAccessEncryptionAlgorithmTest {
 
   @ParameterizedTest
   @MethodSource("randomAccessEncryptionAlgorithms")
-  void testRandomAccessDecryptStream(RandomAccessEncryptionAlgorithm algo) {
+  void testRandomAccessDecryptStreamWithOffsetMoreThanOneBlock(
+      RandomAccessEncryptionAlgorithm algo) {
     byte[] key = algo.generateNewKeyData(new PlainRandomGeneratorType());
-    byte[] plaintext = "StreamingRandomAccessDecryptionTest!".getBytes();
+    byte[] plaintext = "StreamingRandomAccessDecryptionTest!WithALittleBitMoreBytesToDo".getBytes();
 
     // Encrypt full plaintext
     byte[] ciphertext = algo.encrypt(key, plaintext);
 
     // Offset and length
-    int offset = 8;
+    int offset = 17;
     int length = 12;
 
     // Provide ciphertext slice via InputStream
@@ -122,5 +131,49 @@ class RandomAccessEncryptionAlgorithmTest {
 
     assertArrayEquals(
         plaintext, decrypted, "Full randomAccessDecrypt should recover original plaintext");
+  }
+
+  @ParameterizedTest
+  @MethodSource("randomAccessEncryptionAlgorithms")
+  void testRandomAccessDecryptByteArrayLargeOffset(RandomAccessEncryptionAlgorithm algo) {
+    byte[] key = algo.generateNewKeyData(new PlainRandomGeneratorType());
+    byte[] plaintext = deterministicPayload(256 * 1024);
+    byte[] ciphertext = algo.encrypt(key, plaintext);
+
+    int offset = 64 * 1024 + 37;
+    int length = 1021;
+
+    byte[] decryptedSlice = algo.randomAccessDecrypt(key, ciphertext, offset, length);
+    byte[] expectedSlice = Arrays.copyOfRange(plaintext, offset, offset + length);
+
+    assertArrayEquals(
+        expectedSlice,
+        decryptedSlice,
+        "Byte-array random access decryption should match plaintext at large offset");
+  }
+
+  @ParameterizedTest
+  @MethodSource("randomAccessEncryptionAlgorithms")
+  void testRandomAccessDecryptInputStreamLargeOffset(RandomAccessEncryptionAlgorithm algo)
+      throws IOException {
+    byte[] key = algo.generateNewKeyData(new PlainRandomGeneratorType());
+    byte[] plaintext = deterministicPayload(256 * 1024);
+    byte[] ciphertext = algo.encrypt(key, plaintext);
+
+    int offset = 96 * 1024 + 11;
+    int length = 2049;
+
+    ByteArrayInputStream ciphertextStream =
+        new ByteArrayInputStream(Arrays.copyOfRange(ciphertext, offset, offset + length));
+    InputStream plaintextOut =
+        algo.getRandomAccessDecryptedStream(key, offset, length, ciphertextStream);
+
+    byte[] decryptedSlice = plaintextOut.readAllBytes();
+    byte[] expectedSlice = Arrays.copyOfRange(plaintext, offset, offset + length);
+
+    assertArrayEquals(
+        expectedSlice,
+        decryptedSlice,
+        "InputStream random access decryption should match plaintext at large offset");
   }
 }
