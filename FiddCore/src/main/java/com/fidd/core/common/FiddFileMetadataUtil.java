@@ -1,6 +1,7 @@
 package com.fidd.core.common;
 
 import com.fidd.base.BaseRepositories;
+import com.fidd.connectors.FiddCacheConnector;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadata;
@@ -23,6 +24,7 @@ public class FiddFileMetadataUtil {
 
     public static Pair<FiddFileMetadata, MetadataContainer> loadFiddFileMetadata(BaseRepositories baseRepositories,
                                                                                  FiddConnector fiddConnector,
+                                                                                 boolean tryCache,
                                                                                  long messageNumber,
                                                                                  FiddKey.Section fiddFileMetadataSection,
                                                                                  String metadataContainerSerializerFormat
@@ -30,8 +32,16 @@ public class FiddFileMetadataUtil {
         MetadataContainerSerializer metadataContainerSerializer =
                 checkNotNull(baseRepositories.metadataContainerFormatRepo().get(metadataContainerSerializerFormat));
 
-        try (InputStream metadataSectionStream = fiddConnector.getFiddMessageChunk(messageNumber,
-                fiddFileMetadataSection.sectionOffset(), fiddFileMetadataSection.sectionLength())) {
+        InputStream metadataSectionStream;
+        if (fiddConnector instanceof FiddCacheConnector) {
+            metadataSectionStream = ((FiddCacheConnector)fiddConnector).getFiddMessageChunk(messageNumber,
+                fiddFileMetadataSection.sectionOffset(), fiddFileMetadataSection.sectionLength(), tryCache);
+        } else {
+            metadataSectionStream = fiddConnector.getFiddMessageChunk(messageNumber,
+                    fiddFileMetadataSection.sectionOffset(), fiddFileMetadataSection.sectionLength());
+        }
+
+        try (metadataSectionStream) {
             String encryptionAlgorithmName = fiddFileMetadataSection.encryptionAlgorithm();
             LOGGER.info("Loading and decrypting FiddFileMetadata Section: Encryption Algorithm " + encryptionAlgorithmName);
             byte[] sectionBytes = metadataSectionStream.readAllBytes();
