@@ -1,5 +1,6 @@
 package com.fidd.view.rest.invoker;
 
+import com.fidd.service.FiddContentServiceManager;
 import com.fidd.view.rest.controller.*;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
@@ -20,12 +21,18 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
     private static final Logger logger = LoggerFactory.getLogger(FiddHttpServerVerticle.class);
     private final String specFile;
 
-    public FiddHttpServerVerticle(String specFile) {
-        this.specFile = specFile;
-    }
+    private final DownloadCustomApiHandler downloadApiHandler;
+    private final MessagesApiHandler messagesHandler;
 
-    private final DownloadCustomApiHandler downloadApiHandler = new DownloadCustomApiHandler(new DownloadCustomApi(null));
-    //private final MessagesApiHandler messagesHandler = new MessagesApiHandler(new MessagesApiCustomImpl());
+    protected final FiddContentServiceManager fiddContentServiceManager;
+
+    public FiddHttpServerVerticle(String specFile, FiddContentServiceManager fiddContentServiceManager) {
+        this.specFile = specFile;
+        this.fiddContentServiceManager = fiddContentServiceManager;
+
+        downloadApiHandler = new DownloadCustomApiHandler(new DownloadCustomApi(null));
+        messagesHandler = new MessagesApiHandler(new MessagesApiCustomImpl(fiddContentServiceManager));
+    }
 
     @Override
     public void start(Promise<Void> startPromise) {
@@ -37,7 +44,7 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
               );
 
               downloadApiHandler.mount(builder);
-              //messagesHandler.mount(builder);
+              messagesHandler.mount(builder);
 
               Router router = builder.createRouter();
               // Custom router for file download

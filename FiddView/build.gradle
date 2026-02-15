@@ -96,10 +96,8 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-guava:2.20.1'
 
+    implementation 'org.modelmapper:modelmapper:3.2.4'
     implementation "org.immutables:value-annotations:2.9.2"
-    implementation 'org.mapstruct:mapstruct:1.6.3'
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
-
     implementation 'javax.activation:activation:1.1'
 
     implementation 'org.apache.logging.log4j:log4j-api:2.25.3'

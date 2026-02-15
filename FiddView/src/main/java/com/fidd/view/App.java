@@ -41,7 +41,7 @@ public class App extends Application {
             Vertx vertx = Vertx.vertx();
 
             // Deploy the generated Vert.x/Netty HTTP server verticle
-            vertx.deployVerticle(new FiddHttpServerVerticle("openapi.yaml"))
+            vertx.deployVerticle(new FiddHttpServerVerticle("openapi.yaml", fiddContentServiceCache))
                     .onSuccess(id -> LOGGER.info("Vert.x/Netty server started successfully. Deployment ID: " + id))
                     .onFailure(err -> {
                         LOGGER.error("Failed to start HTTP server", err);

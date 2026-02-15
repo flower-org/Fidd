@@ -1,5 +1,7 @@
 package com.fidd.service;
 
+import javax.annotation.Nullable;
+
 public interface FiddContentServiceManager {
-    FiddContentService getContentService(String serviceName);
+    @Nullable FiddContentService getService(String serviceName);
 }
