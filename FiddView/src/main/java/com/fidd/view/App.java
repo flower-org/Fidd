@@ -3,9 +3,10 @@ package com.fidd.view;
 import com.fidd.base.BaseRepositories;
 import com.fidd.base.DefaultBaseRepositories;
 import com.fidd.view.forms.MainForm;
-import com.fidd.view.http.HttpFiddApiServer;
+import com.fidd.view.rest.invoker.FiddHttpServerVerticle;
 import com.fidd.view.serviceCache.FiddContentServiceCache;
 import com.fidd.view.serviceCache.concurrent.ConcurrentFiddContentServiceCache;
+import io.vertx.core.Vertx;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -36,7 +37,19 @@ public class App extends Application {
             FiddContentServiceCache fiddContentServiceCache = new ConcurrentFiddContentServiceCache();
 
             int fiddApiServerPort = 8080;
-            HttpFiddApiServer server = HttpFiddApiServer.runServer(fiddContentServiceCache, repositories, fiddApiServerPort);
+
+            Vertx vertx = Vertx.vertx();
+
+            // Deploy the generated Vert.x/Netty HTTP server verticle
+            vertx.deployVerticle(new FiddHttpServerVerticle("openapi.yaml", fiddContentServiceCache, repositories))
+                    .onSuccess(id -> LOGGER.info("Vert.x/Netty server started successfully. Deployment ID: " + id))
+                    .onFailure(err -> {
+                        LOGGER.error("Failed to start HTTP server", err);
+                        err.printStackTrace();
+                        vertx.close();
+                    });
+
+            // HttpFiddApiServer server = HttpFiddApiServer.runServer(fiddContentServiceCache, repositories, fiddApiServerPort);
             LOGGER.info("Started HTTP API server on port {}", fiddApiServerPort);
 
             MainForm mainForm = fxmlLoader.getController();
@@ -47,7 +60,8 @@ public class App extends Application {
             //Close all threads when we close JavaFX windows.
             mainStage.setOnHidden(event -> {
                 try {
-                    server.stopServer();
+                    vertx.close().result();
+                    LOGGER.info("Vert.x/Netty server stopped.");
                 } catch (Exception e) {
                     LOGGER.error("Error stopping HTTP server", e);
                 } finally {

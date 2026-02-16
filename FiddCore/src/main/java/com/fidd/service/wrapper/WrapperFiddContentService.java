@@ -13,6 +13,7 @@ import com.fidd.core.metadata.MetadataContainer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.service.FiddContentService;
 import com.fidd.service.LogicalFileInfo;
+import com.google.common.base.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,11 +38,10 @@ public class WrapperFiddContentService implements FiddContentService {
 
     protected final BaseRepositories baseRepositories;
     protected final FiddCacheConnector fiddConnector;
-    protected final @Nullable X509Certificate userCert;
-    protected final @Nullable PrivateKey userPrivateKey;
+    protected final Supplier<Pair<X509Certificate, PrivateKey>> keySupplier;
 
     public WrapperFiddContentService(BaseRepositories baseRepositories, FiddConnector fiddConnector,
-                                     @Nullable X509Certificate userCert, @Nullable PrivateKey userPrivateKey) {
+                                     Supplier<Pair<X509Certificate, PrivateKey>> keySupplier) {
         this.baseRepositories = baseRepositories;
         if (fiddConnector instanceof FiddCacheConnector) {
             this.fiddConnector = (FiddCacheConnector) fiddConnector;
@@ -49,8 +49,7 @@ public class WrapperFiddContentService implements FiddContentService {
             this.fiddConnector = new RamCacheConnector(fiddConnector, 1024, 100024,
                     1024, 1024, 1024, 1024);
         }
-        this.userCert = userCert;
-        this.userPrivateKey = userPrivateKey;
+        this.keySupplier = keySupplier;
     }
 
     @Override
@@ -73,8 +72,10 @@ public class WrapperFiddContentService implements FiddContentService {
     protected @Nullable FiddKey loadFiddKey(long messageNumber) throws Exception {
         LOGGER.info("Loading FiddKey for message #" + messageNumber);
         byte[] fiddKeyBytes = null;
-        if (userCert != null) {
-            fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector, userCert, checkNotNull(userPrivateKey));
+        Pair<X509Certificate, PrivateKey> pair = keySupplier.get();
+        if (pair != null) {
+            fiddKeyBytes = FiddKeyUtil.loadFiddKeyBytes(baseRepositories, messageNumber, fiddConnector,
+                    pair.getLeft(), checkNotNull(pair.getRight()));
         }
         if (fiddKeyBytes == null) {
             fiddKeyBytes = FiddKeyUtil.loadDefaultFiddKeyBytes(messageNumber, fiddConnector);

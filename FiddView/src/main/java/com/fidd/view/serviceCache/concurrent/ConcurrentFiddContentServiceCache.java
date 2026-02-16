@@ -30,4 +30,9 @@ public class ConcurrentFiddContentServiceCache implements FiddContentServiceCach
     public boolean containsService(String serviceName) {
         return serviceMap.containsKey(serviceName);
     }
+
+    @Override
+    public void clear() {
+        serviceMap.clear();
+    }
 }

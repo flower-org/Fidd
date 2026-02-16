@@ -5,6 +5,7 @@ plugins {
     id 'org.beryx.jlink' version '2.24.1'
     id "net.ltgt.errorprone" version "3.0.1"
     id "com.github.johnrengelman.shadow" version "8.1.1"
+    id 'org.openapi.generator' version '7.16.0'
 }
 
 group 'com.fidd.view'
@@ -34,7 +35,12 @@ compileTestJava {
 }
 
 sourceSets {
-    main { java { srcDir 'src/main' } }
+    main {
+        java {
+            srcDirs 'src/main/java'
+            srcDirs "$buildDir/generated/src/main/java"
+        }
+    }
     test { java { srcDir 'src/test' } }
 }
 
@@ -45,6 +51,37 @@ tasks.withType(JavaCompile) {
 javafx {
     version = '21.0.2'
     modules = ['javafx.controls', 'javafx.fxml', 'javafx.graphics', 'javafx.media']
+}
+
+// see https://openapi-generator.tech/docs/generators/java-vertx-web
+openApiGenerate {
+    generatorName = 'java-vertx-web'
+    inputSpec = "$rootDir/FiddView/src/main/resources/openapi.yaml"
+    outputDir = "$buildDir/generated"
+    apiPackage = 'com.fidd.view.rest.controller'
+    modelPackage = 'com.fidd.view.rest.model'
+    invokerPackage = 'com.fidd.view.rest.invoker'
+
+    generateApiTests = false
+    generateApiDocumentation = false
+    generateModelTests = false
+    generateModelDocumentation = false
+
+    // see https://openapi-generator.tech/docs/generators/java-vertx-web
+    configOptions = [
+            dateLibrary            : 'java8',
+            serializableModel      : 'true',
+            hideGenerationTimestamp: 'false',
+    ]
+    typeMappings = [ "file": "FileInfo" ]
+    importMappings = [ "FileInfo": "com.fidd.view.rest.controller.FileInfo" ]
+}
+
+// TODO: find a more robust way to clean generated service on build
+tasks.named('openApiGenerate') {
+    doFirst {
+        delete("$buildDir/generated/src")
+    }
 }
 
 dependencies {
@@ -59,22 +96,33 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-guava:2.20.1'
 
+    implementation 'org.modelmapper:modelmapper:3.2.4'
     implementation "org.immutables:value-annotations:2.9.2"
+    implementation 'javax.activation:activation:1.1'
 
-    implementation 'io.netty:netty-all:4.2.9.Final'
-    implementation 'javax.activation:activation:1.1' // Use the latest version
-
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
-    implementation 'org.apache.logging.log4j:log4j-core:2.20.0'
-    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.20.0'
+    implementation 'org.apache.logging.log4j:log4j-api:2.25.3'
+    implementation 'org.apache.logging.log4j:log4j-core:2.25.3'
+    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.25.3'
     implementation 'org.apache.commons:commons-lang3:3.20.0'
-    implementation 'commons-io:commons-io:2.11.0'
+    implementation 'commons-io:commons-io:2.14.0'
 
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.google.guava:guava:33.5.0-jre'
     implementation 'com.google.guava:guava-testlib:31.1-jre'
 
     implementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
+
+    implementation platform('io.vertx:vertx-stack-depchain:4.5.24')
+    implementation 'io.vertx:vertx-core'
+    implementation 'io.vertx:vertx-web'
+    implementation 'io.vertx:vertx-web-validation'
+    implementation 'io.vertx:vertx-web-openapi'
+    implementation 'io.vertx:vertx-json-schema'
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.21'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.21'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.0'
+    implementation "org.openapitools:jackson-databind-nullable:0.2.6"
 
     implementation group: 'org.openjfx', name: 'javafx-base', version: javafx.version, classifier: 'win'
     implementation group: 'org.openjfx', name: 'javafx-base', version: javafx.version, classifier: 'mac'
@@ -122,7 +170,10 @@ tasks.withType(JavaCompile) {
     if (!name.toLowerCase().contains("test") && !name.toLowerCase().contains("build")) {
         options.errorprone {
             //Exclude Immutables generated code
-            excludedPaths.set(".*[\\\\/]generated[\\\\/]sources[\\\\/].*")
+            excludedPaths.set(
+                    ".*[\\\\/]generated[\\\\/].*" +
+                    "|.*DownloadCustomApiHandler.*"
+            )
             check("NullAway", CheckSeverity.ERROR)
             option("NullAway:AnnotatedPackages", "com.fidd.view")
         }
@@ -143,4 +194,9 @@ jar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
+}
+
+// Ensure OpenAPI code is generated before compiling
+tasks.named('compileJava') {
+    dependsOn tasks.named('openApiGenerate')
 }
