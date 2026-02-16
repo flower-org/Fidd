@@ -257,7 +257,7 @@ public class MainForm {
     }
 
     public void showAboutDialog() {
-        Alert alert = new Alert(Alert.AlertType.NONE, "FiddPacker v 0.0.1", ButtonType.OK);
+        Alert alert = new Alert(Alert.AlertType.NONE, "FiddPacker v 0.2.5", ButtonType.OK);
         alert.showAndWait();
     }
 
