@@ -1,11 +1,13 @@
 package com.fidd.core.encryption.aes256;
 
-public class KuznechikCbcEncryptionAlgorithm extends KuznechikBase {
-  public static final String KUZNECHIK_CBC_PKCS_5_PADDING = "GOST3412-2015/CBC/PKCS5Padding";
+import org.bouncycastle.crypto.engines.GOST3412_2015Engine;
+import org.bouncycastle.crypto.modes.G3413CBCBlockCipher;
+import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 
+public class KuznechikCbcEncryptionAlgorithm extends KuznechikBase {
   @Override
-  String transform() {
-    return KUZNECHIK_CBC_PKCS_5_PADDING;
+  PaddedBufferedBlockCipher newCipher() {
+    return new PaddedBufferedBlockCipher(new G3413CBCBlockCipher(new GOST3412_2015Engine()));
   }
 
   @Override

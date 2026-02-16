@@ -2,34 +2,24 @@ package com.fidd.core.encryption.aes256;
 
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.random.RandomGeneratorType;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.Security;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
-import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.io.CipherInputStream;
+import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.crypto.params.ParametersWithIV;
 
 abstract class KuznechikBase implements EncryptionAlgorithm {
-  private static final String PROVIDER = "BC";
-  static final String KUZNECHIK = "GOST3412-2015";
   private static final int KEY_SIZE = 32;
   private static final int IV_SIZE = 16;
-  private static final int BUFFER_SIZE = 1024;
+  private static final int BUFFER_SIZE = 8192;
 
-  static {
-    if (Security.getProvider(PROVIDER) == null) {
-      Security.addProvider(new BouncyCastleProvider());
-    }
-  }
-
-  abstract String transform();
+  abstract PaddedBufferedBlockCipher newCipher();
 
   private record KeyAndIv(byte[] key32, byte[] iv16) {
     static byte[] serialize(KeyAndIv keyAndIv) {
@@ -49,6 +39,40 @@ abstract class KuznechikBase implements EncryptionAlgorithm {
     }
   }
 
+  private long writeChunk(
+      OutputStream out, byte[] buffer, int len, @Nullable List<CrcCallback> crcCallbacks)
+      throws IOException {
+    if (len <= 0) {
+      return 0;
+    }
+    out.write(buffer, 0, len);
+    if (crcCallbacks != null) {
+      byte[] outSlice = Arrays.copyOf(buffer, len);
+      crcCallbacks.forEach(c -> c.write(outSlice));
+    }
+    return len;
+  }
+
+  private PaddedBufferedBlockCipher initCipher(boolean forEncryption, byte[] keyData) {
+    KeyAndIv keyAndIv = KeyAndIv.deserialize(keyData);
+    PaddedBufferedBlockCipher cipher = newCipher();
+    cipher.init(
+        forEncryption, new ParametersWithIV(new KeyParameter(keyAndIv.key32()), keyAndIv.iv16()));
+    return cipher;
+  }
+
+  private byte[] processBytes(boolean forEncryption, byte[] keyData, byte[] input) {
+    PaddedBufferedBlockCipher cipher = initCipher(forEncryption, keyData);
+    byte[] out = new byte[cipher.getOutputSize(input.length)];
+    try {
+      int produced = cipher.processBytes(input, 0, input.length, out, 0);
+      produced += cipher.doFinal(out, produced);
+      return Arrays.copyOf(out, produced);
+    } catch (InvalidCipherTextException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   @Override
   public byte[] generateNewKeyData(RandomGeneratorType random) {
     byte[] key32 = new byte[KEY_SIZE];
@@ -60,28 +84,12 @@ abstract class KuznechikBase implements EncryptionAlgorithm {
 
   @Override
   public byte[] encrypt(byte[] keyData, byte[] plaintext) {
-    KeyAndIv keyAndIv = KeyAndIv.deserialize(keyData);
-    SecretKeySpec key = new SecretKeySpec(keyAndIv.key32(), KUZNECHIK);
-    try {
-      Cipher cipher = Cipher.getInstance(transform(), PROVIDER);
-      cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(keyAndIv.iv16()));
-      return cipher.doFinal(plaintext);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return processBytes(true, keyData, plaintext);
   }
 
   @Override
   public byte[] decrypt(byte[] keyData, byte[] ciphertext) {
-    KeyAndIv keyAndIv = KeyAndIv.deserialize(keyData);
-    SecretKeySpec key = new SecretKeySpec(keyAndIv.key32(), KUZNECHIK);
-    try {
-      Cipher cipher = Cipher.getInstance(transform(), PROVIDER);
-      cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(keyAndIv.iv16()));
-      return cipher.doFinal(ciphertext);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return processBytes(false, keyData, ciphertext);
   }
 
   @Override
@@ -95,24 +103,23 @@ abstract class KuznechikBase implements EncryptionAlgorithm {
     }
 
     try {
-      ByteArrayOutputStream plaintextAll = new ByteArrayOutputStream();
+      PaddedBufferedBlockCipher cipher = initCipher(true, keyData);
+      byte[] outBuf = new byte[cipher.getOutputSize(BUFFER_SIZE)];
+      long total = 0;
+
       for (InputStream plaintext : plaintexts) {
         byte[] buffer = new byte[BUFFER_SIZE];
         int read;
         while ((read = plaintext.read(buffer)) != -1) {
-          plaintextAll.write(buffer, 0, read);
+          int produced = cipher.processBytes(buffer, 0, read, outBuf, 0);
+          total += writeChunk(ciphertext, outBuf, produced, ciphertextCrcCallbacks);
         }
       }
 
-      byte[] encrypted = encrypt(keyData, plaintextAll.toByteArray());
-      if (encrypted.length > 0) {
-        ciphertext.write(encrypted);
-        if (ciphertextCrcCallbacks != null) {
-          ciphertextCrcCallbacks.forEach(c -> c.write(encrypted));
-        }
-      }
-      return encrypted.length;
-    } catch (Exception e) {
+      int fin = cipher.doFinal(outBuf, 0);
+      total += writeChunk(ciphertext, outBuf, fin, ciphertextCrcCallbacks);
+      return total;
+    } catch (InvalidCipherTextException | IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -122,18 +129,26 @@ abstract class KuznechikBase implements EncryptionAlgorithm {
       byte[] keyData, InputStream ciphertext, OutputStream plaintext, boolean allowPartial) {
     try (ciphertext;
         plaintext) {
-      byte[] ciphertextBytes = ciphertext.readAllBytes();
-      byte[] plaintextBytes;
-      try {
-        plaintextBytes = decrypt(keyData, ciphertextBytes);
-      } catch (RuntimeException e) {
-        if (!allowPartial) {
-          throw e;
-        }
-        return 0;
+      PaddedBufferedBlockCipher cipher = initCipher(false, keyData);
+      byte[] inBuf = new byte[BUFFER_SIZE];
+      byte[] outBuf = new byte[cipher.getOutputSize(BUFFER_SIZE)];
+      long total = 0;
+
+      int read;
+      while ((read = ciphertext.read(inBuf)) != -1) {
+        int produced = cipher.processBytes(inBuf, 0, read, outBuf, 0);
+        total += writeChunk(plaintext, outBuf, produced, null);
       }
-      plaintext.write(plaintextBytes);
-      return plaintextBytes.length;
+
+      try {
+        int fin = cipher.doFinal(outBuf, 0);
+        total += writeChunk(plaintext, outBuf, fin, null);
+      } catch (InvalidCipherTextException e) {
+        if (!allowPartial) {
+          throw new RuntimeException(e);
+        }
+      }
+      return total;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -141,11 +156,6 @@ abstract class KuznechikBase implements EncryptionAlgorithm {
 
   @Override
   public InputStream getDecryptedStream(byte[] keyData, InputStream stream) {
-    try (stream) {
-      byte[] decrypted = decrypt(keyData, stream.readAllBytes());
-      return new ByteArrayInputStream(decrypted);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return new CipherInputStream(stream, initCipher(false, keyData));
   }
 }

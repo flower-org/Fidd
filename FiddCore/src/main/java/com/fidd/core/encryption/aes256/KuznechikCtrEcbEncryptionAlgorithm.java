@@ -8,14 +8,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.Security;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.crypto.engines.GOST3412_2015Engine;
+import org.bouncycastle.crypto.params.KeyParameter;
 
 /**
  * Manual CTR implementation on top of Kuznechik ECB block primitive.
@@ -29,12 +27,6 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
   private static final int BLOCK_SIZE = 16;
   private static final int NONCE_SIZE = 8;
   private static final int BUFFER_SIZE = 8192;
-
-  static {
-    if (Security.getProvider("BC") == null) {
-      Security.addProvider(new BouncyCastleProvider());
-    }
-  }
 
   @Override
   public String name() {
@@ -70,14 +62,14 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
   }
 
   private static final class CtrKeystream {
-    private final Cipher ecb;
+    private final GOST3412_2015Engine ecb;
     private final byte[] counterBlock = new byte[BLOCK_SIZE];
     private final byte[] ksBlock = new byte[BLOCK_SIZE];
 
     private long counter;
     private int ksPos = BLOCK_SIZE;
 
-    private CtrKeystream(Cipher ecb, byte[] nonce8, long plaintextOffset) {
+    private CtrKeystream(GOST3412_2015Engine ecb, byte[] nonce8, long plaintextOffset) {
       this.ecb = ecb;
       System.arraycopy(nonce8, 0, counterBlock, 0, NONCE_SIZE);
 
@@ -100,16 +92,7 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
 
     private void refill() {
       encodeCounter64Be(counterBlock, counter);
-      byte[] block;
-      try {
-        block = ecb.doFinal(counterBlock);
-      } catch (Exception e) {
-        throw new IllegalStateException("Failed to encrypt counter block", e);
-      }
-      if (block.length != BLOCK_SIZE) {
-        throw new IllegalStateException("Unexpected block size");
-      }
-      System.arraycopy(block, 0, ksBlock, 0, BLOCK_SIZE);
+      ecb.processBlock(counterBlock, 0, ksBlock, 0);
       ksPos = 0;
       counter++;
     }
@@ -157,9 +140,9 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
     }
   }
 
-  private static Cipher newEcbEncryptCipher(byte[] key32) throws Exception {
-    Cipher ecb = Cipher.getInstance(KUZNECHIK_ECB_NO_PADDING, "BC");
-    ecb.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key32, KUZNECHIK));
+  private static GOST3412_2015Engine newEcbEncryptEngine(byte[] key32) {
+    GOST3412_2015Engine ecb = new GOST3412_2015Engine();
+    ecb.init(true, new KeyParameter(key32));
     return ecb;
   }
 
@@ -181,7 +164,7 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
     KeyAndNonce keyAndNonce = KeyAndNonce.deserialize(keyData);
     byte[] out = new byte[input.length];
     try {
-      Cipher ecb = newEcbEncryptCipher(keyAndNonce.key32);
+      GOST3412_2015Engine ecb = newEcbEncryptEngine(keyAndNonce.key32);
       CtrKeystream keystream = new CtrKeystream(ecb, keyAndNonce.nonce8, plaintextOffset);
       xorInto(input, 0, out, 0, input.length, keystream);
       return out;
@@ -220,7 +203,7 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
 
     KeyAndNonce keyAndNonce = KeyAndNonce.deserialize(keyData);
     try (ciphertext) {
-      Cipher ecb = newEcbEncryptCipher(keyAndNonce.key32);
+      GOST3412_2015Engine ecb = newEcbEncryptEngine(keyAndNonce.key32);
       CtrKeystream keystream = new CtrKeystream(ecb, keyAndNonce.nonce8, 0);
 
       long total = 0;
@@ -253,7 +236,7 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
 
     try (ciphertext;
         plaintext) {
-      Cipher ecb = newEcbEncryptCipher(keyAndNonce.key32);
+      GOST3412_2015Engine ecb = newEcbEncryptEngine(keyAndNonce.key32);
       CtrKeystream keystream = new CtrKeystream(ecb, keyAndNonce.nonce8, 0);
 
       byte[] inBuf = new byte[BUFFER_SIZE];
@@ -278,7 +261,7 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
   public InputStream getDecryptedStream(byte[] keyData, InputStream stream) {
     KeyAndNonce keyAndNonce = KeyAndNonce.deserialize(keyData);
     try {
-      Cipher ecb = newEcbEncryptCipher(keyAndNonce.key32);
+      GOST3412_2015Engine ecb = newEcbEncryptEngine(keyAndNonce.key32);
       return new XorCtrInputStream(stream, new CtrKeystream(ecb, keyAndNonce.nonce8, 0));
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -297,7 +280,7 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
 
     KeyAndNonce keyAndNonce = KeyAndNonce.deserialize(keyData);
     try {
-      Cipher ecb = newEcbEncryptCipher(keyAndNonce.key32);
+      GOST3412_2015Engine ecb = newEcbEncryptEngine(keyAndNonce.key32);
       InputStream pt =
           new XorCtrInputStream(
               ciphertextAtOffset, new CtrKeystream(ecb, keyAndNonce.nonce8, plaintextOffset));
