@@ -41,6 +41,7 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
         RouterBuilder.create(vertx, specFile)
             .map(builder -> {
               builder.setOptions(new RouterBuilderOptions()
+                  // TODO: consider implementing configuration for this
                   // For production use case, you need to enable this flag and provide the proper security handler
                   .setRequireSecurityHandlers(false)
               );

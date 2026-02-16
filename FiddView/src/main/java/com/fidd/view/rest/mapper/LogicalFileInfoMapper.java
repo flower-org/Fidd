@@ -1,6 +1,5 @@
 package com.fidd.view.rest.mapper;
 
-import com.fidd.service.ImmutableLogicalFileInfo;
 import com.fidd.view.rest.model.FileRegion;
 import com.fidd.view.rest.model.LogicalFileInfo;
 import com.fidd.view.rest.model.LogicalFileMetadata;
@@ -48,7 +47,7 @@ public class LogicalFileInfoMapper {
         MODEL_MAPPER.createTypeMap(com.fidd.service.ImmutableLogicalFileInfo.class, LogicalFileInfo.class)
                 .setPostConverter(ctx -> {
                             if (ctx.getSource() == null) { return null; }
-                            ImmutableLogicalFileInfo src = ctx.getSource();
+                            com.fidd.service.LogicalFileInfo src = ctx.getSource();
                             LogicalFileInfo dst = new LogicalFileInfo();
                             dst.setFileOffset(src.fileOffset());
                             dst.setMetadata(MODEL_MAPPER.map(src.metadata(), LogicalFileMetadata.class));

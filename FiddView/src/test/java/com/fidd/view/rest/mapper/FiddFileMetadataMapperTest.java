@@ -49,7 +49,7 @@ public class FiddFileMetadataMapperTest {
         assertEquals(111111111L, dto.getOriginalMessageCreationTime());
         assertEquals(222222222L, dto.getMessageCreationTime());
         assertEquals("RSA", dto.getAuthorsPublicKeyFormat());
-        assertTrue(Arrays.equals(pubKey, dto.getAuthorsPublicKey()));
+        assertArrayEquals(pubKey, dto.getAuthorsPublicKey());
         assertEquals(fileSigs, dto.getAuthorsFiddFileSignatureFormats());
         assertEquals(keySigs, dto.getAuthorsFiddKeyFileSignatureFormats());
     }

@@ -99,6 +99,9 @@ public class DownloadCustomApi implements DownloadApi {
 
             long fileLengthEncrypted = logicalFileInfo.section().sectionLength() - logicalFileInfo.fileOffset();
             EncryptionAlgorithm encryptionAlgorithm = baseRepositories.encryptionAlgorithmRepo().get(logicalFileInfo.section().encryptionAlgorithm());
+            if (encryptionAlgorithm == null) {
+                return Future.failedFuture(new HttpException(501));
+            }
             long fileLength = checkNotNull(encryptionAlgorithm).plaintextLengthToCiphertextLength(fileLengthEncrypted);
 
             boolean headersGotRange = !StringUtils.isBlank(range);
