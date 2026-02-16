@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class FiddHttpServerVerticle extends AbstractVerticle {
 
@@ -64,7 +65,11 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
                               "messageNumber", RequestParameter.create(messageNumber),
                               "logicalFilePath", RequestParameter.create(logicalFilePath)));
 
-                      // TODO: also add query parameters for playlists
+                      // Add query parameters
+                      Map<String, RequestParameter> queryParams = rc.queryParams().names().stream().collect(
+                              Collectors.toMap(name -> name, name -> RequestParameter.create(rc.queryParams().getAll(name)))
+                      );
+                      params.setQueryParameters(queryParams);
 
                       // Inject into routing context so your handler sees it
                       rc.put(ValidationHandler.REQUEST_CONTEXT_KEY, params);

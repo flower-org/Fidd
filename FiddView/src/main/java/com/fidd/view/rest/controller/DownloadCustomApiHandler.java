@@ -1,10 +1,10 @@
 package com.fidd.view.rest.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.jackson.DatabindCodec;
+import io.vertx.core.json.JsonArray;
 import io.vertx.ext.web.openapi.RouterBuilder;
+import io.vertx.ext.web.validation.RequestParameter;
 import io.vertx.ext.web.validation.RequestParameters;
 import io.vertx.ext.web.validation.ValidationHandler;
 import io.vertx.ext.web.RoutingContext;
@@ -13,6 +13,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.InputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -47,19 +50,59 @@ public class DownloadCustomApiHandler extends DownloadApiHandler {
         builder.operation("readLogicalFile").handler(this::readLogicalFile);
     }
 
+    public static @Nullable List<String> getRequestParametersList(RequestParameters requestParameters, String name) {
+        RequestParameter prm = requestParameters.queryParameter(name);
+        if (prm == null || prm.isEmpty() || prm.isNull()) {
+            return null;
+        }
+        List<String> list = new ArrayList<>();
+        if (prm.isBoolean()) {
+            list.add(prm.getBoolean().toString());
+        } else if (prm.isNumber()) {
+            list.add(prm.getDouble().toString());
+        } else if (prm.isString()) {
+            list.add(prm.getString());
+        } else if (prm.isJsonArray()) {
+            JsonArray arr = prm.getJsonArray();
+            for (int i = 0; i < arr.size(); i++) {
+                list.add(arr.getString(i));
+            }
+        } else if (prm.get() instanceof List<?>) {
+            ((List)prm.get()).forEach(elm -> list.add(elm.toString()));
+        } else {
+            throw new IllegalArgumentException("Unsupported parameter type");
+        }
+
+        List<String> decodedList = new ArrayList<>();
+        list.forEach(elm -> decodedList.add(URLDecoder.decode(elm, StandardCharsets.UTF_8)));
+        return decodedList;
+    }
+
+    public static @Nullable String getFirstRequestParameter(RequestParameters requestParameters, String name, @Nullable String defaultValue) {
+        List<String> list = getRequestParametersList(requestParameters, name);
+        if (list == null || list.isEmpty()) {
+            return defaultValue;
+        }
+        return list.get(0);
+    }
+
     public void readLogicalFile(RoutingContext routingContext) {
         // Param extraction
         RequestParameters requestParameters = routingContext.get(ValidationHandler.REQUEST_CONTEXT_KEY);
 
-        String fiddId = checkNotNull(requestParameters.pathParameter("fiddId").getString());
+        String fiddId = URLDecoder.decode(checkNotNull(requestParameters.pathParameter("fiddId").getString()), StandardCharsets.UTF_8);
         Long messageNumber = checkNotNull(requestParameters.pathParameter("messageNumber").getLong());
-        String logicalFilePath = checkNotNull(requestParameters.pathParameter("logicalFilePath").getString());
-        String range = requestParameters.headerParameter("Range") != null ? requestParameters.headerParameter("Range").getString() : null;
-        String _list = requestParameters.queryParameter("list") != null ? requestParameters.queryParameter("list").getString() : null;
-        List<String> filterIn = requestParameters.queryParameter("filterIn") != null ? DatabindCodec.mapper().convertValue(requestParameters.queryParameter("filterIn").get(), new TypeReference<List<String>>(){}) : null;
-        List<String> filterOut = requestParameters.queryParameter("filterOut") != null ? DatabindCodec.mapper().convertValue(requestParameters.queryParameter("filterOut").get(), new TypeReference<List<String>>(){}) : null;
-        String sort = requestParameters.queryParameter("sort") != null ? requestParameters.queryParameter("sort").getString() : "NUMERICAL_ASC";
-        Boolean includeSubfolders = requestParameters.queryParameter("includeSubfolders") != null ? requestParameters.queryParameter("includeSubfolders").getBoolean() : false;
+        String logicalFilePath = URLDecoder.decode(checkNotNull(requestParameters.pathParameter("logicalFilePath").getString()), StandardCharsets.UTF_8);
+
+        String range = requestParameters.headerParameter("Range") != null
+                ? URLDecoder.decode(requestParameters.headerParameter("Range").getString(), StandardCharsets.UTF_8)
+                : null;
+
+        String _list = getFirstRequestParameter(requestParameters, "list", null);
+        List<String> filterIn = getRequestParametersList(requestParameters, "filterIn");
+        List<String> filterOut = getRequestParametersList(requestParameters, "filterOut");
+        String sort = getFirstRequestParameter(requestParameters, "sort", "NUMERICAL_ASC");
+        Boolean includeSubfolders = Boolean.parseBoolean(getFirstRequestParameter(requestParameters, "includeSubfolders", "false"));
 
         api.readLogicalFile(fiddId, messageNumber, logicalFilePath, range, _list, filterIn, filterOut, sort, includeSubfolders)
                 .onSuccess(apiResponse -> {
