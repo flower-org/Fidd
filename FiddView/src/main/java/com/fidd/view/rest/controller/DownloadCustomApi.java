@@ -86,6 +86,7 @@ public class DownloadCustomApi implements DownloadApi {
             if (logicalFileInfos == null) {
                 return Future.failedFuture(new HttpException(404));
             }
+            // TODO: cache / optimize? MB not on this level
             for (LogicalFileInfo candidate : logicalFileInfos) {
                 if (candidate.metadata().filePath().equals(logicalFilePath)) {
                     logicalFileInfo = candidate;
@@ -102,22 +103,26 @@ public class DownloadCustomApi implements DownloadApi {
 
             boolean headersGotRange = !StringUtils.isBlank(range);
             if (!headersGotRange) {
-                // Partial content
+                // Get full file content
+
                 InputStream responseFileStream = fiddService.readLogicalFile(messageNumber, logicalFileInfo);
-                FileInfo responseFileInfo = new FileInfo(responseFileStream);
-                responseFileInfo.setContentLength(Long.toString(fileLength));
                 if (responseFileStream == null) {
                     return Future.failedFuture(new HttpException(404));
                 }
+
+                FileInfo responseFileInfo = new FileInfo(responseFileStream);
+                responseFileInfo.setContentLength(Long.toString(fileLength));
                 String contentType = getContentType(logicalFilePath);
                 if (contentType != null) {
                     responseFileInfo.setContentType(contentType);
                 }
                 return Future.succeededFuture(new ApiResponse<>(200, responseFileInfo));
             } else {
+                // Partial content
+
                 //TODO: the standard also describes multiple ranges in the request, like "Range: 0-99,200-299"
                 // ideally we want to support that, but practically speaking video streaming (ffplay, VLC, browsers)
-                // works just fine without it, utilizing only singe range requests.
+                // work just fine without it, utilizing only single range requests.
                 if (!(encryptionAlgorithm instanceof RandomAccessEncryptionAlgorithm)) {
                     return Future.failedFuture(new HttpException(REQUESTED_RANGE_NOT_SATISFIABLE.code()));
                 }
@@ -164,6 +169,7 @@ public class DownloadCustomApi implements DownloadApi {
                 return Future.failedFuture(new HttpException(BAD_REQUEST.code()));
             }
 
+            // TODO: cache / optimize? MB not on this level
             List<LogicalFileInfo> logicalFileInfos = fiddService.getLogicalFileInfos(messageNumber);
             if (logicalFileInfos == null) {
                 return Future.failedFuture(new HttpException(NOT_FOUND.code()));

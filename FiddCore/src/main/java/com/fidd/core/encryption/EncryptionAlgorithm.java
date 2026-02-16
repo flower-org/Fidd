@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.util.List;
 
 public interface EncryptionAlgorithm extends NamedEntry {
+    // TODO: this may be impossible to calculate precisely for some algorithms, e.g. AES/CBC/PKCS5Padding
     default long plaintextLengthToCiphertextLength(long plaintextLength) { return plaintextLength; }
 
     String UNENCRYPTED = "UNENCRYPTED";
