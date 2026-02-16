@@ -22,8 +22,6 @@ import org.bouncycastle.crypto.params.KeyParameter;
  * control and O(1) random-access positioning by block index.
  */
 public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptionAlgorithm {
-  public static final String KUZNECHIK = "GOST3412-2015";
-  public static final String KUZNECHIK_ECB_NO_PADDING = "GOST3412-2015/ECB/NoPadding";
   private static final int BLOCK_SIZE = 16;
   private static final int NONCE_SIZE = 8;
   private static final int BUFFER_SIZE = 8192;
