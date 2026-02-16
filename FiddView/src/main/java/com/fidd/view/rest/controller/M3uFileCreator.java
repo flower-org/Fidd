@@ -1,4 +1,4 @@
-package com.fidd.view.http;
+package com.fidd.view.rest.controller;
 
 import java.util.List;
 

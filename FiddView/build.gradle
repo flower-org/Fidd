@@ -73,8 +73,8 @@ openApiGenerate {
             serializableModel      : 'true',
             hideGenerationTimestamp: 'false',
     ]
-    typeMappings = [ "file": "InputStream" ]
-    importMappings = [ "InputStream": "java.io.InputStream" ]
+    typeMappings = [ "file": "FileInfo" ]
+    importMappings = [ "FileInfo": "com.fidd.view.rest.controller.FileInfo" ]
 }
 
 // TODO: find a more robust way to clean generated service on build

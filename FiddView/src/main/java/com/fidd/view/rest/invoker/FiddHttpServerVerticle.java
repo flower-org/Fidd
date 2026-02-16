@@ -1,5 +1,6 @@
 package com.fidd.view.rest.invoker;
 
+import com.fidd.base.BaseRepositories;
 import com.fidd.service.FiddContentServiceManager;
 import com.fidd.view.rest.controller.*;
 import io.vertx.core.AbstractVerticle;
@@ -26,11 +27,11 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
 
     protected final FiddContentServiceManager fiddContentServiceManager;
 
-    public FiddHttpServerVerticle(String specFile, FiddContentServiceManager fiddContentServiceManager) {
+    public FiddHttpServerVerticle(String specFile, FiddContentServiceManager fiddContentServiceManager, BaseRepositories repositories) {
         this.specFile = specFile;
         this.fiddContentServiceManager = fiddContentServiceManager;
 
-        downloadApiHandler = new DownloadCustomApiHandler(new DownloadCustomApi(null));
+        downloadApiHandler = new DownloadCustomApiHandler(new DownloadCustomApi(fiddContentServiceManager, repositories));
         messagesHandler = new MessagesApiHandler(new MessagesApiCustomImpl(fiddContentServiceManager));
     }
 

@@ -267,18 +267,10 @@ paths:
               schema:
                 type: string
               description: 'Attachment header for M3U playlist download (e.g., "attachment; filename=\"playlist.m3u\"")'
-            Last-Modified:
+            Content-Type:
               schema:
                 type: string
-              description: Last modification date of the file (HTTP date format)
-            Cache-Control:
-              schema:
-                type: string
-              description: Cache control directives
-            Expires:
-              schema:
-                type: string
-              description: Expiration date for caching
+              description: Type of content returned (e.g., "application/octet-stream" for files, "text/plain" for M3U)
           content:
             application/octet-stream:
               schema:
@@ -303,6 +295,10 @@ paths:
               schema:
                 type: integer
               description: Size of the returned content in bytes
+            Content-Type:
+              schema:
+                type: string
+              description: Type of content returned (e.g., "application/octet-stream" for files, "text/plain" for M3U)
           content:
             application/octet-stream:
               schema:

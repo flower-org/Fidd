@@ -1,8 +1,7 @@
 package com.fidd.view.rest.controller;
 
-import java.io.InputStream;
-
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.ext.web.openapi.RouterBuilder;
@@ -12,13 +11,25 @@ import io.vertx.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.net.HttpHeaders.ACCEPT_RANGES;
+import static com.google.common.net.HttpHeaders.CONTENT_DISPOSITION;
+import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
+import static com.google.common.net.HttpHeaders.CONTENT_RANGE;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
 public class DownloadCustomApiHandler extends DownloadApiHandler {
     private static final Logger logger = LoggerFactory.getLogger(DownloadCustomApiHandler.class);
+
+    protected static void addHeader(MultiMap headers, String header, @Nullable String value) {
+        if (value == null) { return; }
+        headers.add(header, value);
+    }
 
     private final DownloadApi api;
 
@@ -37,8 +48,6 @@ public class DownloadCustomApiHandler extends DownloadApiHandler {
     }
 
     public void readLogicalFile(RoutingContext routingContext) {
-        logger.info("readLogicalFile()");
-
         // Param extraction
         RequestParameters requestParameters = routingContext.get(ValidationHandler.REQUEST_CONTEXT_KEY);
 
@@ -52,34 +61,35 @@ public class DownloadCustomApiHandler extends DownloadApiHandler {
         String sort = requestParameters.queryParameter("sort") != null ? requestParameters.queryParameter("sort").getString() : "NUMERICAL_ASC";
         Boolean includeSubfolders = requestParameters.queryParameter("includeSubfolders") != null ? requestParameters.queryParameter("includeSubfolders").getBoolean() : false;
 
-        logger.debug("Parameter fiddId is {}", fiddId);
-        logger.debug("Parameter messageNumber is {}", messageNumber);
-        logger.debug("Parameter logicalFilePath is {}", logicalFilePath);
-        logger.debug("Parameter range is {}", range);
-        logger.debug("Parameter _list is {}", _list);
-        logger.debug("Parameter filterIn is {}", filterIn);
-        logger.debug("Parameter filterOut is {}", filterOut);
-        logger.debug("Parameter sort is {}", sort);
-        logger.debug("Parameter includeSubfolders is {}", includeSubfolders);
-
         api.readLogicalFile(fiddId, messageNumber, logicalFilePath, range, _list, filterIn, filterOut, sort, includeSubfolders)
                 .onSuccess(apiResponse -> {
                     routingContext.response().setStatusCode(apiResponse.getStatusCode());
                     if (apiResponse.hasData()) {
-                        InputStream in = apiResponse.getData();
-                        routingContext.response() .putHeader("Content-Type", "application/octet-stream") .setChunked(true);
+                        FileInfo fileInfo = apiResponse.getData();
+                        addHeader(routingContext.response().headers(), ACCEPT_RANGES, fileInfo.getAcceptRanges());
+                        addHeader(routingContext.response().headers(), CONTENT_LENGTH, fileInfo.getContentLength());
+                        addHeader(routingContext.response().headers(), CONTENT_DISPOSITION, fileInfo.getContentDisposition());
+                        addHeader(routingContext.response().headers(), CONTENT_RANGE, fileInfo.getContentRange());
+                        addHeader(routingContext.response().headers(), CONTENT_TYPE, fileInfo.getContentType());
 
                         routingContext.vertx().executeBlocking(
                             promise -> {
-                                try (in) {
-                                    byte[] buffer = new byte[8192];
-                                    int read;
-                                    while ((read = in.read(buffer)) != -1) {
-                                        routingContext.response().write(Buffer.buffer(Arrays.copyOf(buffer, read)));
+                                routingContext.response().setChunked(true);
+
+                                InputStream in = fileInfo.getInputStream();
+                                if (in != null) {
+                                    try (in) {
+                                        byte[] buffer = new byte[8192];
+                                        int read;
+                                        while ((read = in.read(buffer)) != -1) {
+                                            routingContext.response().write(Buffer.buffer(Arrays.copyOf(buffer, read)));
+                                        }
+                                        promise.complete();
+                                    } catch (Exception e) {
+                                        promise.fail(e);
                                     }
+                                } else {
                                     promise.complete();
-                                } catch (Exception e) {
-                                    promise.fail(e);
                                 }
                             }, ar -> {
                                 if (ar.succeeded()) {
@@ -93,6 +103,6 @@ public class DownloadCustomApiHandler extends DownloadApiHandler {
                         routingContext.response().end();
                     }
                 })
-                .onFailure(routingContext::fail);
+                .onFailure(exc -> routingContext.fail(exc));
     }
 }
