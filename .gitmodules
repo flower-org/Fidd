@@ -7,3 +7,6 @@
 [submodule "KeyManagerFx"]
 	path = KeyManagerFx
 	url = https://github.com/flower-org/KeyManagerFx.git
+[submodule "FiddView/src/main/resources/openapi"]
+	path = FiddView/src/main/resources/openapi
+	url = https://github.com/flower-org/FiddContentService.git

@@ -1,9 +1,0 @@
-type: object
-description: Alternative location to download file from
-required:
-  - fileRegions
-properties:
-  fileRegions:
-    type: array
-    items:
-      $ref: './FileRegion.yaml'

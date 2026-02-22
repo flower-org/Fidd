@@ -56,7 +56,7 @@ javafx {
 // see https://openapi-generator.tech/docs/generators/java-vertx-web
 openApiGenerate {
     generatorName = 'java-vertx-web'
-    inputSpec = "$rootDir/FiddView/src/main/resources/openapi.yaml"
+    inputSpec = "$rootDir/FiddView/src/main/resources/openapi/openapi.yaml"
     outputDir = "$buildDir/generated"
     apiPackage = 'com.fidd.view.rest.controller'
     modelPackage = 'com.fidd.view.rest.model'
