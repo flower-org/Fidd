@@ -2,41 +2,38 @@ package com.fidd.core.encryption.aes256;
 
 import com.fidd.core.common.SubInputStream;
 import com.fidd.core.encryption.RandomAccessEncryptionAlgorithm;
-import java.io.*;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-public class Aes256CtrEncryptionAlgorithm extends Aes256Base
-    implements RandomAccessEncryptionAlgorithm {
+public class Aes256CtrEncryptionAlgorithm extends Aes256Base implements RandomAccessEncryptionAlgorithm {
   public static final String AES = "AES";
   public static final String AES_CTR_NO_PADDING = "AES/CTR/NoPadding";
   private static final int BLOCK_SIZE = 16;
 
-  @Override
-  public String keySpec() {
-    return AES;
-  }
+  @Override public String keySpec() { return AES; }
+  @Override public String transform() { return AES_CTR_NO_PADDING; }
 
   @Override
-  public String transform() {
-    return AES_CTR_NO_PADDING;
-  }
-
-  @Override
-  public String name() {
+  public String name()
+  {
     return "AES-256-CTR";
   }
 
   @Override
-  public byte[] randomAccessDecrypt(
-      byte[] keyData, byte[] ciphertext, long plaintextOffset, long plaintextLength) {
-    InputStream inputStream =
-        new ByteArrayInputStream(
-            ciphertext,
-            (int) plaintextPosToCiphertextPos(plaintextOffset),
-            (int) plaintextLengthToCiphertextLength(plaintextLength));
+  public byte[] randomAccessDecrypt(byte[] keyData,
+                                    byte[] ciphertext,
+                                    long plaintextOffset,
+                                    long plaintextLength) {
+    InputStream inputStream = new ByteArrayInputStream(ciphertext,
+            (int)plaintextPosToCiphertextPos(plaintextOffset),
+            (int)plaintextLengthToCiphertextLength(plaintextLength));
 
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -45,29 +42,24 @@ public class Aes256CtrEncryptionAlgorithm extends Aes256Base
   }
 
   @Override
-  public void randomAccessDecrypt(
-      byte[] keyData,
-      long plaintextOffset,
-      long plaintextLength,
-      InputStream ciphertextAtOffset,
-      OutputStream plaintext) {
+  public void randomAccessDecrypt(byte[] keyData,
+                                  long plaintextOffset,
+                                  long plaintextLength,
+                                  InputStream ciphertextAtOffset,
+                                  OutputStream plaintext) {
     if (plaintextOffset < 0 || plaintextLength < 0) {
       throw new IllegalArgumentException("offset/length must be non-negative");
     }
     if (plaintextLength == 0) return;
 
-    InputStream decryptedStream =
-        getRandomAccessDecryptedStream(
-            keyData, plaintextOffset, plaintextLength, ciphertextAtOffset);
+    InputStream decryptedStream = getRandomAccessDecryptedStream(keyData, plaintextOffset, plaintextLength, ciphertextAtOffset);
     try (InputStream in = new SubInputStream(decryptedStream, 0, plaintextLength);
-        decryptedStream) {
+         decryptedStream) {
       byte[] buf = new byte[AES_BUFFER_SIZE];
 
       while (true) {
         int r = in.read(buf);
-        if (r == -1) {
-          break;
-        }
+        if (r == -1) { break; }
         plaintext.write(buf, 0, r);
       }
     } catch (IOException e) {
@@ -76,8 +68,10 @@ public class Aes256CtrEncryptionAlgorithm extends Aes256Base
   }
 
   @Override
-  public InputStream getRandomAccessDecryptedStream(
-      byte[] keyData, long plaintextOffset, long plaintextLength, InputStream ciphertextAtOffset) {
+  public InputStream getRandomAccessDecryptedStream(byte[] keyData,
+                                                    long plaintextOffset,
+                                                    long plaintextLength,
+                                                    InputStream ciphertextAtOffset) {
     if (plaintextOffset < 0 || plaintextLength < 0) {
       throw new IllegalArgumentException("offset/length must be non-negative");
     }
