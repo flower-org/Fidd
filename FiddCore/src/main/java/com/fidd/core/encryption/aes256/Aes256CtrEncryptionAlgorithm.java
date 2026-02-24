@@ -103,6 +103,11 @@ public class Aes256CtrEncryptionAlgorithm extends Aes256Base implements RandomAc
     }
   }
 
+  /**
+   * Returns {@code iv + blockIndex} where {@code iv} is treated as a 128-bit unsigned big-endian
+   * counter. Used for AES-CTR random access: start from counter {@code IV + (offset / 16)}. This
+   * matches typical JCE AES/CTR behavior (128-bit big-endian counter increment per block).
+   */
   private static byte[] addToIv128(byte[] iv, long blockIndex) {
     if (iv.length != 16) throw new IllegalArgumentException("IV must be 16 bytes");
     if (blockIndex < 0) throw new IllegalArgumentException("blockIndex must be non-negative");

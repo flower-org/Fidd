@@ -2,6 +2,8 @@ package com.fidd.core.encryption;
 
 import com.fidd.core.encryption.aes256.Aes256CbcEncryptionAlgorithm;
 import com.fidd.core.encryption.aes256.Aes256CtrEncryptionAlgorithm;
+import com.fidd.core.encryption.aes256.KuznechikCbcEncryptionAlgorithm;
+import com.fidd.core.encryption.aes256.KuznechikCtrEcbEncryptionAlgorithm;
 import com.fidd.core.encryption.unencrypted.NoEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
 import com.fidd.core.random.plain.PlainRandomGeneratorType;
@@ -22,11 +24,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class EncryptionAlgorithmTest {
     static Stream<Arguments> encryptionAlgorithms() {
         return Stream.of(
-                Arguments.of(new Aes256CbcEncryptionAlgorithm()),
-          Arguments.of(new Aes256CtrEncryptionAlgorithm()),
-                Arguments.of(new XorEncryptionAlgorithm()),
-                Arguments.of(new NoEncryptionAlgorithm())
-        );
+            Arguments.of(new Aes256CbcEncryptionAlgorithm()),
+            Arguments.of(new KuznechikCbcEncryptionAlgorithm()),
+            Arguments.of(new KuznechikCtrEcbEncryptionAlgorithm()),
+            Arguments.of(new Aes256CtrEncryptionAlgorithm()),
+            Arguments.of(new XorEncryptionAlgorithm()),
+            Arguments.of(new NoEncryptionAlgorithm()));
     }
 
     private static final String originalText = "This is a secret message.";
