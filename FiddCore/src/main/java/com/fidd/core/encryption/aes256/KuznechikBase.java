@@ -14,22 +14,22 @@ import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 
-abstract class KuznechikBase implements EncryptionAlgorithm {
+public abstract class KuznechikBase implements EncryptionAlgorithm {
   private static final int KEY_SIZE = 32;
   private static final int IV_SIZE = 16;
   private static final int BUFFER_SIZE = 8192;
 
   abstract PaddedBufferedBlockCipher newCipher();
 
-  private record KeyAndIv(byte[] key32, byte[] iv16) {
-    static byte[] serialize(KeyAndIv keyAndIv) {
+  public record KeyAndIv(byte[] key32, byte[] iv16) {
+    public static byte[] serialize(KeyAndIv keyAndIv) {
       byte[] serialized = new byte[KEY_SIZE + IV_SIZE];
       System.arraycopy(keyAndIv.key32, 0, serialized, 0, KEY_SIZE);
       System.arraycopy(keyAndIv.iv16, 0, serialized, KEY_SIZE, IV_SIZE);
       return serialized;
     }
 
-    static KeyAndIv deserialize(byte[] serializedKeyAndIv) {
+    public static KeyAndIv deserialize(byte[] serializedKeyAndIv) {
       if (serializedKeyAndIv.length != KEY_SIZE + IV_SIZE) {
         throw new IllegalArgumentException("Invalid serialized data length");
       }

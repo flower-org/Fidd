@@ -31,7 +31,7 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
     return "KUZNECHIK-CTR";
   }
 
-  private record KeyAndNonce(byte[] key32, byte[] nonce8) {
+  public record KeyAndNonce(byte[] key32, byte[] nonce8) {
     byte[] serialize() {
       byte[] out = new byte[40];
       System.arraycopy(key32, 0, out, 0, 32);
@@ -39,7 +39,7 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
       return out;
     }
 
-    static KeyAndNonce deserialize(byte[] data) {
+    public static KeyAndNonce deserialize(byte[] data) {
       if (data.length != 40) {
         throw new IllegalArgumentException("Invalid serialized data length");
       }
