@@ -28,7 +28,7 @@ public class KuznechikCtrEcbEncryptionAlgorithm implements RandomAccessEncryptio
 
   @Override
   public String name() {
-    return "KUZNECHIK-CTR-ECB";
+    return "KUZNECHIK-CTR";
   }
 
   private record KeyAndNonce(byte[] key32, byte[] nonce8) {
