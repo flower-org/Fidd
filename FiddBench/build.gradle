@@ -33,3 +33,18 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+def registerJmhSubsetTask = { taskName, includePattern ->
+    tasks.register(taskName, JavaExec) {
+        group = 'jmh'
+        description = "Runs JMH benchmarks matching ${includePattern}"
+        dependsOn tasks.named('jmhClasses')
+        classpath = sourceSets.jmh.runtimeClasspath
+        mainClass.set('org.openjdk.jmh.Main')
+        args includePattern
+        workingDir = project.projectDir
+    }
+}
+
+registerJmhSubsetTask('jmhEncryption', 'com\\.fidd\\.bench\\.EncryptionAlgorithm.*')
+registerJmhSubsetTask('jmhRandomAccess', 'com\\.fidd\\.bench\\.RandomAccessEncryptionAlgorithm.*')

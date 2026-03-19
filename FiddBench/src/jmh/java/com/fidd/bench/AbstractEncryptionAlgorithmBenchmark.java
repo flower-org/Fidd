@@ -8,6 +8,7 @@ import com.fidd.core.encryption.aes256.KuznechikCtrEcbEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
 import com.fidd.core.random.plain.PlainRandomGeneratorType;
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Random;
@@ -40,6 +41,10 @@ public abstract class AbstractEncryptionAlgorithmBenchmark {
 
     public byte[] plainText;
     public byte[] cipherText;
+    public ByteArrayInputStream plainTextStream;
+    public ByteArrayInputStream cipherTextStream;
+    public List<InputStream> plainTextStreams;
+    public OutputStream nullOutputStream;
 
     private static final int DETERMINED_RANDOM_SEED = 100;
 
@@ -62,6 +67,16 @@ public abstract class AbstractEncryptionAlgorithmBenchmark {
       determinedRandom.nextBytes(plainText);
 
       cipherText = currentAlgorithm.encrypt(keyData, plainText);
+      plainTextStream = new ByteArrayInputStream(plainText);
+      cipherTextStream = new ByteArrayInputStream(cipherText);
+      plainTextStreams = List.of(plainTextStream);
+      nullOutputStream = OutputStream.nullOutputStream();
+    }
+
+    @Setup(Level.Invocation)
+    public void resetStreams() {
+      plainTextStream.reset();
+      cipherTextStream.reset();
     }
   }
 
@@ -77,16 +92,13 @@ public abstract class AbstractEncryptionAlgorithmBenchmark {
 
   @Benchmark
   public long streamEncryptCryptoOnly(EncryptionAlgorithmState state) {
-    ByteArrayInputStream plainTextStream = new ByteArrayInputStream(state.plainText);
-    OutputStream cipherTextStream = OutputStream.nullOutputStream();
     return state.currentAlgorithm.encrypt(
-        state.keyData, List.of(plainTextStream), cipherTextStream, null);
+        state.keyData, state.plainTextStreams, state.nullOutputStream, null);
   }
 
   @Benchmark
   public long streamDecryptCryptoOnly(EncryptionAlgorithmState state) {
-    ByteArrayInputStream cipherTextStream = new ByteArrayInputStream(state.cipherText);
-    OutputStream plainTextStream = OutputStream.nullOutputStream();
-    return state.currentAlgorithm.decrypt(state.keyData, cipherTextStream, plainTextStream);
+    return state.currentAlgorithm.decrypt(
+        state.keyData, state.cipherTextStream, state.nullOutputStream);
   }
 }

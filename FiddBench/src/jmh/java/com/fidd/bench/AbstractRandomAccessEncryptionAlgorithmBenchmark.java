@@ -39,6 +39,10 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
 
     public byte[] plainText;
     public byte[] cipherText;
+    public long cipherTextOffset;
+    public long cipherTextLength;
+    public ByteArrayInputStream cipherTextStream;
+    public ByteArrayOutputStream plainTextStream;
 
     private static final int DETERMINED_RANDOM_SEED = 100;
 
@@ -60,15 +64,25 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
 
       cipherText = currentAlgorithm.encrypt(keyData, plainText);
 
-      long cOffset = currentAlgorithm.plaintextPosToCiphertextPos(offset);
-      long cLength = currentAlgorithm.plaintextLengthToCiphertextLength(length);
-      long availableCipherBytes = cipherText.length - cOffset;
-      if (cLength > availableCipherBytes) {
+      cipherTextOffset = currentAlgorithm.plaintextPosToCiphertextPos(offset);
+      cipherTextLength = currentAlgorithm.plaintextLengthToCiphertextLength(length);
+      long availableCipherBytes = cipherText.length - cipherTextOffset;
+      if (cipherTextLength > availableCipherBytes) {
         throw new IllegalArgumentException(
             String.format(
                 "Invalid params: payloadSize=%d, offset=%d, length=%d, offset+length=%d",
                 payloadSize, offset, length, offset + length));
       }
+
+      cipherTextStream =
+          new ByteArrayInputStream(cipherText, (int) cipherTextOffset, (int) cipherTextLength);
+      plainTextStream = new ByteArrayOutputStream((int) length);
+    }
+
+    @Setup(Level.Invocation)
+    public void resetStreams() {
+      cipherTextStream.reset();
+      plainTextStream.reset();
     }
   }
 
@@ -80,23 +94,17 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
 
   @Benchmark
   public long randomAccessDecryptBenchmarkVoid(RandomAccessEncryptionState state) {
-    long cOffset = state.currentAlgorithm.plaintextPosToCiphertextPos(state.offset);
-    long cLength = state.currentAlgorithm.plaintextLengthToCiphertextLength(state.length);
-    ByteArrayInputStream cipherTextStream =
-        new ByteArrayInputStream(state.cipherText, (int) cOffset, (int) cLength);
-    ByteArrayOutputStream plainTextStream = new ByteArrayOutputStream();
     state.currentAlgorithm.randomAccessDecrypt(
-        state.keyData, state.offset, state.length, cipherTextStream, plainTextStream);
+        state.keyData, state.offset, state.length, state.cipherTextStream, state.plainTextStream);
 
-    return plainTextStream.size();
+    return state.plainTextStream.size();
   }
 
   @Benchmark
   public byte[] getRandomAccessDecryptedStreamBenchmark(RandomAccessEncryptionState state) {
-    long cOffset = state.currentAlgorithm.plaintextPosToCiphertextPos(state.offset);
-    long cLength = state.currentAlgorithm.plaintextLengthToCiphertextLength(state.length);
     ByteArrayInputStream cipherTextStream =
-        new ByteArrayInputStream(state.cipherText, (int) cOffset, (int) cLength);
+        new ByteArrayInputStream(
+            state.cipherText, (int) state.cipherTextOffset, (int) state.cipherTextLength);
     try (InputStream resultStream =
         state.currentAlgorithm.getRandomAccessDecryptedStream(
             state.keyData, state.offset, state.length, cipherTextStream)) {

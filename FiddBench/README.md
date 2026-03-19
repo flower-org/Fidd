@@ -34,18 +34,27 @@ Run all benchmarks:
 gradlew :FiddBench:jmh
 ```
 
-Run only average-time benchmarks:
+Run only encryption benchmarks:
 
 ```bash
-gradlew :FiddBench:jmh --tests "*EncryptionAlgorithmBenchmark*"
-gradlew :FiddBench:jmh --tests "*RandomAccessEncryptionAlgorithmBenchmark*"
+gradlew :FiddBench:jmhEncryption
 ```
 
-Run only throughput benchmarks:
+This task runs:
+
+- `EncryptionAlgorithmBenchmark`
+- `EncryptionAlgorithmThroughputBenchmark`
+
+Run only random-access benchmarks:
 
 ```bash
-gradlew :FiddBench:jmh --tests "*ThroughputBenchmark*"
+gradlew :FiddBench:jmhRandomAccess
 ```
+
+This task runs:
+
+- `RandomAccessEncryptionAlgorithmBenchmark`
+- `RandomAccessEncryptionAlgorithmThroughputBenchmark`
 
 ## Result files
 
