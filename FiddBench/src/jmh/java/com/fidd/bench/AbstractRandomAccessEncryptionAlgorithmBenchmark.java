@@ -16,6 +16,7 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.infra.Blackhole;
 
 public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
 
@@ -43,6 +44,7 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
     public long cipherTextLength;
     public ByteArrayInputStream cipherTextStream;
     public ByteArrayOutputStream plainTextStream;
+    public byte[] readBuffer;
 
     private static final int DETERMINED_RANDOM_SEED = 100;
 
@@ -77,6 +79,7 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
       cipherTextStream =
           new ByteArrayInputStream(cipherText, (int) cipherTextOffset, (int) cipherTextLength);
       plainTextStream = new ByteArrayOutputStream((int) length);
+      readBuffer = new byte[(int) length];
     }
 
     @Setup(Level.Invocation)
@@ -101,14 +104,17 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
   }
 
   @Benchmark
-  public byte[] getRandomAccessDecryptedStreamBenchmark(RandomAccessEncryptionState state) {
-    ByteArrayInputStream cipherTextStream =
-        new ByteArrayInputStream(
-            state.cipherText, (int) state.cipherTextOffset, (int) state.cipherTextLength);
+  public void getRandomAccessDecryptedStreamBenchmark(
+      RandomAccessEncryptionState state, Blackhole blackhole) {
     try (InputStream resultStream =
         state.currentAlgorithm.getRandomAccessDecryptedStream(
-            state.keyData, state.offset, state.length, cipherTextStream)) {
-      return resultStream.readAllBytes();
+            state.keyData, state.offset, state.length, state.cipherTextStream)) {
+      byte[] buffer = state.readBuffer;
+      int read;
+      while ((read = resultStream.read(buffer)) != -1) {
+        blackhole.consume(buffer);
+        blackhole.consume(read);
+      }
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

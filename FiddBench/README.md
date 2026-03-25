@@ -66,9 +66,16 @@ jmh {
 }
 ```
 
-Typical output file:
+Main task output:
 
 - `FiddBench/build/results/jmh/results.json`
+
+Subset task outputs:
+
+- `FiddBench/build/results/jmh/jmhEncryption.json`
+- `FiddBench/build/results/jmh/jmhEncryption.txt`
+- `FiddBench/build/results/jmh/jmhRandomAccess.json`
+- `FiddBench/build/results/jmh/jmhRandomAccess.txt`
 
 ## Notes
 
