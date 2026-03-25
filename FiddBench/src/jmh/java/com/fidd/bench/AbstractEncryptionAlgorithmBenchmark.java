@@ -6,7 +6,6 @@ import com.fidd.core.encryption.aes256.Aes256CtrEncryptionAlgorithm;
 import com.fidd.core.encryption.aes256.KuznechikCbcEncryptionAlgorithm;
 import com.fidd.core.encryption.aes256.KuznechikCtrEcbEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
-import com.fidd.core.random.plain.PlainRandomGeneratorType;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -47,6 +46,7 @@ public abstract class AbstractEncryptionAlgorithmBenchmark {
     public OutputStream nullOutputStream;
 
     private static final int DETERMINED_RANDOM_SEED = 100;
+    private static final long DETERMINISTIC_KEY_SEED = 200L;
 
     @Setup(Level.Trial)
     public void setup() {
@@ -60,7 +60,9 @@ public abstract class AbstractEncryptionAlgorithmBenchmark {
             default -> throw new IllegalArgumentException("Unknown algorithm name: " + algorithm);
           };
 
-      keyData = currentAlgorithm.generateNewKeyData(new PlainRandomGeneratorType());
+      keyData =
+          currentAlgorithm.generateNewKeyData(
+              new DeterministicRandomGeneratorType(DETERMINISTIC_KEY_SEED));
 
       plainText = new byte[payloadSize];
       Random determinedRandom = new Random(DETERMINED_RANDOM_SEED);

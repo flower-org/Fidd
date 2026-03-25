@@ -4,7 +4,6 @@ import com.fidd.core.encryption.RandomAccessEncryptionAlgorithm;
 import com.fidd.core.encryption.aes256.Aes256CtrEncryptionAlgorithm;
 import com.fidd.core.encryption.aes256.KuznechikCtrEcbEncryptionAlgorithm;
 import com.fidd.core.encryption.xor.XorEncryptionAlgorithm;
-import com.fidd.core.random.plain.PlainRandomGeneratorType;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -47,6 +46,7 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
     public byte[] readBuffer;
 
     private static final int DETERMINED_RANDOM_SEED = 100;
+    private static final long DETERMINISTIC_KEY_SEED = 200L;
 
     @Setup(Level.Trial)
     public void setup() {
@@ -58,7 +58,9 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
             default -> throw new IllegalArgumentException("Unknown algorithm name: " + algorithm);
           };
 
-      keyData = currentAlgorithm.generateNewKeyData(new PlainRandomGeneratorType());
+      keyData =
+          currentAlgorithm.generateNewKeyData(
+              new DeterministicRandomGeneratorType(DETERMINISTIC_KEY_SEED));
 
       plainText = new byte[payloadSize];
       Random determinedRandom = new Random(DETERMINED_RANDOM_SEED);
@@ -74,6 +76,13 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
             String.format(
                 "Invalid params: payloadSize=%d, offset=%d, length=%d, offset+length=%d",
                 payloadSize, offset, length, offset + length));
+      }
+
+      if (cipherTextOffset > Integer.MAX_VALUE || cipherTextLength > Integer.MAX_VALUE) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Benchmark ByteArrayInputStream requires int-sized offsets: cipherTextOffset=%d, cipherTextLength=%d",
+                cipherTextOffset, cipherTextLength));
       }
 
       cipherTextStream =
