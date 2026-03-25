@@ -3,13 +3,18 @@ plugins {
     id 'me.champeau.jmh' version '0.7.3'
 }
 
-group 'com.fidd.view'
+group 'com.fidd.bench'
 version '0.0.1'
 
 repositories {
     mavenCentral()
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
 
 // docs: https://github.com/melix/jmh-gradle-plugin
 jmh {

@@ -19,7 +19,7 @@ import org.openjdk.jmh.annotations.State;
 
 public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
 
-  @State(Scope.Benchmark)
+  @State(Scope.Thread)
   public static class RandomAccessEncryptionState {
     @Param({"XOR", "AES_CTR", "KUZNECHIK_CTR"})
     public String algorithm;

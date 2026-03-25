@@ -27,7 +27,7 @@ import org.openjdk.jmh.annotations.State;
  */
 public abstract class AbstractEncryptionAlgorithmBenchmark {
 
-  @State(Scope.Benchmark)
+  @State(Scope.Thread)
   public static class EncryptionAlgorithmState {
     @Param({"XOR", "AES_CBC", "AES_CTR", "KUZNECHIK_CBC", "KUZNECHIK_CTR"})
     public String algorithm;
