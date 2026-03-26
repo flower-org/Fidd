@@ -79,8 +79,8 @@ Subset task outputs:
 
 ## Notes
 
-- Stream benchmarks intentionally use `OutputStream.nullOutputStream()` to avoid measuring output buffering/allocation
-  when the goal is crypto cost.
+- Stream benchmarks write into a lightweight checksum sink and consume the checksum through JMH
+  `Blackhole`. This keeps output bytes observable without accumulating the full output in memory.
 - Random-access benchmarks validate `offset/length` combinations during `@Setup` and fail fast on invalid parameter
   combinations.
 - Benchmark payload is deterministic, so repeated runs compare the same input shape.

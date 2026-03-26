@@ -90,8 +90,8 @@ public abstract class AbstractEncryptionAlgorithmBenchmark {
               new DeterministicRandomGeneratorType(DETERMINISTIC_KEY_SEED));
 
       plainText = new byte[payloadSize];
-      Random determinedRandom = new Random(DETERMINISTIC_RANDOM_SEED);
-      determinedRandom.nextBytes(plainText);
+      Random deterministicRandom = new Random(DETERMINISTIC_RANDOM_SEED);
+      deterministicRandom.nextBytes(plainText);
 
       cipherText = currentAlgorithm.encrypt(keyData, plainText);
       plainTextStream = new ByteArrayInputStream(plainText);

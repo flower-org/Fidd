@@ -63,8 +63,8 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
               new DeterministicRandomGeneratorType(DETERMINISTIC_KEY_SEED));
 
       plainText = new byte[payloadSize];
-      Random determinedRandom = new Random(DETERMINISTIC_RANDOM_SEED);
-      determinedRandom.nextBytes(plainText);
+      Random deterministicRandom = new Random(DETERMINISTIC_RANDOM_SEED);
+      deterministicRandom.nextBytes(plainText);
 
       cipherText = currentAlgorithm.encrypt(keyData, plainText);
 
@@ -83,6 +83,12 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
             String.format(
                 "Benchmark ByteArrayInputStream requires int-sized offsets: cipherTextOffset=%d, cipherTextLength=%d",
                 cipherTextOffset, cipherTextLength));
+      }
+
+      if (length > Integer.MAX_VALUE) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Benchmark in-memory buffers require int-sized length: length=%d", length));
       }
 
       cipherTextStream =
