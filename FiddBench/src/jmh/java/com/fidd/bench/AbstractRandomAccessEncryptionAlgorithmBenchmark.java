@@ -45,7 +45,7 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
     public ByteArrayOutputStream plainTextStream;
     public byte[] readBuffer;
 
-    private static final int DETERMINED_RANDOM_SEED = 100;
+    private static final int DETERMINISTIC_RANDOM_SEED = 100;
     private static final long DETERMINISTIC_KEY_SEED = 200L;
 
     @Setup(Level.Trial)
@@ -63,7 +63,7 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
               new DeterministicRandomGeneratorType(DETERMINISTIC_KEY_SEED));
 
       plainText = new byte[payloadSize];
-      Random determinedRandom = new Random(DETERMINED_RANDOM_SEED);
+      Random determinedRandom = new Random(DETERMINISTIC_RANDOM_SEED);
       determinedRandom.nextBytes(plainText);
 
       cipherText = currentAlgorithm.encrypt(keyData, plainText);
@@ -119,11 +119,14 @@ public abstract class AbstractRandomAccessEncryptionAlgorithmBenchmark {
         state.currentAlgorithm.getRandomAccessDecryptedStream(
             state.keyData, state.offset, state.length, state.cipherTextStream)) {
       byte[] buffer = state.readBuffer;
+      long checksum = 0L;
       int read;
       while ((read = resultStream.read(buffer)) != -1) {
-        blackhole.consume(buffer);
-        blackhole.consume(read);
+        for (int i = 0; i < read; i++) {
+          checksum = checksum * 31 + (buffer[i] & 0xFFL);
+        }
       }
+      blackhole.consume(checksum);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

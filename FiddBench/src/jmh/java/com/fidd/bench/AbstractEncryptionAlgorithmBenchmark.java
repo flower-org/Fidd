@@ -17,6 +17,7 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.infra.Blackhole;
 
 /**
  * Shared JMH benchmark logic for comparing encryption algorithms.
@@ -25,6 +26,30 @@ import org.openjdk.jmh.annotations.State;
  * throughput stay separated without duplicating benchmark bodies.
  */
 public abstract class AbstractEncryptionAlgorithmBenchmark {
+
+  private static final class ChecksumOutputStream extends OutputStream {
+    private long checksum;
+
+    void reset() {
+      checksum = 0L;
+    }
+
+    long checksum() {
+      return checksum;
+    }
+
+    @Override
+    public void write(int b) {
+      checksum = checksum * 31 + (b & 0xFFL);
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) {
+      for (int i = off; i < off + len; i++) {
+        checksum = checksum * 31 + (b[i] & 0xFFL);
+      }
+    }
+  }
 
   @State(Scope.Thread)
   public static class EncryptionAlgorithmState {
@@ -43,9 +68,9 @@ public abstract class AbstractEncryptionAlgorithmBenchmark {
     public ByteArrayInputStream plainTextStream;
     public ByteArrayInputStream cipherTextStream;
     public List<InputStream> plainTextStreams;
-    public OutputStream nullOutputStream;
+    public ChecksumOutputStream checksumOutputStream;
 
-    private static final int DETERMINED_RANDOM_SEED = 100;
+    private static final int DETERMINISTIC_RANDOM_SEED = 100;
     private static final long DETERMINISTIC_KEY_SEED = 200L;
 
     @Setup(Level.Trial)
@@ -65,20 +90,21 @@ public abstract class AbstractEncryptionAlgorithmBenchmark {
               new DeterministicRandomGeneratorType(DETERMINISTIC_KEY_SEED));
 
       plainText = new byte[payloadSize];
-      Random determinedRandom = new Random(DETERMINED_RANDOM_SEED);
+      Random determinedRandom = new Random(DETERMINISTIC_RANDOM_SEED);
       determinedRandom.nextBytes(plainText);
 
       cipherText = currentAlgorithm.encrypt(keyData, plainText);
       plainTextStream = new ByteArrayInputStream(plainText);
       cipherTextStream = new ByteArrayInputStream(cipherText);
       plainTextStreams = List.of(plainTextStream);
-      nullOutputStream = OutputStream.nullOutputStream();
+      checksumOutputStream = new ChecksumOutputStream();
     }
 
     @Setup(Level.Invocation)
     public void resetStreams() {
       plainTextStream.reset();
       cipherTextStream.reset();
+      checksumOutputStream.reset();
     }
   }
 
@@ -93,14 +119,20 @@ public abstract class AbstractEncryptionAlgorithmBenchmark {
   }
 
   @Benchmark
-  public long streamEncryptCryptoOnly(EncryptionAlgorithmState state) {
-    return state.currentAlgorithm.encrypt(
-        state.keyData, state.plainTextStreams, state.nullOutputStream, null);
+  public long streamEncryptCryptoOnly(EncryptionAlgorithmState state, Blackhole blackhole) {
+    long written =
+        state.currentAlgorithm.encrypt(
+            state.keyData, state.plainTextStreams, state.checksumOutputStream, null);
+    blackhole.consume(state.checksumOutputStream.checksum());
+    return written;
   }
 
   @Benchmark
-  public long streamDecryptCryptoOnly(EncryptionAlgorithmState state) {
-    return state.currentAlgorithm.decrypt(
-        state.keyData, state.cipherTextStream, state.nullOutputStream);
+  public long streamDecryptCryptoOnly(EncryptionAlgorithmState state, Blackhole blackhole) {
+    long written =
+        state.currentAlgorithm.decrypt(
+            state.keyData, state.cipherTextStream, state.checksumOutputStream);
+    blackhole.consume(state.checksumOutputStream.checksum());
+    return written;
   }
 }
