@@ -25,19 +25,19 @@ The benchmark state currently varies:
 Compile benchmark classes:
 
 ```bash
-gradlew :FiddBench:jmhClasses
+gradle :FiddBench:jmhClasses
 ```
 
 Run all benchmarks:
 
 ```bash
-gradlew :FiddBench:jmh
+gradle :FiddBench:jmh
 ```
 
 Run only encryption benchmarks:
 
 ```bash
-gradlew :FiddBench:jmhEncryption
+gradle :FiddBench:jmhEncryption
 ```
 
 This task runs:
@@ -48,7 +48,7 @@ This task runs:
 Run only random-access benchmarks:
 
 ```bash
-gradlew :FiddBench:jmhRandomAccess
+gradle :FiddBench:jmhRandomAccess
 ```
 
 This task runs:
