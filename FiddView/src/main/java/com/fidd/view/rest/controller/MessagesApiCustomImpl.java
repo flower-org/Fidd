@@ -70,5 +70,11 @@ public class MessagesApiCustomImpl implements MessagesApi {
                 LogicalFileInfoMapper.toDtoList(logicalFileInfos == null ? List.of() : logicalFileInfos);
         return Future.succeededFuture(new ApiResponse<>(dtoLogicalFileInfos));
     }
+
+    @Override
+    public Future<ApiResponse<List<String>>> getFiddIds() {
+        List<String> serviceIds = fiddContentServiceManager.getServiceIds();
+        return Future.succeededFuture(new ApiResponse<>(serviceIds));
+    }
 }
 
