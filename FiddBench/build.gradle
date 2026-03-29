@@ -1,0 +1,68 @@
+import me.champeau.jmh.JMHTask
+
+plugins {
+    id 'java'
+    id 'me.champeau.jmh' version '0.7.3'
+}
+
+group 'com.fidd.bench'
+version '0.0.1'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+// docs: https://github.com/melix/jmh-gradle-plugin
+jmh {
+    warmupIterations = 3
+    iterations = 5
+    fork = 1
+    resultFormat = 'JSON'
+}
+
+dependencies {
+    jmh project(':FiddCore')
+
+    jmh 'org.openjdk.jmh:jmh-core:1.37'
+    jmhAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.37'
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+def registerJmhSubsetTask = { taskName, includePattern ->
+    tasks.register(taskName, JMHTask) {
+        def mainJmh = tasks.named('jmh', JMHTask)
+
+        group = 'jmh'
+        description = "Runs JMH benchmarks matching ${includePattern}"
+        dependsOn tasks.named('jmhJar')
+
+        jmhClasspath.from(mainJmh.map { it.jmhClasspath })
+        testRuntimeClasspath.from(mainJmh.map { it.testRuntimeClasspath })
+        jarArchive.set(mainJmh.flatMap { it.jarArchive })
+
+        warmupIterations.set(mainJmh.flatMap { it.warmupIterations })
+        iterations.set(mainJmh.flatMap { it.iterations })
+        fork.set(mainJmh.flatMap { it.fork })
+        resultFormat.set(mainJmh.flatMap { it.resultFormat })
+
+        includes.set([includePattern])
+        resultsFile.set(layout.buildDirectory.file("results/jmh/${taskName}.json"))
+        humanOutputFile.set(layout.buildDirectory.file("results/jmh/${taskName}.txt"))
+    }
+}
+
+registerJmhSubsetTask('jmhEncryption', 'com\\.fidd\\.bench\\.EncryptionAlgorithm.*')
+registerJmhSubsetTask('jmhRandomAccess', 'com\\.fidd\\.bench\\.RandomAccessEncryptionAlgorithm.*')
