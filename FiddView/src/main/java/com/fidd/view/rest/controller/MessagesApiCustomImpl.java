@@ -33,6 +33,11 @@ public class MessagesApiCustomImpl implements MessagesApi {
     }
 
     @Override
+    public Future<ApiResponse<List<String>>> getFiddIds() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Future<ApiResponse<List<Long>>> getMessageNumbersBefore(String fiddId, Long messageNumber, Integer count,
                                                                    Boolean inclusive) {
         FiddContentService service = fiddContentServiceManager.getService(fiddId);
