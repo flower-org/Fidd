@@ -23,7 +23,6 @@ sourceCompatibility = '17'
 targetCompatibility = '17'
 
 application {
-    mainModule = 'com.fidd.view'
     mainClass = 'com.fidd.view.AppLauncher'
 }
 
