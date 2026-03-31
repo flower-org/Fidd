@@ -161,9 +161,6 @@ dependencies {
     implementation 'io.vertx:vertx-web-openapi'
     implementation 'io.vertx:vertx-json-schema'
     implementation 'org.slf4j:slf4j-api:2.0.9'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.21'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.21'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.0'
     implementation "org.openapitools:jackson-databind-nullable:0.2.6"
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
@@ -201,8 +198,11 @@ tasks.withType(JavaCompile) {
     }
 }
 
-// build jar:
-// ./gradlew jar -Dorg.gradle.java.home=/Users/john/Library/Java/JavaVirtualMachines/temurin-17.0.5/Contents/Home
+// Build artifacts:
+// - `jar` produces the thin application JAR with Main-Class set.
+// - `shadowJar` produces the runnable fat JAR with runtime dependencies bundled.
+// Example:
+// ./gradlew shadowJar -Dorg.gradle.java.home=/Users/john/Library/Java/JavaVirtualMachines/temurin-17.0.5/Contents/Home
 jar {
     manifest {
         attributes 'Main-Class': 'com.fidd.view.AppLauncher'
