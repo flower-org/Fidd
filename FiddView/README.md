@@ -3,21 +3,7 @@
 JavaFX desktop module for the Fidd application. Contains the desktop UI layer and packages it as a runnable application
 image.
 
-Main entry point:
-
-- `com.fidd.view.AppLauncher`
-
-Build configuration:
-
-- `FiddView/build.gradle`
-
 ## Packaging approach
-
-This module currently uses:
-
-- `org.openjfx.javafxplugin` for JavaFX dependencies
-- `org.beryx.runtime` for runtime image packaging
-- `jpackage` through the runtime plugin
 
 The current `runtime` block builds an `app-image`, not an installer.
 
@@ -28,20 +14,20 @@ So the target machine does not need a separately installed Java runtime.
 Build the runtime image:
 
 ```bash
-gradlew :FiddView:runtime
+gradle :FiddView:runtime
 ```
 
 Build the packaged application image:
 
 ```bash
-gradlew :FiddView:jpackageImage
+gradle :FiddView:jpackageImage
 ```
 
 ## How multi-platform packaging works
 
-1. Linux runner executes `gradlew :FiddView:jpackageImage`
-2. Windows runner executes `gradlew :FiddView:jpackageImage`
-3. macOS runner executes `gradlew :FiddView:jpackageImage`
+1. Linux runner executes `gradle :FiddView:jpackageImage`
+2. Windows runner executes `gradle :FiddView:jpackageImage`
+3. macOS runner executes `gradle :FiddView:jpackageImage`
 
 Each run produces an image for its own platform only.
 
