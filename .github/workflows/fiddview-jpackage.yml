@@ -2,15 +2,6 @@ name: FiddView JPackage
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/fiddview-jpackage.yml'
-      - 'settings.gradle'
-      - 'FiddView/**'
-      - 'FiddCore/**'
-      - 'CryptCore/**'
-      - 'JavaFxUtils/**'
-      - 'KeyManagerFx/**'
 
 jobs:
   build-fiddview-image:
