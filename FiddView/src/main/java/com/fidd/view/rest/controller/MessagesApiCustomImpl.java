@@ -34,9 +34,8 @@ public class MessagesApiCustomImpl implements MessagesApi {
 
     @Override
     public Future<ApiResponse<List<String>>> getFiddIds() {
-        throw new UnsupportedOperationException();
-        /* List<String> serviceIds = fiddContentServiceManager.getServiceIds();
-        return Future.succeededFuture(new ApiResponse<>(serviceIds));*/
+        List<String> serviceIds = fiddContentServiceManager.getServiceIds();
+        return Future.succeededFuture(new ApiResponse<>(serviceIds));
     }
 
     @Override
