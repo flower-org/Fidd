@@ -20,6 +20,11 @@ public class ConcurrentFiddContentServiceCache implements FiddContentServiceCach
         return serviceMap.get(serviceName);
     }
 
+    @Override
+    public List<String> getServiceIds() {
+        return new ArrayList<>(serviceMap.keySet());
+    }
+
     public boolean addServiceIfAbsent(String serviceName, FiddContentService service) {
         return serviceMap.putIfAbsent(serviceName, service) == null;
     }
