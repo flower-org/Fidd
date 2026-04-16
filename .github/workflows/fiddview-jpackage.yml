@@ -1,12 +1,18 @@
 name: FiddView JPackage
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
   build-fiddview-image:
     name: Build FiddView on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: write
 
     strategy:
       fail-fast: false
@@ -42,9 +48,31 @@ jobs:
       - name: Build FiddView app image
         run: gradle :FiddView:jpackageImage
 
-      - name: Upload FiddView app image
+      - name: Archive app image (macOS/Linux)
+        if: runner.os != 'Windows'
+        run: |
+          cd FiddView/build/jpackage
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            zip -r ../../../${{ matrix.artifact_name }}.zip FiddView.app
+          else
+            zip -r ../../../${{ matrix.artifact_name }}.zip FiddView
+          fi
+
+      - name: Archive app image (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd FiddView/build/jpackage
+          Compress-Archive -Path FiddView -DestinationPath ..\..\..\${{ matrix.artifact_name }}.zip
+
+      - name: Upload FiddView app image artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_path }}
+          path: ${{ matrix.artifact_name }}.zip
           if-no-files-found: error
+
+      - name: Upload to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact_name }}.zip

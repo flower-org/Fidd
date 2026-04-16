@@ -54,43 +54,13 @@ jobs:
       - name: sha256-fiddview
         run: openssl sha256 FiddView/build/libs/*
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+          files: |
+            Cryptor/build/libs/Cryptor-1.2.7-amd64-all.jar
+            FiddPacker/build/libs/FiddPacker-1.2.7-amd64-all.jar
 
-      - name: Upload Cryptor x64 artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: Cryptor/build/libs/Cryptor-1.2.7-amd64-all.jar
-          asset_name: Cryptor-1.2.7-amd64-all.jar
-          asset_content_type: application/jar
-
-      - name: Upload FiddPacker x64 artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: FiddPacker/build/libs/FiddPacker-1.2.7-amd64-all.jar
-          asset_name: FiddPacker-1.2.7-amd64-all.jar
-          asset_content_type: application/jar
-
-      - name: Upload FiddView x64 artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: FiddView/build/libs/FiddView-1.2.7-amd64-all.jar
-          asset_name: FiddView-1.2.7-amd64-all.jar
-          asset_content_type: application/jar
