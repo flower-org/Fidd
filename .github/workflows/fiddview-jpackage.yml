@@ -48,12 +48,9 @@ jobs:
       - name: Build FiddView app image
         run: gradle :FiddView:jpackageImage
 
-      - name: ls-fiddview-jpackage
-        run: ls -al FiddView/build/jpackage
-
       - name: Archive app image (macOS/Linux)
         if: runner.os != 'Windows'
-        run: |
+        run:
           cd FiddView/build/jpackage
           if [ "${{ runner.os }}" = "macOS" ]; then
             zip -r ../../../${{ matrix.artifact_name }}.zip FiddView.app
@@ -63,9 +60,17 @@ jobs:
 
       - name: Archive app image (Windows)
         if: runner.os == 'Windows'
-        run: |
+        run:
           cd FiddView/build/jpackage
           Compress-Archive -Path FiddView -DestinationPath ..\..\..\${{ matrix.artifact_name }}.zip
+
+      - name: ls-fiddview-zip (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: ls -al ${{ matrix.artifact_name }}.zip
+
+      - name: ls-fiddview-zip (Windows)
+        if: runner.os == 'Windows'
+        run: dir ${{ matrix.artifact_name }}.zip
 
       - name: sha256-fiddview-zip (Linux)
         if: runner.os == 'Linux'
