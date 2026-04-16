@@ -61,6 +61,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
-            Cryptor/build/libs/Cryptor-1.2.7-amd64-all.jar
-            FiddPacker/build/libs/FiddPacker-1.2.7-amd64-all.jar
+            Cryptor/build/libs/Cryptor-1.2.8-amd64-all.jar
+            FiddPacker/build/libs/FiddPacker-1.2.8-amd64-all.jar
 
