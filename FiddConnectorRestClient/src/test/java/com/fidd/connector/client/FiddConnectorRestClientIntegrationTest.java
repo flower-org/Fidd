@@ -8,8 +8,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fidd.connector.FiddConnectorRestServerApplication;
+import com.fidd.connector.client.invoker.ApiException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -38,6 +40,8 @@ class FiddConnectorRestClientIntegrationTest {
   private static final long FIRST_MESSAGE_NUMBER = 1L;
   private static final long SECOND_MESSAGE_NUMBER = 2L;
   private static final long THIRD_MESSAGE_NUMBER = 3L;
+  private static final long MISSING_MESSAGE_NUMBER = 404L;
+  private static final int HTTP_NOT_FOUND = 404;
 
   private static final String FIRST_MESSAGE_CONTENT = "first-message-content";
   private static final String SECOND_MESSAGE_CONTENT = "second-message-content";
@@ -62,6 +66,7 @@ class FiddConnectorRestClientIntegrationTest {
   private static final String MESSAGE_SIGNATURE_PREFIX = "message-signature-";
   private static final int FIRST_SIGNATURE_INDEX = 0;
   private static final int SECOND_SIGNATURE_INDEX = 1;
+  private static final int MISSING_SIGNATURE_INDEX = 10;
   private static final int SIGNATURE_COUNT = 2;
 
   private static final Path FIDD_FOLDER = createTempDirectory();
@@ -149,6 +154,27 @@ class FiddConnectorRestClientIntegrationTest {
     assertArrayEquals(
         (MESSAGE_SIGNATURE_PREFIX + SECOND_SIGNATURE_INDEX).getBytes(UTF_8),
         client.getFiddMessageSignature(SECOND_MESSAGE_NUMBER, SECOND_SIGNATURE_INDEX));
+  }
+
+  @Test
+  void returnsNotFoundForMissingSignature() {
+    RuntimeException exception =
+        assertThrows(
+            RuntimeException.class,
+            () -> client.getFiddMessageSignature(SECOND_MESSAGE_NUMBER, MISSING_SIGNATURE_INDEX));
+
+    ApiException apiException = (ApiException) exception.getCause();
+    assertEquals(HTTP_NOT_FOUND, apiException.getCode());
+  }
+
+  @Test
+  void returnsNotFoundForMissingMessageContent() {
+    RuntimeException exception =
+        assertThrows(
+            RuntimeException.class, () -> client.getFiddMessageSize(MISSING_MESSAGE_NUMBER));
+
+    ApiException apiException = (ApiException) exception.getCause();
+    assertEquals(HTTP_NOT_FOUND, apiException.getCode());
   }
 
   private static Path createTempDirectory() {

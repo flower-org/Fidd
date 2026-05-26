@@ -1,7 +1,9 @@
 package com.fidd.connector.controller;
 
 import com.fidd.connector.service.FiddConnectorRestService;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.nio.file.NoSuchFileException;
 import java.util.List;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -54,29 +56,45 @@ public class MessagesController implements MessagesApi {
   // GET /messages/{messageNumber}/content/size
   @Override
   public ResponseEntity<Long> getFiddMessageSize(Long messageNumber) {
-    long messageSize = fiddConnectorRestService.getFiddMessageSize(messageNumber);
-    return ResponseEntity.ok(messageSize);
+    try {
+      long messageSize = fiddConnectorRestService.getFiddMessageSize(messageNumber);
+      return ResponseEntity.ok(messageSize);
+    } catch (RuntimeException e) {
+      if (e.getCause() instanceof FileNotFoundException
+          || e.getCause() instanceof NoSuchFileException) {
+        return ResponseEntity.notFound().build();
+      }
+      throw e;
+    }
   }
 
   // GET /messages/{messageNumber}/content?offset=...&length=...
   @Override
   public ResponseEntity<Resource> getFiddMessageChunk(
       Long messageNumber, Long offset, Long length) {
-    if (offset < 0 || length < 0) {
-      return ResponseEntity.badRequest().build();
-    }
+    try {
+      if (offset < 0 || length < 0) {
+        return ResponseEntity.badRequest().build();
+      }
 
-    long messageSize = fiddConnectorRestService.getFiddMessageSize(messageNumber);
-    if (offset > messageSize || (offset == messageSize && length > 0)) {
-      return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE).build();
-    }
+      long messageSize = fiddConnectorRestService.getFiddMessageSize(messageNumber);
+      if (offset > messageSize || (offset == messageSize && length > 0)) {
+        return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE).build();
+      }
 
-    long actualLength = Math.min(length, messageSize - offset);
-    InputStream chunk =
-        fiddConnectorRestService.getFiddMessageChunk(messageNumber, offset, actualLength);
-    return ResponseEntity.ok()
-        .contentType(MediaType.APPLICATION_OCTET_STREAM)
-        .contentLength(actualLength)
-        .body(new InputStreamResource(chunk));
+      long actualLength = Math.min(length, messageSize - offset);
+      InputStream chunk =
+          fiddConnectorRestService.getFiddMessageChunk(messageNumber, offset, actualLength);
+      return ResponseEntity.ok()
+          .contentType(MediaType.APPLICATION_OCTET_STREAM)
+          .contentLength(actualLength)
+          .body(new InputStreamResource(chunk));
+    } catch (RuntimeException e) {
+      if (e.getCause() instanceof FileNotFoundException
+          || e.getCause() instanceof NoSuchFileException) {
+        return ResponseEntity.notFound().build();
+      }
+      throw e;
+    }
   }
 }
