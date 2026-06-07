@@ -35,6 +35,9 @@ public class Message {
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL)
     private List<MetadataChunk> metadataChunks;
 
+    @Column(name = "last_access_time")
+    private Long lastAccessTime;
+
     public Long getId() {
         return id;
     }
@@ -105,5 +108,19 @@ public class Message {
 
     public void setMetadataChunks(List<MetadataChunk> metadataChunks) {
         this.metadataChunks = metadataChunks;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void updateLastAccessTime() {
+        this.lastAccessTime = System.currentTimeMillis();
+    }
+
+    public Long getLastAccessTime() {
+        return lastAccessTime;
+    }
+
+    public void setLastAccessTime(Long lastAccessTime) {
+        this.lastAccessTime = lastAccessTime;
     }
 }

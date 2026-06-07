@@ -16,6 +16,9 @@ public class FiddKey {
     @Column(name = "key_name")
     private String keyName;
 
+    @Column(name = "last_access_time")
+    private Long lastAccessTime;
+
     @Lob
     @Column(name = "data")
     private byte[] data;
@@ -50,5 +53,19 @@ public class FiddKey {
 
     public void setData(byte[] data) {
         this.data = data;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void updateLastAccessTime() {
+        this.lastAccessTime = System.currentTimeMillis();
+    }
+
+    public Long getLastAccessTime() {
+        return lastAccessTime;
+    }
+
+    public void setLastAccessTime(Long lastAccessTime) {
+        this.lastAccessTime = lastAccessTime;
     }
 }

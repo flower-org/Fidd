@@ -21,6 +21,9 @@ public class Signature {
     @Column(name = "signature")
     private byte[] signature;
 
+    @Column(name = "last_access_time")
+    private Long lastAccessTime;
+
     public Long getId() {
         return id;
     }
@@ -51,5 +54,19 @@ public class Signature {
 
     public void setSignature(byte[] signature) {
         this.signature = signature;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void updateLastAccessTime() {
+        this.lastAccessTime = System.currentTimeMillis();
+    }
+
+    public Long getLastAccessTime() {
+        return lastAccessTime;
+    }
+
+    public void setLastAccessTime(Long lastAccessTime) {
+        this.lastAccessTime = lastAccessTime;
     }
 }

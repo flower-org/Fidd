@@ -16,6 +16,9 @@ public class MessageSize {
     @Column(name = "size")
     private Long size;
 
+    @Column(name = "last_access_time")
+    private Long lastAccessTime;
+
     public Long getId() {
         return id;
     }
@@ -38,5 +41,19 @@ public class MessageSize {
 
     public void setSize(Long size) {
         this.size = size;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void updateLastAccessTime() {
+        this.lastAccessTime = System.currentTimeMillis();
+    }
+
+    public Long getLastAccessTime() {
+        return lastAccessTime;
+    }
+
+    public void setLastAccessTime(Long lastAccessTime) {
+        this.lastAccessTime = lastAccessTime;
     }
 }

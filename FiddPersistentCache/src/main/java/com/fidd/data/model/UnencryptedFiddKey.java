@@ -13,6 +13,9 @@ public class UnencryptedFiddKey {
     @JoinColumn(name = "message_id", nullable = false)
     private Message message;
 
+    @Column(name = "last_access_time")
+    private Long lastAccessTime;
+
     @Lob
     @Column(name = "data")
     private byte[] data;
@@ -39,5 +42,19 @@ public class UnencryptedFiddKey {
 
     public void setData(byte[] data) {
         this.data = data;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void updateLastAccessTime() {
+        this.lastAccessTime = System.currentTimeMillis();
+    }
+
+    public Long getLastAccessTime() {
+        return lastAccessTime;
+    }
+
+    public void setLastAccessTime(Long lastAccessTime) {
+        this.lastAccessTime = lastAccessTime;
     }
 }

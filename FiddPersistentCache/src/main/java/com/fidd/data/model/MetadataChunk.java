@@ -19,6 +19,9 @@ public class MetadataChunk {
     @Column(name = "range_to")
     private Long rangeTo;
 
+    @Column(name = "last_access_time")
+    private Long lastAccessTime;
+
     @Lob
     @Column(name = "data")
     private byte[] data;
@@ -61,5 +64,19 @@ public class MetadataChunk {
 
     public void setData(byte[] data) {
         this.data = data;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void updateLastAccessTime() {
+        this.lastAccessTime = System.currentTimeMillis();
+    }
+
+    public Long getLastAccessTime() {
+        return lastAccessTime;
+    }
+
+    public void setLastAccessTime(Long lastAccessTime) {
+        this.lastAccessTime = lastAccessTime;
     }
 }
