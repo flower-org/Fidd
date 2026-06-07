@@ -3,24 +3,38 @@ package com.fidd.cache;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.data.dao.FiddDao;
 import com.fidd.data.dao.FiddKeyDao;
+import com.fidd.data.dao.FiddKeyCandidatesDao;
 import com.fidd.data.dao.MessageDao;
 import com.fidd.data.dao.UnencryptedFiddKeyDao;
 import com.fidd.data.dao.SignatureDao;
+import com.fidd.data.dao.MetadataChunkDao;
 import com.fidd.data.model.Fidd;
 import com.fidd.data.model.FiddKey;
+import com.fidd.data.model.FiddKeyCandidates;
 import com.fidd.data.model.Message;
+import com.fidd.data.model.MetadataChunk;
 import com.fidd.data.model.Signature;
 import com.fidd.data.model.SignatureType;
 import com.fidd.data.model.UnencryptedFiddKey;
+import com.fidd.core.common.SubInputStream;
 import com.fidd.data.utils.DBUtil;
 import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.SequenceInputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FiddPersistentCache implements FiddConnector {
     private static final Logger LOGGER = LoggerFactory.getLogger(FiddPersistentCache.class);
@@ -34,17 +48,26 @@ public class FiddPersistentCache implements FiddConnector {
     protected final long fiddKeyCacheCapacity;
     protected final long unencryptedFiddKeyCacheCapacity;
     protected final long fiddMessageChunkCacheCapacity;
+    protected final long fiddMessageSignatureCacheCapacity;
+    protected final long fiddKeySignatureCacheCapacity;
+    protected final long fiddMessageCacheCapacity;
 
-    public FiddPersistentCache(long fiddKeyCandidatesCacheCapacity, long fiddKeyCacheCapacity,
+    public FiddPersistentCache(long fiddMessageCacheCapacity, long fiddKeyCandidatesCacheCapacity, long fiddKeyCacheCapacity,
                                long unencryptedFiddKeyCacheCapacity, long fiddMessageChunkCacheCapacity,
+                               long fiddMessageSignatureCacheCapacity, long fiddKeySignatureCacheCapacity,
                                String fiddId, FiddConnector underlyingConnector) {
         this.connector = underlyingConnector;
         this.fiddId = fiddId;
+
+        this.fiddMessageCacheCapacity = fiddMessageCacheCapacity;
 
         this.fiddKeyCandidatesCacheCapacity = fiddKeyCandidatesCacheCapacity;
         this.fiddKeyCacheCapacity = fiddKeyCacheCapacity;
         this.unencryptedFiddKeyCacheCapacity = unencryptedFiddKeyCacheCapacity;
         this.fiddMessageChunkCacheCapacity = fiddMessageChunkCacheCapacity;
+
+        this.fiddMessageSignatureCacheCapacity = fiddMessageSignatureCacheCapacity;
+        this.fiddKeySignatureCacheCapacity = fiddKeySignatureCacheCapacity;
     }
 
     @Override
@@ -65,32 +88,54 @@ public class FiddPersistentCache implements FiddConnector {
 
     @Override
     public InputStream getFiddMessageChunk(long messageNumber, long offset, long length) {
-        throw new UnsupportedOperationException();
-        /*
-        MessageKey messageKey = new MessageKey(fiddId, messageNumber);
-        MessageChunkCache messageChunkCache = ramCache.getOrCreateMessageChunkCache(messageKey);
-        byte[] chunkBytes = messageChunkCache.get(new ChunkKey(offset, length));
+        byte[] chunkBytes = null;
+        try {
+            chunkBytes = DBUtil.connectGetResultAndClose(session -> {
+                Transaction tx = session.beginTransaction();
+                MetadataChunk c = MetadataChunkDao.findByFiddIdMessageNumberAndRange(session, fiddId, messageNumber, offset, offset + length);
+                if (c != null) {
+                    c.setLastAccessTime(System.currentTimeMillis());
+                    session.merge(c);
+                    return c.getData();
+                }
+                tx.commit();
+                return null;
+            });
+        } catch (Exception e) {
+            LOGGER.warn("Persistent cache error: getFiddMessageChunk({}) ", messageNumber, e);
+        }
+
         if (chunkBytes != null) {
             return new ByteArrayInputStream(chunkBytes);
         } else {
-            // Don't populate cache in this method
+            // Don't populate cache in this method, let getFiddMessageChunks do it
             return connector.getFiddMessageChunk(messageNumber, offset, length);
         }
-        */
     }
 
     @Override
     public InputStream getFiddMessageChunks(long messageNumber, List<? extends Chunk<?>> chunks) {
-        throw new UnsupportedOperationException();
-        /*
-        MessageKey messageKey = new MessageKey(fiddId, messageNumber);
-        MessageChunkCache messageChunkCache = ramCache.getOrCreateMessageChunkCache(messageKey);
-
         Map<Chunk<?>, byte[]> cacheChunksMap = new HashMap<>();
         List<Chunk<?>> chunksToLoad = new ArrayList<>();
 
         for (Chunk<?> chunk : chunks) {
-            byte[] chunkBytes = messageChunkCache.get(new ChunkKey(chunk.offset(), chunk.length()));
+            byte[] chunkBytes = null;
+            try {
+                chunkBytes = DBUtil.connectGetResultAndClose(session -> {
+                    Transaction tx = session.beginTransaction();
+                    MetadataChunk c = MetadataChunkDao.findByFiddIdMessageNumberAndRange(session, fiddId, messageNumber, chunk.offset(), chunk.offset() + chunk.length());
+                    if (c != null) {
+                        c.setLastAccessTime(System.currentTimeMillis());
+                        session.merge(c);
+                        return c.getData();
+                    }
+                    tx.commit();
+                    return null;
+                });
+            } catch (Exception e) {
+                 LOGGER.warn("Persistent cache error: getFiddMessageChunks({}) ", messageNumber, e);
+            }
+
             if (chunkBytes != null) {
                 cacheChunksMap.put(chunk, chunkBytes);
             } else {
@@ -130,8 +175,8 @@ public class FiddPersistentCache implements FiddConnector {
         }
 
         InputStream mergedInputStream = new SequenceInputStream(Collections.enumeration(streams));
-        return new ChunkCachingInputStream(fiddId, messageNumber, ramCache, MAX_CHUNK_SIZE, mergedInputStream, chunks);
-        */
+        long capacity = fiddMessageChunkCacheCapacity > 0 ? fiddMessageChunkCacheCapacity : MAX_CHUNK_SIZE;
+        return new PersistentChunkCachingInputStream(fiddId, messageNumber, capacity, fiddMessageCacheCapacity, mergedInputStream, chunks);
     }
 
     @Override
@@ -175,6 +220,7 @@ public class FiddPersistentCache implements FiddConnector {
                             message.setFidd(fidd);
                             message.setNumber(messageNumber);
                             session.persist(message);
+                            MessageDao.checkCapacityAndRemoveOldest(session, fiddMessageCacheCapacity);
                         }
 
                         Signature s = new Signature();
@@ -183,6 +229,10 @@ public class FiddPersistentCache implements FiddConnector {
                         s.setIndex(index);
                         s.setSignature(signatureData);
                         session.persist(s);
+
+                        if (fiddKeySignatureCacheCapacity > 0 && SignatureDao.count(session, SignatureType.KEY) > fiddKeySignatureCacheCapacity) {
+                            SignatureDao.removeOldest(session, SignatureType.KEY);
+                        }
 
                         tx.commit();
                     });
@@ -236,6 +286,7 @@ public class FiddPersistentCache implements FiddConnector {
                             message.setFidd(fidd);
                             message.setNumber(messageNumber);
                             session.persist(message);
+                            MessageDao.checkCapacityAndRemoveOldest(session, fiddMessageCacheCapacity);
                         }
 
                         Signature s = new Signature();
@@ -244,6 +295,10 @@ public class FiddPersistentCache implements FiddConnector {
                         s.setIndex(index);
                         s.setSignature(signatureData);
                         session.persist(s);
+
+                        if (fiddMessageSignatureCacheCapacity > 0 && SignatureDao.count(session, SignatureType.MSG) > fiddMessageSignatureCacheCapacity) {
+                            SignatureDao.removeOldest(session, SignatureType.MSG);
+                        }
 
                         tx.commit();
                     });
@@ -256,24 +311,99 @@ public class FiddPersistentCache implements FiddConnector {
         }
     }
 
+    private byte[] serializeCandidates(List<byte[]> candidates) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(baos);
+        dos.writeInt(candidates.size());
+        for (byte[] b : candidates) {
+            dos.writeInt(b.length);
+            dos.write(b);
+        }
+        return baos.toByteArray();
+    }
+
+    private List<byte[]> deserializeCandidates(byte[] blob) throws IOException {
+        ByteArrayInputStream bais = new ByteArrayInputStream(blob);
+        DataInputStream dis = new DataInputStream(bais);
+        int size = dis.readInt();
+        List<byte[]> list = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            int len = dis.readInt();
+            byte[] b = new byte[len];
+            dis.readFully(b);
+            list.add(b);
+        }
+        return list;
+    }
+
     // TODO: what if access was granted after caching event, need to invalidate by request?
     //  M.B. approve proper candidate callback on connector interface level?
     //  M.B. also support invalidation of cache on connector interface level?
     //  M.B. create a cache connector interface with invalidation methods then? - to support smth like "hard refresh" in UI on content service API?
     @Override
     public List<byte[]> getFiddKeyCandidates(long messageNumber, byte[] footprint) throws IOException {
-        throw new UnsupportedOperationException();
-        /*
-        MessageElementKey cacheKey = new MessageElementKey(fiddId, messageNumber, footprint);
-        List<byte[]> keyCandidates = ramCache.fiddKeyCandidatesCache.getIfPresent(cacheKey);
-        if (keyCandidates == null) {
-            keyCandidates = connector.getFiddKeyCandidates(messageNumber, footprint);
-            if (keyCandidates != null && !keyCandidates.isEmpty()) {
-                ramCache.fiddKeyCandidatesCache.put(cacheKey, keyCandidates);
-            }
+        String footprintBase64 = java.util.Base64.getEncoder().encodeToString(footprint);
+        FiddKeyCandidates candidates_;
+        try {
+            candidates_ = DBUtil.connectGetResultAndClose(session -> {
+                Transaction tx = session.beginTransaction();
+                FiddKeyCandidates c = FiddKeyCandidatesDao.findByFiddIdMessageNumberAndFootprint(session, fiddId, messageNumber, footprintBase64);
+                if (c != null) {
+                    c.setLastAccessTime(System.currentTimeMillis());
+                    session.merge(c);
+                }
+                tx.commit();
+                return c;
+            });
+        } catch (Exception e) {
+            LOGGER.warn("Persistent cache error: getFiddKeyCandidates({}, {}) ", messageNumber, footprintBase64, e);
+            candidates_ = null;
         }
-        return keyCandidates;
-        */
+
+        if (candidates_ != null) {
+            return deserializeCandidates(candidates_.getCandidatesBlob());
+        } else {
+            List<byte[]> keyCandidates = connector.getFiddKeyCandidates(messageNumber, footprint);
+
+            if (keyCandidates != null) {
+                try {
+                    byte[] blob = serializeCandidates(keyCandidates);
+                    DBUtil.connectCommitAndClose(session -> {
+                        Transaction tx = session.beginTransaction();
+                        Fidd fidd = FiddDao.findByName(session, fiddId);
+                        if (fidd == null) {
+                            fidd = new Fidd();
+                            fidd.setName(fiddId);
+                            session.persist(fidd);
+                        }
+                        Message message = MessageDao.findByFiddIdAndMessageNumber(session, fiddId, messageNumber);
+                        if (message == null) {
+                            message = new Message();
+                            message.setFidd(fidd);
+                            message.setNumber(messageNumber);
+                            session.persist(message);
+                            MessageDao.checkCapacityAndRemoveOldest(session, fiddMessageCacheCapacity);
+                        }
+
+                        FiddKeyCandidates c = new FiddKeyCandidates();
+                        c.setMessage(message);
+                        c.setFootprintBase64(footprintBase64);
+                        c.setCandidatesBlob(blob);
+                        session.persist(c);
+
+                        if (fiddKeyCandidatesCacheCapacity > 0 && FiddKeyCandidatesDao.count(session) > fiddKeyCandidatesCacheCapacity) {
+                            FiddKeyCandidatesDao.removeOldest(session);
+                        }
+
+                        tx.commit();
+                    });
+                } catch (Exception e) {
+                    LOGGER.warn("Persistent cache error: getFiddKeyCandidates({}, {}) ", messageNumber, footprintBase64, e);
+                }
+            }
+
+            return keyCandidates;
+        }
     }
 
     @Override
@@ -323,6 +453,7 @@ public class FiddPersistentCache implements FiddConnector {
                     
                     if (message.getId() == null) {
                         session.persist(message);
+                        MessageDao.checkCapacityAndRemoveOldest(session, fiddMessageCacheCapacity);
                     } else {
                         session.merge(message);
                     }
@@ -384,6 +515,7 @@ public class FiddPersistentCache implements FiddConnector {
                     
                     if (message.getId() == null) {
                         session.persist(message);
+                        MessageDao.checkCapacityAndRemoveOldest(session, fiddMessageCacheCapacity);
                     } else {
                         session.merge(message);
                     }
@@ -441,6 +573,7 @@ public class FiddPersistentCache implements FiddConnector {
                         message.setNumber(messageNumber);
                         message.setMessageSize(sizeData);
                         session.persist(message);
+                        MessageDao.checkCapacityAndRemoveOldest(session, fiddMessageCacheCapacity);
                     } else {
                         message.setMessageSize(sizeData);
                         session.merge(message);
@@ -498,6 +631,7 @@ public class FiddPersistentCache implements FiddConnector {
                             message.setFidd(fidd);
                             message.setNumber(messageNumber);
                             session.persist(message);
+                            MessageDao.checkCapacityAndRemoveOldest(session, fiddMessageCacheCapacity);
                         }
 
                         FiddKey k = new FiddKey();
@@ -560,6 +694,7 @@ public class FiddPersistentCache implements FiddConnector {
                         message.setFidd(fidd);
                         message.setNumber(messageNumber);
                         session.persist(message);
+                        MessageDao.checkCapacityAndRemoveOldest(session, fiddMessageCacheCapacity);
                     }
 
                     UnencryptedFiddKey key = new UnencryptedFiddKey();

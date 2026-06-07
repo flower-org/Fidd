@@ -2,6 +2,7 @@ package com.fidd.view.forms;
 
 import com.fidd.base.BaseRepositories;
 import com.fidd.base.DefaultBaseRepositories;
+import com.fidd.cache.FiddPersistentCache;
 import com.fidd.connectors.FiddConnector;
 import com.fidd.connectors.FiddConnectorFactory;
 import com.fidd.connectors.cache.ram.RamCache;
@@ -248,9 +249,15 @@ public class MainForm {
     FiddContentService getFiddContentServiceForConnection(String fiddId, FiddConnection fiddConnection) {
         FiddConnectorFactory fiddConnectorFactory = BASE_REPOSITORIES.fiddConnectorFactoryRepo().get(fiddConnection.connectorType());
         FiddConnector fiddConnector = checkNotNull(fiddConnectorFactory).createConnector(fiddConnection.url());
-        if (ramCache != null) {
+        /*if (ramCache != null) {
             fiddConnector = ramCache.createCachingConnector(fiddId, fiddConnector);
-        }
+        }*/
+        fiddConnector = new FiddPersistentCache(1024, 10240, 10240,
+                                                10240, 10240,
+                                                10240, 10240,
+                                                fiddId, fiddConnector);
+
+    //ramCache.createCachingConnector(fiddId, fiddConnector);
 
         return new WrapperFiddContentService(BASE_REPOSITORIES, fiddConnector, keySupplier);
     }

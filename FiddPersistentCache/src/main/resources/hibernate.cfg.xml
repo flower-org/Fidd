@@ -31,6 +31,7 @@
         <mapping class="com.fidd.data.model.UnencryptedFiddKey"/>
         <mapping class="com.fidd.data.model.FiddKey"/>
         <mapping class="com.fidd.data.model.Signature"/>
+        <mapping class="com.fidd.data.model.FiddKeyCandidates"/>
         <mapping class="com.fidd.data.model.MetadataChunk"/>
 
     </session-factory>

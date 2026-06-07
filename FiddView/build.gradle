@@ -108,6 +108,7 @@ dependencies {
     implementation project(':JavaFxUtils')
     implementation project(':KeyManagerFx')
     implementation project(':FiddCore')
+    implementation project(':FiddPersistentCache')
 
     annotationProcessor 'org.immutables:value:2.9.2'
 

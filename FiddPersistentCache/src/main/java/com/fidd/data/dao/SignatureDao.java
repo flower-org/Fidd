@@ -24,4 +24,20 @@ public class SignatureDao {
                 .setParameter("index", index)
                 .uniqueResult();
     }
+
+    public static long count(Session session, com.fidd.data.model.SignatureType type) {
+        return session.createQuery("SELECT count(s) FROM Signature s WHERE s.type = :type", Long.class)
+                .setParameter("type", type)
+                .uniqueResult();
+    }
+
+    public static void removeOldest(Session session, com.fidd.data.model.SignatureType type) {
+        Signature oldest = session.createQuery("SELECT s FROM Signature s WHERE s.type = :type ORDER BY s.lastAccessTime ASC", Signature.class)
+                .setParameter("type", type)
+                .setMaxResults(1)
+                .uniqueResult();
+        if (oldest != null) {
+            session.remove(oldest);
+        }
+    }
 }

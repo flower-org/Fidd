@@ -22,4 +22,23 @@ public class MessageDao {
                 .setParameter("messageNumber", messageNumber)
                 .uniqueResult();
     }
+
+    public static long count(Session session) {
+        return session.createQuery("SELECT count(m) FROM Message m", Long.class).uniqueResult();
+    }
+
+    public static void removeOldest(Session session) {
+        Message oldest = session.createQuery("SELECT m FROM Message m ORDER BY m.lastAccessTime ASC", Message.class)
+                .setMaxResults(1)
+                .uniqueResult();
+        if (oldest != null) {
+            session.remove(oldest);
+        }
+    }
+
+    public static void checkCapacityAndRemoveOldest(Session session, long capacity) {
+        if (capacity > 0 && count(session) > capacity) {
+            removeOldest(session);
+        }
+    }
 }
