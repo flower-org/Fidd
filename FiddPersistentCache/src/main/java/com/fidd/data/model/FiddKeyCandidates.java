@@ -13,7 +13,7 @@ public class FiddKeyCandidates {
     @JoinColumn(name = "message_id", nullable = false)
     private Message message;
 
-    @Column(name = "footprint_base64", nullable = false)
+    @Column(name = "footprint_base64", nullable = false, length = 2048)
     private String footprintBase64;
 
     @Lob

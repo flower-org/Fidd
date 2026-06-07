@@ -207,7 +207,6 @@ public class FiddPersistentCache implements FiddConnector {
             if (signatureData != null) {
                 try {
                     DBUtil.connectCommitAndClose(session -> {
-                        Transaction tx = session.beginTransaction();
                         Fidd fidd = FiddDao.findByName(session, fiddId);
                         if (fidd == null) {
                             fidd = new Fidd();
@@ -233,8 +232,6 @@ public class FiddPersistentCache implements FiddConnector {
                         if (fiddKeySignatureCacheCapacity > 0 && SignatureDao.count(session, SignatureType.KEY) > fiddKeySignatureCacheCapacity) {
                             SignatureDao.removeOldest(session, SignatureType.KEY);
                         }
-
-                        tx.commit();
                     });
                 } catch (Exception e) {
                     LOGGER.warn("Persistent cache error: getFiddKeySignature({}, {}) ", messageNumber, index, e);
@@ -273,7 +270,6 @@ public class FiddPersistentCache implements FiddConnector {
             if (signatureData != null) {
                 try {
                     DBUtil.connectCommitAndClose(session -> {
-                        Transaction tx = session.beginTransaction();
                         Fidd fidd = FiddDao.findByName(session, fiddId);
                         if (fidd == null) {
                             fidd = new Fidd();
@@ -299,8 +295,6 @@ public class FiddPersistentCache implements FiddConnector {
                         if (fiddMessageSignatureCacheCapacity > 0 && SignatureDao.count(session, SignatureType.MSG) > fiddMessageSignatureCacheCapacity) {
                             SignatureDao.removeOldest(session, SignatureType.MSG);
                         }
-
-                        tx.commit();
                     });
                 } catch (Exception e) {
                     LOGGER.warn("Persistent cache error: getFiddMessageSignature({}, {}) ", messageNumber, index, e);
@@ -369,7 +363,6 @@ public class FiddPersistentCache implements FiddConnector {
                 try {
                     byte[] blob = serializeCandidates(keyCandidates);
                     DBUtil.connectCommitAndClose(session -> {
-                        Transaction tx = session.beginTransaction();
                         Fidd fidd = FiddDao.findByName(session, fiddId);
                         if (fidd == null) {
                             fidd = new Fidd();
@@ -394,8 +387,6 @@ public class FiddPersistentCache implements FiddConnector {
                         if (fiddKeyCandidatesCacheCapacity > 0 && FiddKeyCandidatesDao.count(session) > fiddKeyCandidatesCacheCapacity) {
                             FiddKeyCandidatesDao.removeOldest(session);
                         }
-
-                        tx.commit();
                     });
                 } catch (Exception e) {
                     LOGGER.warn("Persistent cache error: getFiddKeyCandidates({}, {}) ", messageNumber, footprintBase64, e);
@@ -435,7 +426,6 @@ public class FiddPersistentCache implements FiddConnector {
 
             try {
                 DBUtil.connectCommitAndClose(session -> {
-                    Transaction tx = session.beginTransaction();
                     Fidd fidd = FiddDao.findByName(session, fiddId);
                     if (fidd == null) {
                         fidd = new Fidd();
@@ -457,8 +447,6 @@ public class FiddPersistentCache implements FiddConnector {
                     } else {
                         session.merge(message);
                     }
-
-                    tx.commit();
                 });
             } catch (Exception e) {
                 LOGGER.warn("Persistent cache error: getFiddKeySignatureCount({}) ", messageNumber, e);
@@ -497,7 +485,6 @@ public class FiddPersistentCache implements FiddConnector {
 
             try {
                 DBUtil.connectCommitAndClose(session -> {
-                    Transaction tx = session.beginTransaction();
                     Fidd fidd = FiddDao.findByName(session, fiddId);
                     if (fidd == null) {
                         fidd = new Fidd();
@@ -519,8 +506,6 @@ public class FiddPersistentCache implements FiddConnector {
                     } else {
                         session.merge(message);
                     }
-
-                    tx.commit();
                 });
             } catch (Exception e) {
                 LOGGER.warn("Persistent cache error: getFiddMessageSignatureCount({}) ", messageNumber, e);
@@ -559,7 +544,6 @@ public class FiddPersistentCache implements FiddConnector {
 
             try {
                 DBUtil.connectCommitAndClose(session -> {
-                    Transaction tx = session.beginTransaction();
                     Fidd fidd = FiddDao.findByName(session, fiddId);
                     if (fidd == null) {
                         fidd = new Fidd();
@@ -578,8 +562,6 @@ public class FiddPersistentCache implements FiddConnector {
                         message.setMessageSize(sizeData);
                         session.merge(message);
                     }
-
-                    tx.commit();
                 });
             } catch (Exception e) {
                 LOGGER.warn("Persistent cache error: getFiddMessageSize({}) ", messageNumber, e);
@@ -618,7 +600,6 @@ public class FiddPersistentCache implements FiddConnector {
             if (fiddKeyData != null) {
                 try {
                     DBUtil.connectCommitAndClose(session -> {
-                        Transaction tx = session.beginTransaction();
                         Fidd fidd = FiddDao.findByName(session, fiddId);
                         if (fidd == null) {
                             fidd = new Fidd();
@@ -643,7 +624,6 @@ public class FiddPersistentCache implements FiddConnector {
                         if (fiddKeyCacheCapacity > 0 && FiddKeyDao.count(session) > fiddKeyCacheCapacity) {
                             FiddKeyDao.removeOldest(session);
                         }
-                        tx.commit();
                     });
                 } catch (Exception e) {
                     LOGGER.warn("Persistent cache error: getFiddKey({}, {}) ", messageNumber, keyName, e);
@@ -681,7 +661,6 @@ public class FiddPersistentCache implements FiddConnector {
 
             try {
                 DBUtil.connectCommitAndClose(session -> {
-                    Transaction tx = session.beginTransaction();
                     Fidd fidd = FiddDao.findByName(session, fiddId);
                     if (fidd == null) {
                         fidd = new Fidd();
@@ -705,7 +684,6 @@ public class FiddPersistentCache implements FiddConnector {
                     if (unencryptedFiddKeyCacheCapacity > 0 && UnencryptedFiddKeyDao.count(session) > unencryptedFiddKeyCacheCapacity) {
                         UnencryptedFiddKeyDao.removeOldest(session);
                     }
-                    tx.commit();
                 });
             } catch (Exception e) {
                 LOGGER.warn("Persistent cache error: getUnencryptedFiddKey({}) ",messageNumber , e);

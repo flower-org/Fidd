@@ -127,8 +127,6 @@ public class PersistentChunkCachingInputStream extends InputStream {
     protected void cacheChunk(FiddConnector.Chunk<?> chunk, byte[] chunkBytes) {
         try {
             DBUtil.connectCommitAndClose(session -> {
-                Transaction tx = session.beginTransaction();
-
                 Fidd fidd = FiddDao.findByName(session, fiddId);
                 if (fidd == null) {
                     fidd = new Fidd();
@@ -144,6 +142,12 @@ public class PersistentChunkCachingInputStream extends InputStream {
                     MessageDao.checkCapacityAndRemoveOldest(session, fiddMessageCacheCapacity);
                 }
 
+                MetadataChunk existingChunk = MetadataChunkDao.findByFiddIdMessageNumberAndRange(
+                        session, fiddId, messageNumber, chunk.offset(), chunk.offset() + chunk.length());
+                if (existingChunk != null) {
+                    return;
+                }
+
                 MetadataChunk metadataChunk = new MetadataChunk();
                 metadataChunk.setMessage(message);
                 metadataChunk.setRangeFrom(chunk.offset());
@@ -154,8 +158,6 @@ public class PersistentChunkCachingInputStream extends InputStream {
                 while (MetadataChunkDao.getTotalSizeForMessage(session, fiddId, messageNumber) > maxTotalChunkSize) {
                     MetadataChunkDao.removeOldestForMessage(session, fiddId, messageNumber);
                 }
-
-                tx.commit();
             });
         } catch (Exception e) {
             LOGGER.warn("Persistent cache error: cacheChunk({}, {}) ", messageNumber, chunk.offset(), e);
