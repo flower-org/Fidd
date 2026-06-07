@@ -24,6 +24,9 @@ public class Signature {
     @Column(name = "last_access_time")
     private Long lastAccessTime;
 
+    @Column(name = "index")
+    private int index;
+
     public Long getId() {
         return id;
     }
@@ -54,6 +57,14 @@ public class Signature {
 
     public void setSignature(byte[] signature) {
         this.signature = signature;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
     }
 
     @PrePersist

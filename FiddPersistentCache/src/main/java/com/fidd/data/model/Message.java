@@ -23,14 +23,14 @@ public class Message {
     @OneToOne(mappedBy = "message", cascade = CascadeType.ALL)
     private UnencryptedFiddKey unencryptedFiddKey;
 
-    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL)
-    private List<FiddKey> fiddKeys;
+    @Column(name = "message_size")
+    private Long messageSize;
 
-    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL)
-    private List<Signature> signatures;
+    @Column(name = "fidd_key_count")
+    private Long fiddKeySignatureCount;
 
-    @OneToOne(mappedBy = "message", cascade = CascadeType.ALL)
-    private MessageSize messageSize;
+    @Column(name = "signature_count")
+    private Long fiddMesageSignatureCount;
 
     @OneToMany(mappedBy = "message", cascade = CascadeType.ALL)
     private List<MetadataChunk> metadataChunks;
@@ -78,27 +78,27 @@ public class Message {
         this.unencryptedFiddKey = unencryptedFiddKey;
     }
 
-    public List<FiddKey> getFiddKeys() {
-        return fiddKeys;
+    public Long getFiddKeySignatureCount() {
+        return fiddKeySignatureCount;
     }
 
-    public void setFiddKeys(List<FiddKey> fiddKeys) {
-        this.fiddKeys = fiddKeys;
+    public void setFiddKeySignatureCount(Long fiddKeySignatureCount) {
+        this.fiddKeySignatureCount = fiddKeySignatureCount;
     }
 
-    public List<Signature> getSignatures() {
-        return signatures;
+    public Long getFiddMesageSignatureCount() {
+        return fiddMesageSignatureCount;
     }
 
-    public void setSignatures(List<Signature> signatures) {
-        this.signatures = signatures;
+    public void setFiddMesageSignatureCount(Long fiddMesageSignatureCount) {
+        this.fiddMesageSignatureCount = fiddMesageSignatureCount;
     }
 
-    public MessageSize getMessageSize() {
+    public Long getMessageSize() {
         return messageSize;
     }
 
-    public void setMessageSize(MessageSize messageSize) {
+    public void setMessageSize(Long messageSize) {
         this.messageSize = messageSize;
     }
 

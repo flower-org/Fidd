@@ -15,4 +15,8 @@ public class FiddDao {
     public static void delete(Session session, Fidd fidd) {
         session.remove(fidd);
     }
+
+    public static Fidd findByName(Session session, String name) {
+        return session.find(Fidd.class, name);
+    }
 }

@@ -15,4 +15,11 @@ public class MessageDao {
     public static void delete(Session session, Message message) {
         session.remove(message);
     }
+
+    public static Message findByFiddIdAndMessageNumber(Session session, String fiddId, long messageNumber) {
+        return session.createQuery("SELECT m FROM Message m JOIN m.fidd f WHERE f.name = :fiddId AND m.number = :messageNumber", Message.class)
+                .setParameter("fiddId", fiddId)
+                .setParameter("messageNumber", messageNumber)
+                .uniqueResult();
+    }
 }
