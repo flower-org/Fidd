@@ -1,6 +1,8 @@
 plugins {
     id 'java'
+    id 'application'
     id "net.ltgt.errorprone" version "3.0.1"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
 }
 
 group 'com.poplavok'
@@ -12,6 +14,11 @@ repositories {
 
 sourceCompatibility = '17'
 targetCompatibility = '17'
+
+application {
+    mainModule = 'com.poplavok'
+    mainClass = 'com.fidd.data.DemoApp'
+}
 
 compileJava {
     options.compilerArgs << '-parameters'
@@ -27,6 +34,7 @@ sourceSets {
 
 dependencies {
     implementation project(':FiddCore')
+    implementation project(':MySqlConnector')
 
     annotationProcessor "org.immutables:value:2.10.1"
     annotationProcessor "com.uber.nullaway:nullaway:0.10.26"
@@ -46,9 +54,11 @@ dependencies {
     implementation 'com.google.guava:guava:33.5.0-jre'
     implementation 'com.google.guava:guava-testlib:33.3.1-jre'
 
+    implementation 'org.hibernate.orm:hibernate-core:7.2.6.Final'
     implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
-
     implementation 'io.vertx:vertx-mysql-client:5.1.1'
+    runtimeOnly 'com.h2database:h2:2.3.232'
+    runtimeOnly 'com.mysql:mysql-connector-j:9.1.0'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.0'
@@ -68,17 +78,23 @@ test {
 import net.ltgt.gradle.errorprone.CheckSeverity
 
 tasks.withType(JavaCompile) {
-    // remove the if condition if you want to run NullAway on test code
     if (!name.toLowerCase().contains("test") && !name.toLowerCase().contains("build")) {
         options.errorprone {
-            //Exclude Immutables generated code
             excludedPaths.set(".*[\\\\/]generated[\\\\/]sources[\\\\/].*")
             check("NullAway", CheckSeverity.ERROR)
-            option("NullAway:AnnotatedPackages", "com.poplavok")
+            option("NullAway:AnnotatedPackages", "com.poplavok,com.fidd")
         }
     } else {
         options.errorprone {
             check("DoNotMock", CheckSeverity.WARN)
         }
+    }
+}
+
+shadowJar { manifest { attributes 'Main-Class': 'com.fidd.data.DemoApp' } }
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.fidd.data.DemoApp'
     }
 }
