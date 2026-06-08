@@ -17,7 +17,7 @@ public class FiddKeyCandidates {
     private String footprintBase64;
 
     @Lob
-    @Column(name = "candidates_blob")
+    @Column(name = "candidates_blob", columnDefinition = "MEDIUMBLOB")
     private byte[] candidatesBlob;
 
     @Column(name = "last_access_time")

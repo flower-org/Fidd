@@ -7,7 +7,7 @@
         <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
         <property name="hibernate.connection.url">jdbc:mysql://localhost:3306/fidd</property>
         <property name="hibernate.connection.username">root</property>
-        <property name="hibernate.connection.password">rootpass</property>
+        <property name="hibernate.connection.password">rootpassword</property>
 
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
         <property name="hibernate.hbm2ddl.auto">update</property>
@@ -23,6 +23,8 @@
 
         <!-- Mappings for Fidd Entities -->
         <mapping class="com.fidd.data.model.Fidd"/>
+        <mapping class="com.fidd.data.model.FiddTag"/>
+        <mapping class="com.fidd.data.model.StorageAccount"/>
         <mapping class="com.fidd.data.model.Message"/>
         <mapping class="com.fidd.data.model.UnencryptedFiddKey"/>
         <mapping class="com.fidd.data.model.FiddKey"/>

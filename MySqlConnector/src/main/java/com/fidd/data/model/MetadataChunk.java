@@ -23,7 +23,7 @@ public class MetadataChunk {
     private Long lastAccessTime;
 
     @Lob
-    @Column(name = "data")
+    @Column(name = "data", columnDefinition = "MEDIUMBLOB")
     private byte[] data;
 
     public Long getId() {

@@ -14,7 +14,14 @@ public class Message {
     private Long number;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fidd_name", nullable = false)
+    @JoinColumn(name = "storage_account_id", nullable = false)
+    private StorageAccount storageAccount;
+
+    @Column(name = "path", length = 2048)
+    private String path;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fidd_id", nullable = false)
     private Fidd fidd;
 
     @Column(name = "metadata_range")
@@ -52,6 +59,22 @@ public class Message {
 
     public void setNumber(Long number) {
         this.number = number;
+    }
+
+    public StorageAccount getStorageAccount() {
+        return storageAccount;
+    }
+
+    public void setStorageAccount(StorageAccount storageAccount) {
+        this.storageAccount = storageAccount;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
     }
 
     public Fidd getFidd() {
