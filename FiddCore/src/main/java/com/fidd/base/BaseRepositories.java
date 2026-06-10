@@ -5,6 +5,7 @@ import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKeySerializer;
+import com.fidd.core.info.MetadataSectionInfoSerializer;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
@@ -18,6 +19,7 @@ public interface BaseRepositories {
     Repository<MetadataContainerSerializer> metadataContainerFormatRepo();
     Repository<FiddFileMetadataSerializer> fiddFileMetadataFormatRepo();
     Repository<LogicalFileMetadataSerializer> logicalFileMetadataFormatRepo();
+    Repository<MetadataSectionInfoSerializer> metadataSectionInfoFormatRepo();
 
     Repository<PublicKeySerializer> publicKeyFormatRepo();
     Repository<StableTransformForAlgo> stableTransformRepo();

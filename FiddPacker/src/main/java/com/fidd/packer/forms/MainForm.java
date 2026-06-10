@@ -10,6 +10,7 @@ import com.fidd.core.crc.CrcCalculator;
 import com.fidd.core.encryption.EncryptionAlgorithm;
 import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKeySerializer;
+import com.fidd.core.info.MetadataSectionInfoSerializer;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
 import com.fidd.core.pki.PublicKeySerializer;
@@ -131,6 +132,7 @@ public class MainForm {
     final static String ADD_PROGRESSIVE_CRC = "ADD_PROGRESSIVE_CRC";
     final static String PROGRESSIVE_CRC_MIN_FILE_SIZE = "PROGRESSIVE_CRC_MIN_FILE_SIZE";
     final static String PROGRESSIVE_CRC_CALCULATOR = "PROGRESSIVE_CRC_CALCULATOR";
+    final static String METADATA_SECTION_INFO_FORMAT = "METADATA_SECTION_INFO_FORMAT";
 
     final static String SIGNATURE_FILES_DELIMITER = ";";
 
@@ -210,6 +212,10 @@ public class MainForm {
     @FXML @Nullable CheckBox encryptDecryptSubscribersFileCheckBox;
     @FXML @Nullable CheckBox selfSubscribeCheckBox;
     @FXML @Nullable CheckBox highAmbiguityCheckBox;
+
+    @FXML @Nullable CheckBox singleMetadataChunkCheckBox;
+    @FXML @Nullable CheckBox createFiddMetaCheckBox;
+    @FXML @Nullable ComboBox<String> fiddMetaFileFormatComboBox;
 
     BaseRepositories baseRepositories;
     @Nullable ObservableList<SubscriberList.Subscriber> subscribers;
@@ -340,6 +346,7 @@ public class MainForm {
         initRepositoryComboBox(baseRepositories.metadataContainerFormatRepo(), checkNotNull(metadataContainerComboBox), getUserPreference(METADATA_CONTAINER));
         initRepositoryComboBox(baseRepositories.crcCalculatorsRepo(), checkNotNull(crcCalculatorComboBox), getUserPreference(CRC_CALCULATOR));
         initRepositoryComboBox(baseRepositories.crcCalculatorsRepo(), checkNotNull(progressiveCrcCalculatorComboBox), getUserPreference(PROGRESSIVE_CRC_CALCULATOR));
+        initRepositoryComboBox(baseRepositories.metadataSectionInfoFormatRepo(), checkNotNull(fiddMetaFileFormatComboBox), getUserPreference(METADATA_SECTION_INFO_FORMAT));
 
         initCheckBox(checkNotNull(signFiddFileAndFiddKeyCheckBox), getUserPreference(SIGN_FIDD_FILE_AND_FIDD_KEY));
         initCheckBox(checkNotNull(signLogicalFilesCheckBox), getUserPreference(SIGN_LOGICAL_FILES));
@@ -399,6 +406,22 @@ public class MainForm {
         checkNotNull(validateLogicalFilesCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
 
         checkNotNull(publicKeySourceComboBox).valueProperty().addListener(this::fiddPackerTextChanged);
+
+        checkNotNull(singleMetadataChunkCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
+            checkNotNull(createFiddMetaCheckBox).setDisable(!newValue);
+            checkNotNull(fiddMetaFileFormatComboBox).setDisable(!newValue || !checkNotNull(createFiddMetaCheckBox).isSelected());
+        });
+        checkNotNull(singleMetadataChunkCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+
+        checkNotNull(createFiddMetaCheckBox).selectedProperty().addListener((observable, oldValue, newValue) -> {
+            checkNotNull(fiddMetaFileFormatComboBox).setDisable(!checkNotNull(singleMetadataChunkCheckBox).isSelected() || !newValue);
+        });
+        checkNotNull(createFiddMetaCheckBox).selectedProperty().addListener(this::fiddPackerBoolChanged);
+
+        boolean singleMetadataChunkSelected = checkNotNull(singleMetadataChunkCheckBox).isSelected();
+        boolean createFiddMetaSelected = checkNotNull(createFiddMetaCheckBox).isSelected();
+        checkNotNull(createFiddMetaCheckBox).setDisable(!singleMetadataChunkSelected);
+        checkNotNull(fiddMetaFileFormatComboBox).setDisable(!singleMetadataChunkSelected || !createFiddMetaSelected);
     }
 
     public void fiddPackerTextChanged(ObservableValue<? extends String> observable, String _old, String _new) {
@@ -577,6 +600,7 @@ public class MainForm {
             LogicalFileMetadataSerializer logicalFileMetadataSerializer = getComboBoxSelectionFromRepo(baseRepositories.logicalFileMetadataFormatRepo(), logicalFileMetadataComboBox);
             EncryptionAlgorithm encryptionAlgorithm = getComboBoxSelectionFromRepo(baseRepositories.encryptionAlgorithmRepo(), encryptionAlgorithmComboBox);
             RandomGeneratorType randomGenerator = getComboBoxSelectionFromRepo(baseRepositories.randomGeneratorsRepo(), randomGeneratorComboBox);
+            MetadataSectionInfoSerializer metadataSectionInfoSerializer = getComboBoxSelectionFromRepo(baseRepositories.metadataSectionInfoFormatRepo(), fiddMetaFileFormatComboBox);
             long minGapSize;
             String minGapSizeStr = checkNotNull(minGapSizeTextField).textProperty().get();
             try { minGapSize = Long.parseLong(minGapSizeStr);
@@ -597,8 +621,9 @@ public class MainForm {
             boolean addFiddFileMetadataSignature = checkNotNull(signFiddFileMetadataCheckBox).selectedProperty().get();
             boolean addLogicalFileSignatures = checkNotNull(signLogicalFilesCheckBox).selectedProperty().get();
             boolean addLogicalFileMetadataSignatures = checkNotNull(signLogicalFileMetadatasCheckBox).selectedProperty().get();
-            // TODO: add UI control for setting `alignAllMetadatas`
-            boolean alignAllMetadatas = true;
+            boolean alignAllMetadatas = checkNotNull(singleMetadataChunkCheckBox).selectedProperty().get();
+            boolean createFiddMeta = checkNotNull(createFiddMetaCheckBox).selectedProperty().get();
+
             boolean includePublicKey = checkNotNull(includePublicKeyCheckBox).selectedProperty().get();
 
             PublicKeySerializer publicKeySerializer = getComboBoxSelectionFromRepo(baseRepositories.publicKeyFormatRepo(), publicKeyFormatComboBox);
@@ -701,7 +726,10 @@ public class MainForm {
                     minProgressiveCrcFileSize,
                     ONE_MEBIBYTE,
                     List.of(progressiveCrcCalculator),
-                    alignAllMetadatas
+
+                    alignAllMetadatas,
+                    createFiddMeta,
+                    metadataSectionInfoSerializer
             );
 
             formMessageNumber(packedContentDirectoryRoot);

@@ -17,6 +17,8 @@ import com.fidd.core.fiddfile.FiddFileMetadataSerializer;
 import com.fidd.core.fiddfile.yaml.YamlFiddFileMetadataSerializer;
 import com.fidd.core.fiddkey.FiddKeySerializer;
 import com.fidd.core.fiddkey.yaml.YamlFiddKeySerializer;
+import com.fidd.core.info.MetadataSectionInfoSerializer;
+import com.fidd.core.info.yaml.YamlMetadataSectionInfoSerializer;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
 import com.fidd.core.logicalfile.yaml.YamlLogicalFileMetadataSerializer;
 import com.fidd.core.metadata.MetadataContainerSerializer;
@@ -36,6 +38,7 @@ public class DefaultBaseRepositories implements BaseRepositories {
     static final Repository<EncryptionAlgorithm> ENCRYPTION_ALGORITHM_REPO;
     static final Repository<FiddKeySerializer> FIDD_KEY_FORMAT_REPO;
     static final Repository<MetadataContainerSerializer> METADATA_SECTION_FORMAT_REPO;
+    static final Repository<MetadataSectionInfoSerializer> METADATA_SECTION_INFO_FORMAT_REPO;
     static final Repository<FiddFileMetadataSerializer> FIDD_FILE_METADATA_FORMAT_REPO;
     static final Repository<LogicalFileMetadataSerializer> LOGICAL_FILE_METADATA_FORMAT_REPO;
     static final Repository<PublicKeySerializer> PUBLIC_KEY_FORMAT_REPO;
@@ -63,6 +66,9 @@ public class DefaultBaseRepositories implements BaseRepositories {
 
         YamlFiddFileMetadataSerializer yamlFiddFileMetadataSerializer = new YamlFiddFileMetadataSerializer();
         FIDD_FILE_METADATA_FORMAT_REPO = new MapRepository<>(yamlFiddFileMetadataSerializer.name(), List.of(yamlFiddFileMetadataSerializer));
+
+        YamlMetadataSectionInfoSerializer yamlMetadataSectionInfoSerializer = new YamlMetadataSectionInfoSerializer();
+        METADATA_SECTION_INFO_FORMAT_REPO = new MapRepository<>(yamlMetadataSectionInfoSerializer.name(), List.of(yamlMetadataSectionInfoSerializer));
 
         YamlLogicalFileMetadataSerializer yamlLogicalFileMetadataSerializer = new YamlLogicalFileMetadataSerializer();
         LOGICAL_FILE_METADATA_FORMAT_REPO = new MapRepository<>(yamlLogicalFileMetadataSerializer.name(), List.of(yamlLogicalFileMetadataSerializer));
@@ -102,6 +108,11 @@ public class DefaultBaseRepositories implements BaseRepositories {
     @Override
     public Repository<MetadataContainerSerializer> metadataContainerFormatRepo() {
         return METADATA_SECTION_FORMAT_REPO;
+    }
+
+    @Override
+    public Repository<MetadataSectionInfoSerializer> metadataSectionInfoFormatRepo() {
+        return METADATA_SECTION_INFO_FORMAT_REPO;
     }
 
     @Override

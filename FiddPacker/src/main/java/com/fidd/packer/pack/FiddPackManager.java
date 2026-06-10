@@ -14,6 +14,9 @@ import com.fidd.core.fiddkey.FiddKeySerializer;
 import com.fidd.core.fiddkey.ImmutableFiddKey;
 import com.fidd.core.fiddkey.ImmutableSection;
 import com.fidd.core.fiddkey.ImmutableSectionWithHeader;
+import com.fidd.core.info.ImmutableMetadataSectionInfo;
+import com.fidd.core.info.MetadataSectionInfo;
+import com.fidd.core.info.MetadataSectionInfoSerializer;
 import com.fidd.core.logicalfile.ImmutableLogicalFileMetadata;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
 import com.fidd.core.logicalfile.LogicalFileMetadataSerializer;
@@ -140,7 +143,9 @@ public class FiddPackManager {
                                 long progressiveCrcChunkSize,
                                 List<CrcCalculator> progressiveCrcCalculators,
 
-                                boolean alignAllMetadatas
+                                boolean alignAllMetadatas,
+                                boolean createFiddMeta,
+                                MetadataSectionInfoSerializer metadataSectionInfoSerializer
     ) throws IOException {
         // Fidd Key parts will be populated as we go
         FiddKey.Section fiddFileMetadataSection = null;
@@ -201,6 +206,8 @@ public class FiddPackManager {
             // Establish the structure of Fidd File
             sectionDescriptors = rearrangeSections(sectionDescriptors, minGapSize, maxGapSize, randomGenerator.generator(), alignAllMetadatas);
 
+            long metadataStart = -1;
+            long metadataEnd = -1;
             for (SectionDescriptor sectionDescriptor : sectionDescriptors) {
                 // Add gap before Section
                 position += appendGap(outputStream, sectionDescriptor.getGapBefore(), randomGenerator.generator());
@@ -239,7 +246,10 @@ public class FiddPackManager {
                                     signerCheckers, authorsPrivateKey,
                                     addCrcsToFiddKey, crcCalculators,
                                     addProgressiveCrcs, minProgressiveCrcFileSize, progressiveCrcChunkSize, progressiveCrcCalculators);
+
+                    if (metadataStart < 0) { metadataStart = position; }
                     position += logicalFileMetadataSectionLengthAndCrc.length();
+                    metadataEnd = position;
                     file.setLogicalFileMetadataSectionLengthAndCrc(logicalFileMetadataSectionLengthAndCrc);
                 } else if (sectionDescriptor instanceof FiddFileMetadataSectionDescriptor) {
                     // 3.2.2.1 Encrypt and add FiddFileMetadata
@@ -258,7 +268,9 @@ public class FiddPackManager {
                             fiddFileMetadataSectionKey, addCrcsToFiddKey,
                             crcCalculators, fiddFileMetadataSectionLengthAndCrc.crcs());
 
+                    if (metadataStart < 0) { metadataStart = position; }
                     position = position + length;
+                    metadataEnd = position;
                 } else {
                     throw new RuntimeException("Unknown SectionDescriptor type " + sectionDescriptor.getClass());
                 }
@@ -267,6 +279,17 @@ public class FiddPackManager {
             // 3.3. Append last gap
             final long lastGapSize = randomLongBetween(minGapSize, maxGapSize, randomGenerator.generator());
             appendGap(outputStream, lastGapSize, randomGenerator.generator());
+
+            if (alignAllMetadatas && createFiddMeta) {
+                MetadataSectionInfo metadataSectionInfo = ImmutableMetadataSectionInfo.builder()
+                        .offset(metadataStart)
+                        .length((int)(metadataEnd - metadataStart))
+                        .build();
+
+                byte[] metadataSectionInfoBytes = metadataSectionInfoSerializer.serialize(metadataSectionInfo);
+                File metadataSectionInfoFile = new File(packedContentDirectory, "fidd.meta");
+                Files.write(metadataSectionInfoFile.toPath(), metadataSectionInfoBytes);
+            }
         }
 
         // 4. Form FiddKey file

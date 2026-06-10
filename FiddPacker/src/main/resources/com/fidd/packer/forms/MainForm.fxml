@@ -20,7 +20,7 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<SplitPane dividerPositions="0.0" orientation="VERTICAL" prefHeight="829.0" prefWidth="895.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.fidd.packer.forms.MainForm">
+<SplitPane dividerPositions="0.0" orientation="VERTICAL" prefHeight="829.0" prefWidth="895.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.fidd.packer.forms.MainForm">
         <items>
         <AnchorPane fx:id="topPane" minHeight="250.0" prefHeight="250.0" prefWidth="893.0" />
         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
@@ -40,7 +40,7 @@
                                                  <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                                  <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                     <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                                    <RowConstraints maxHeight="100.0" minHeight="100.0" prefHeight="100.0" vgrow="SOMETIMES" />
+                                    <RowConstraints maxHeight="150.0" minHeight="150.0" prefHeight="150.0" vgrow="SOMETIMES" />
                                     <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                     <RowConstraints maxHeight="100.0" minHeight="150.0" prefHeight="150.0" vgrow="SOMETIMES" />
                                     <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
@@ -110,6 +110,8 @@
                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                           <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                       </rowConstraints>
                                        <children>
                                           <Label text="Fidd Key:" />
@@ -120,6 +122,8 @@
                                           <ComboBox fx:id="logicalFileMetadataComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                                           <ComboBox fx:id="metadataContainerComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                           <Label text="Metadata Section:" GridPane.rowIndex="1" />
+                                          <Label text="Single Metadata chunk:" GridPane.rowIndex="4" />
+                                          <CheckBox fx:id="singleMetadataChunkCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                                        </children>
                                     </GridPane>
                                     <GridPane GridPane.rowIndex="5">
@@ -198,6 +202,8 @@
                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                           <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                       </rowConstraints>
                                        <children>
                                           <Label text="Encryption Algorithm:" />
@@ -208,6 +214,10 @@
                                           <ComboBox fx:id="randomGeneratorComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                           <TextField fx:id="minGapSizeTextField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                           <TextField fx:id="maxGapSizeTextField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                          <Label text="Create `fidd.meta`:" GridPane.rowIndex="4" />
+                                          <CheckBox fx:id="createFiddMetaCheckBox" mnemonicParsing="false" selected="true" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                                          <Label text="`fidd.meta` file format:" GridPane.rowIndex="5" />
+                                          <ComboBox fx:id="fiddMetaFileFormatComboBox" prefWidth="250.0" GridPane.columnIndex="1" GridPane.rowIndex="5" />
                                        </children>
                                     </GridPane>
                                     <Label style="-fx-font-weight: bold;" text="Fidd Pack Settings:" GridPane.rowIndex="2" />
