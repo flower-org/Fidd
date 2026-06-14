@@ -133,8 +133,9 @@ public class ClientTest {
         // 2. the actual download
         responses.put("/actual-download", "File data here");
 
-        InputStream is = client.downloadFile("/file.txt");
-        assertEquals("File data here", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+        try (InputStream is = client.downloadFile("/file.txt")) {
+            assertEquals("File data here", new String(is.readAllBytes(), StandardCharsets.UTF_8));
+        }
     }
 
     @Test

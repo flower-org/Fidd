@@ -63,7 +63,7 @@ tasks.withType(JavaCompile) {
         options.errorprone {
             check("NullAway", CheckSeverity.ERROR)
             excludedPaths.set(".*[\\\\/]generated[\\\\/]sources[\\\\/].*")
-            option("NullAway:AnnotatedPackages", "com.flower")
+            option("NullAway:AnnotatedPackages", "com.fidd")
         }
     } else {
         options.errorprone {

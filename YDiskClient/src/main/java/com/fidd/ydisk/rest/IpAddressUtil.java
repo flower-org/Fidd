@@ -12,7 +12,6 @@ public class IpAddressUtil {
     public static boolean isIPv4Address(String input) {
         IPAddressString ipAddressString = new IPAddressString(input);
         IPAddress ipAddress = ipAddressString.getAddress();
-        System.out.println(ipAddress);
         return ipAddress != null && ipAddress.isIPv4();
     }
 

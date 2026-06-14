@@ -8,7 +8,9 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
+import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -58,8 +60,8 @@ public class Client {
 
     protected <T> T send(Request request, Class<T> responseClass) throws Exception {
         try (Response response = httpClient.newCall(request).execute()) {
-
-            String body = response.body().string();
+            ResponseBody responseBody = response.body();
+            String body = responseBody != null ? responseBody.string() : "";
 
             if (!response.isSuccessful()) {
                 try {
@@ -104,14 +106,14 @@ public class Client {
         return downloadFileWithRange(remotePath, 0, null);
     }
 
-    public InputStream downloadFileWithRange(String remotePath, long offset, Long limit) throws Exception {
+    public InputStream downloadFileWithRange(String remotePath, long offset, @Nullable Long limit) throws Exception {
         Link downloadLink = getDownloadLink(remotePath);
         URI uri = URI.create(downloadLink.href());
 
         return downloadOrRedirect(uri, offset, limit, 0);
     }
 
-    protected InputStream downloadOrRedirect(URI uri, long offset, Long limit, int redirectCount) throws Exception {
+    protected InputStream downloadOrRedirect(URI uri, long offset, @Nullable Long limit, int redirectCount) throws Exception {
         if (redirectCount > 5) {
             throw new RuntimeException("Too many redirects");
         }
@@ -157,7 +159,12 @@ public class Client {
             );
         }
 
-        return response.body().byteStream();
+        okhttp3.ResponseBody responseBody = response.body();
+        if (responseBody == null) {
+            response.close();
+            throw new RuntimeException("Download response had no body");
+        }
+        return responseBody.byteStream();
     }
 
     public Link getUploadLink(String remotePath, boolean overwrite) throws Exception {
