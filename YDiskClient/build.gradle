@@ -31,6 +31,12 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
 
+    implementation("com.github.ben-manes.caffeine:caffeine:3.2.0")
+    implementation 'com.github.seancfoley:ipaddress:5.5.1'
+
+    implementation "com.squareup.okhttp3:okhttp:4.12.0"
+    implementation "com.squareup.okhttp3:logging-interceptor:4.12.0"
+
     implementation 'org.slf4j:slf4j-api:1.7.10'
 
     testImplementation 'org.slf4j:slf4j-simple:1.7.10'
@@ -57,7 +63,7 @@ tasks.withType(JavaCompile) {
         options.errorprone {
             check("NullAway", CheckSeverity.ERROR)
             excludedPaths.set(".*[\\\\/]generated[\\\\/]sources[\\\\/].*")
-            option("NullAway:AnnotatedPackages", "com.flower")
+            option("NullAway:AnnotatedPackages", "com.fidd")
         }
     } else {
         options.errorprone {

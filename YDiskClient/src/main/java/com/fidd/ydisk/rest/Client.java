@@ -4,72 +4,101 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fidd.ydisk.rest.models.Link;
 import com.fidd.ydisk.rest.models.Resource;
 import com.fidd.ydisk.rest.models.YandexApiError;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
+import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.net.URLEncoder;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 public class Client {
-    private static final String DEFAULT_API_BASE = "https://cloud-api.yandex.net/v1/disk";
+    protected static final String DEFAULT_API_BASE = "https://cloud-api.yandex.net/v1/disk";
 
     public static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SSS").withZone(ZoneId.systemDefault());
 
-    private final String apiBase;
-    private final HttpClient httpClient;
-    private final String oauthToken;
-    private final ObjectMapper mapper;
+    protected final String apiBase;
+    protected final OkHttpClient httpClient;
+    protected final String oauthToken;
+    protected final ObjectMapper mapper;
 
     public Client(String oauthToken, ObjectMapper mapper) {
-        this(oauthToken, mapper, DEFAULT_API_BASE, HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .connectTimeout(Duration.ofSeconds(10))
-                .build());
+        this(
+                oauthToken,
+                mapper,
+                DEFAULT_API_BASE,
+                new OkHttpClient.Builder()
+                        .dns(new DnsOverHttpsClient())
+                        .connectTimeout(Duration.ofSeconds(10))
+                        .followRedirects(false) // matches your current behavior
+                        .followSslRedirects(false)
+                        .build()
+        );
     }
 
-    Client(String oauthToken, ObjectMapper mapper, String apiBase, HttpClient httpClient) {
+    protected Client(String oauthToken, ObjectMapper mapper, String apiBase, OkHttpClient httpClient) {
         this.oauthToken = oauthToken;
         this.mapper = mapper;
         this.apiBase = apiBase;
         this.httpClient = httpClient;
     }
 
-    private HttpRequest.Builder baseRequest(String endpoint) {
-        return HttpRequest.newBuilder()
-                .uri(URI.create(apiBase + endpoint))
+    protected Request.Builder baseRequest(String endpoint) {
+        return new Request.Builder()
+                .url(apiBase + endpoint)
                 .header("Authorization", "OAuth " + oauthToken)
                 .header("Accept", "application/json");
     }
 
-    private <T> T send(HttpRequest request, Class<T> responseClass) throws Exception {
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    protected <T> T send(Request request, Class<T> responseClass) throws Exception {
+        try (Response response = httpClient.newCall(request).execute()) {
+            ResponseBody responseBody = response.body();
+            String body = responseBody != null ? responseBody.string() : "";
 
-        if (response.statusCode() >= 400) {
-            try {
-                YandexApiError apiError = mapper.readValue(response.body(), YandexApiError.class);
-                throw new RuntimeException("Yandex Disk Error [" + response.statusCode() + "]: "
-                        + apiError.message() + " - " + apiError.description());
-            } catch (Exception e) {
-                if (e instanceof RuntimeException) {
-                    throw e;
+            if (!response.isSuccessful()) {
+                try {
+                    YandexApiError apiError =
+                            mapper.readValue(body, YandexApiError.class);
+
+                    throw new RuntimeException(
+                            "Yandex Disk Error [" + response.code() + "]: "
+                                    + apiError.message()
+                                    + " - "
+                                    + apiError.description()
+                    );
+                } catch (Exception e) {
+                    if (e instanceof RuntimeException) {
+                        throw e;
+                    }
+
+                    throw new RuntimeException(
+                            "HTTP Error [" + response.code() + "]: " + body
+                    );
                 }
-                throw new RuntimeException("HTTP Error [" + response.statusCode() + "]: " + response.body());
             }
-        }
 
-        return mapper.readValue(response.body(), responseClass);
+            return mapper.readValue(body, responseClass);
+        }
     }
 
     public Resource getResources(String path) throws Exception {
-        // TODO: normal pagination
-        String endpoint = "/resources?path=" + java.net.URLEncoder.encode(path, StandardCharsets.UTF_8.name()) +"&limit=200";
-        HttpRequest request = baseRequest(endpoint).GET().build();
+        String endpoint =
+                "/resources?path="
+                        + URLEncoder.encode(path, StandardCharsets.UTF_8)
+                        + "&limit=200";
+
+        Request request = baseRequest(endpoint)
+                .get()
+                .build();
+
         return send(request, Resource.class);
     }
 
@@ -77,22 +106,22 @@ public class Client {
         return downloadFileWithRange(remotePath, 0, null);
     }
 
-    public InputStream downloadFileWithRange(String remotePath, long offset, Long limit) throws Exception {
+    public InputStream downloadFileWithRange(String remotePath, long offset, @Nullable Long limit) throws Exception {
         Link downloadLink = getDownloadLink(remotePath);
         URI uri = URI.create(downloadLink.href());
 
         return downloadOrRedirect(uri, offset, limit, 0);
     }
 
-    protected InputStream downloadOrRedirect(URI uri, long offset, Long limit, int redirectCount) throws Exception {
+    protected InputStream downloadOrRedirect(URI uri, long offset, @Nullable Long limit, int redirectCount) throws Exception {
         if (redirectCount > 5) {
             throw new RuntimeException("Too many redirects");
         }
 
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(uri)
-                .GET();
-        
+        Request.Builder builder = new Request.Builder()
+                .url(uri.toString())
+                .get();
+
         if (offset > 0 || limit != null) {
             String rangeHeader = "bytes=" + offset + "-";
             if (limit != null && limit > 0) {
@@ -101,51 +130,69 @@ public class Client {
             builder.header("Range", rangeHeader);
         }
 
-        HttpRequest getRequest = builder.build();
+        Response response = httpClient.newCall(builder.build()).execute();
 
-        HttpResponse<java.io.InputStream> response = httpClient.send(getRequest, HttpResponse.BodyHandlers.ofInputStream());
+        int code = response.code();
 
-        //System.out.println(FMT.format(Instant.now()) + " Download response status: " + response.statusCode() + " for URI: " + uri);
+        if (code >= 300 && code < 400) {
 
-        if (response.statusCode() >= 300 && response.statusCode() < 400) {
-            String loc = response.headers().firstValue("location").orElseThrow(() -> new RuntimeException("Redirect without Location"));
-            uri = uri.resolve(loc);
-            return downloadOrRedirect(uri, offset, limit, ++redirectCount);
-        } else if (response.statusCode() >= 400 && response.statusCode() != 416) {
-            throw new RuntimeException("Download failed with status: " + response.statusCode());
+            String location = response.header("Location");
+
+            response.close();
+
+            if (location == null) {
+                throw new RuntimeException("Redirect without Location");
+            }
+
+            return downloadOrRedirect(
+                    uri.resolve(location),
+                    offset,
+                    limit,
+                    redirectCount + 1
+            );
         }
-        return response.body();
+
+        if (code >= 400 && code != 416) {
+            response.close();
+            throw new RuntimeException(
+                    "Download failed with status: " + code
+            );
+        }
+
+        okhttp3.ResponseBody responseBody = response.body();
+        if (responseBody == null) {
+            response.close();
+            throw new RuntimeException("Download response had no body");
+        }
+        return responseBody.byteStream();
     }
 
     public Link getUploadLink(String remotePath, boolean overwrite) throws Exception {
-        // TODO: remotePath is interpolated into the query string without URL-encoding.
-        //  Paths containing spaces, : (e.g. disk:/...), #, etc. will produce invalid requests or be parsed incorrectly
-        //  by the server. Encode the query parameter value (as you already do in getResources).
-        String endpoint = "/resources/upload?path=" + remotePath + "&overwrite=" + overwrite;
-        HttpRequest request = baseRequest(endpoint).GET().build();
+        String endpoint = "/resources/upload?path=" + URLEncoder.encode(remotePath, StandardCharsets.UTF_8) + "&overwrite=" + overwrite;
+        Request request = baseRequest(endpoint).get().build();
         return send(request, Link.class);
     }
 
-    public void uploadFile(String remotePath, java.nio.file.Path localFile) throws Exception {
+    public void uploadFile(String remotePath, Path localFile) throws Exception {
         Link uploadLink = getUploadLink(remotePath, true);
 
-        HttpRequest putRequest = HttpRequest.newBuilder()
-                .uri(URI.create(uploadLink.href()))
-                .method(uploadLink.method(), HttpRequest.BodyPublishers.ofFile(localFile))
+        RequestBody body = RequestBody.create(localFile.toFile(), null);
+
+        Request request = new Request.Builder()
+                .url(uploadLink.href())
+                .method(uploadLink.method(), body)
                 .build();
 
-        HttpResponse<Void> response = httpClient.send(putRequest, HttpResponse.BodyHandlers.discarding());
-
-        if (response.statusCode() != 201 && response.statusCode() != 202) {
-            throw new RuntimeException("Upload failed with status: " + response.statusCode());
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (response.code() != 201 && response.code() != 202) {
+                throw new RuntimeException("Upload failed with status: " + response.code());
+            }
         }
     }
 
     public Link getDownloadLink(String remotePath) throws Exception {
-        // TODO: remotePath is interpolated into the query string without URL-encoding, which will break for paths
-        //  with reserved characters. Encode the query parameter value before building the endpoint.
-        String endpoint = "/resources/download?path=" + remotePath;
-        HttpRequest request = baseRequest(endpoint).GET().build();
+        String endpoint = "/resources/download?path=" + URLEncoder.encode( remotePath, StandardCharsets.UTF_8);
+        Request request = baseRequest(endpoint).get().build();
         return send(request, Link.class);
     }
 }
