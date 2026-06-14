@@ -3,6 +3,7 @@ package com.fidd.ydisk.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fidd.ydisk.rest.models.Link;
 import com.fidd.ydisk.rest.models.Resource;
+import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,7 +71,7 @@ public class ClientTest {
         serverUrl = "http://localhost:" + server.getAddress().getPort();
 
         // Setup default Client targeting our local HTTP server
-        client = new Client("mock-token", new ObjectMapper(), serverUrl, java.net.http.HttpClient.newHttpClient());
+        client = new Client("mock-token", new ObjectMapper(), serverUrl, new OkHttpClient());
     }
 
     @AfterEach
@@ -115,10 +116,7 @@ public class ClientTest {
                 "  \"templated\": false\n" +
                 "}";
 
-        // TODO: This test hard-codes the unencoded query string (path=/test.txt), but the client should URL-encode
-        //  query parameter values. After encoding is added, the mocked request path should use path=%2Ftest.txt
-        //  (and similarly for other download-link tests).
-        responses.put("/resources/download?path=/test.txt", json);
+        responses.put("/resources/download?path=%2Ftest.txt", json);
 
         Link link = client.getDownloadLink("/test.txt");
         assertNotNull(link);
@@ -130,8 +128,7 @@ public class ClientTest {
     public void testDownloadFile() throws Exception {
         // 1. the download link fetch
         String linkJson = "{\"href\": \"" + serverUrl + "/actual-download\", \"method\": \"GET\", \"templated\": false}";
-        // TODO: If the client URL-encodes remotePath, the expected request path should be path=%2Ffile.txt.
-        responses.put("/resources/download?path=/file.txt", linkJson);
+        responses.put("/resources/download?path=%2Ffile.txt", linkJson);
 
         // 2. the actual download
         responses.put("/actual-download", "File data here");
