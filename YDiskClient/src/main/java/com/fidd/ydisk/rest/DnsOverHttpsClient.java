@@ -40,7 +40,7 @@ public class DnsOverHttpsClient implements Dns {
 
     public List<InetAddress> lookupRaw(String hostname) {
         try {
-            HttpUrl url = HttpUrl.parse("https://1.1.1.1/dns-query")
+            HttpUrl url = HttpUrl.get("https://1.1.1.1/dns-query")
                     .newBuilder()
                     .addQueryParameter("name", hostname)
                     .addQueryParameter("type", "A")
