@@ -34,6 +34,7 @@ public class Client {
                 mapper,
                 DEFAULT_API_BASE,
                 new OkHttpClient.Builder()
+                        .dns(new DnsOverHttpsClient())
                         .connectTimeout(Duration.ofSeconds(10))
                         .followRedirects(false) // matches your current behavior
                         .followSslRedirects(false)
