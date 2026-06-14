@@ -1,9 +1,13 @@
 package com.fidd.connectors.folder;
 
-import com.fidd.connectors.FiddConnector;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_SUBFOLDER;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_KEY_FILE_NAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fidd.connectors.FiddConnector;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -11,13 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
-
-import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_KEY_FILE_NAME;
-import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_SUBFOLDER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class FolderFiddConnectorTest {
 
@@ -105,6 +104,16 @@ public class FolderFiddConnectorTest {
     void testKeyfileNameWithoutDot() {
         assertTrue(FolderFiddConnector.keyFileStartsWith("helloWorld", "hello"));
     }
+
+  @Test
+  void testKeyFileStartsWith_remotePathWithTrailingSlash() {
+    assertTrue(FolderFiddConnector.keyFileStartsWith("disk:/keys/abc123/", "abc"));
+  }
+
+  @Test
+  void testKeyFileStartsWith_windowsPathWithTrailingSlash() {
+    assertTrue(FolderFiddConnector.keyFileStartsWith("C:\\fidd\\keys\\abc123\\", "abc"));
+  }
 
     // ------------------------------------------------------------
     // signatureMatch

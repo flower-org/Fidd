@@ -1,18 +1,19 @@
 package com.fidd.connectors.base;
 
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_FILE_EXT;
+import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_SUBFOLDER;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_KEY_FILE_NAME;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_MESSAGE_FILE_NAME;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.fidd.connectors.FiddConnector;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -20,12 +21,9 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_FILE_EXT;
-import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_SUBFOLDER;
-import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_KEY_FILE_NAME;
-import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_MESSAGE_FILE_NAME;
-import static com.google.common.base.Preconditions.checkNotNull;
+import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class BaseDirectoryConnector implements FiddConnector {
     final static Logger LOGGER = LoggerFactory.getLogger(BaseDirectoryConnector.class);
@@ -232,7 +230,16 @@ public abstract class BaseDirectoryConnector implements FiddConnector {
     protected String messageFilePath(long messageNumber) { return messageFolderPath(messageNumber) + PATH_SEPARATOR + FIDD_MESSAGE_FILE_NAME; }
 
     protected static String getFileName(String path) {
-        return Path.of(path).getFileName().toString();
+        int end = path.length();
+        while (end > 0 && (path.charAt(end - 1) == '/' || path.charAt(end - 1) == '\\')) {
+            end--;
+        }
+        if (end == 0) {
+            return "";
+        }
+
+        int slashIndex = Math.max(path.lastIndexOf('/', end - 1), path.lastIndexOf('\\', end - 1));
+        return slashIndex == -1 ? path.substring(0, end) : path.substring(slashIndex + 1, end);
     }
 
     protected static String getFileNameNoExtensions(String fileName) {
