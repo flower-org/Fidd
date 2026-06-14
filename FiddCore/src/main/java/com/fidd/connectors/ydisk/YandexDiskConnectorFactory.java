@@ -2,7 +2,9 @@ package com.fidd.connectors.ydisk;
 
 import com.fidd.connectors.FiddConnector;
 import com.fidd.connectors.FiddConnectorFactory;
+import com.fidd.ydisk.rest.Client;
 
+import java.io.IOException;
 import java.net.URL;
 
 public class YandexDiskConnectorFactory implements FiddConnectorFactory {
@@ -18,5 +20,9 @@ public class YandexDiskConnectorFactory implements FiddConnectorFactory {
     @Override
     public String name() {
         return "YANDEX_DISK";
+    }
+
+    public static void shutdownOkHttpClient() throws IOException {
+        Client.shutdownOkHttpClient();
     }
 }

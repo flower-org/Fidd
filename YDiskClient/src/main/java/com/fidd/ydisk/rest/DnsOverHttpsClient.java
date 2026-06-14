@@ -17,11 +17,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DnsOverHttpsClient implements Dns {
-    private final OkHttpClient client = new OkHttpClient();
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final OkHttpClient client;
+    private final ObjectMapper mapper;
 
     private final Cache<String, List<InetAddress>> lookupCache = Caffeine.newBuilder().maximumSize(1024)
             .expireAfterWrite(java.time.Duration.ofMinutes(45)).build();
+
+    public DnsOverHttpsClient(OkHttpClient client, ObjectMapper mapper) {
+        this.client = client;
+        this.mapper = mapper;
+    }
 
     @Override
     public List<InetAddress> lookup(String hostname) throws UnknownHostException {

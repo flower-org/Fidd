@@ -11,19 +11,26 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.nio.charset.StandardCharsets;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 
 public class Client {
     protected static final String DEFAULT_API_BASE = "https://cloud-api.yandex.net/v1/disk";
 
-    public static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss.SSS").withZone(ZoneId.systemDefault());
+    public static final OkHttpClient DNS_OVER_HTTPS_CLIENT = new OkHttpClient();
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    public static final OkHttpClient MAIN_CLIENT =new OkHttpClient.Builder()
+            .dns(new DnsOverHttpsClient(DNS_OVER_HTTPS_CLIENT, OBJECT_MAPPER))
+            .connectTimeout(Duration.ofSeconds(10))
+            .followRedirects(false) // matches your current behavior
+            .followSslRedirects(false)
+            .build();
 
     protected final String apiBase;
     protected final OkHttpClient httpClient;
@@ -35,12 +42,7 @@ public class Client {
                 oauthToken,
                 mapper,
                 DEFAULT_API_BASE,
-                new OkHttpClient.Builder()
-                        .dns(new DnsOverHttpsClient())
-                        .connectTimeout(Duration.ofSeconds(10))
-                        .followRedirects(false) // matches your current behavior
-                        .followSslRedirects(false)
-                        .build()
+                MAIN_CLIENT
         );
     }
 
@@ -194,5 +196,16 @@ public class Client {
         String endpoint = "/resources/download?path=" + URLEncoder.encode( remotePath, StandardCharsets.UTF_8);
         Request request = baseRequest(endpoint).get().build();
         return send(request, Link.class);
+    }
+
+    public static void shutdownOkHttpClient() throws IOException {
+        shutdownOkHttpClient(DNS_OVER_HTTPS_CLIENT);
+        shutdownOkHttpClient(MAIN_CLIENT);
+    }
+
+    protected static void shutdownOkHttpClient(OkHttpClient client) throws IOException {
+        client.dispatcher().executorService().shutdown();
+        client.connectionPool().evictAll();
+        if (client.cache() != null) { client.cache().close(); }
     }
 }

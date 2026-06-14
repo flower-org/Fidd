@@ -3,6 +3,7 @@ package com.fidd.view;
 import com.fidd.base.BaseRepositories;
 import com.fidd.base.DefaultBaseRepositories;
 import com.fidd.connectors.cache.ram.RamCache;
+import com.fidd.connectors.ydisk.YandexDiskConnectorFactory;
 import com.fidd.view.forms.MainForm;
 import com.fidd.view.http.HttpFiddApiServer;
 import com.fidd.view.rest.invoker.FiddHttpServerVerticle;
@@ -80,6 +81,10 @@ public class App extends Application {
                 try {
                     server.stopServer();
                     vertx.close().result();
+                    // TODO: improve this?
+                    YandexDiskConnectorFactory.shutdownOkHttpClient();
+                    // TODO: problem with clean shutdown when something is streaming, using nuclear option for now
+                    System.exit(0);
                     LOGGER.info("Vert.x/Netty server stopped.");
                 } catch (Exception e) {
                     LOGGER.error("Error stopping HTTP server", e);
