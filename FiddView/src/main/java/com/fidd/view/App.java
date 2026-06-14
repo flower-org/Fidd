@@ -88,7 +88,7 @@ public class App extends Application {
                 }
             });
 
-            mainStage.setTitle("FiddView");
+            mainStage.setTitle("FiddView 1.4.3");
             mainStage.setScene(mainScene);
             mainStage.setResizable(true);
             mainStage.show();
