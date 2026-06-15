@@ -9,7 +9,7 @@ plugins {
 }
 
 group 'com.fidd.view'
-version '1.4.4-amd64'
+version '1.4.5-amd64'
 def jpackageVersion = version.toString().replaceFirst(/-.*/, '')
 
 repositories {
@@ -33,7 +33,7 @@ application {
 runtime {
     imageDir = layout.buildDirectory.dir("image").get().asFile
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information']
-    addModules('jdk.crypto.cryptoki', 'java.xml', 'java.scripting', 'java.logging', 'java.prefs', 'jdk.unsupported', 'java.management', 'java.net.http')
+    addModules('jdk.crypto.cryptoki', 'java.xml', 'java.scripting', 'java.logging', 'java.prefs', 'jdk.unsupported', 'java.management', 'java.desktop')
     launcher {
         jvmArgs = ['-Dfile.encoding=UTF-8']
     }
