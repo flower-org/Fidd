@@ -1,4 +1,26 @@
 ```
+June 14, 2026
+Cryptor-1.4.4-amd64-all.jar
+34536308
+SHA2-256= 0d39792211243d17f398ed93369c47522a10c254f6c7af9a2ed9b23e03fb4520
+FiddPacker-1.4.4-amd64-all.jar
+39785011
+SHA2-256= f314144b6e8f7602c13fac92fad825ee093888cc6b2acb3e2efa10dad86a129c
+FiddView-1.4.4-amd64-all.jar
+52231326
+SHA2-256= b085f1869ed47644cfc368516b1d2085cbcaf5b1ee9f71e37464be69de5e5f3d
+FiddView-1.4.4-portable-linux.zip
+71294928
+SHA2-256= c78ea80b5bcdd6270ed54b2ac567d7e86a19c4cc933c71ef05cf3835286fbefe
+FiddView-1.4.4-portable-macos.zip
+67459057
+abdf93516efb920ad1b596cac50bb9d23fac57235604df0ccd2903cd84f2bf1f
+FiddView-1.4.4-portable-windows.zip
+68811545
+DDD97E19CF9BA16CAE12F734BC251E36990BCA5BE38D8467319B39349E49EC83
+```
+
+```
 May 28, 2026
 Cryptor-1.3.0-amd64-all.jar
 34514082
