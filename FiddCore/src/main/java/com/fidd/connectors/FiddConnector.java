@@ -1,5 +1,8 @@
 package com.fidd.connectors;
 
+import com.fidd.core.info.FiddInfo;
+import com.fidd.core.info.FiddMetadataInfo;
+
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +14,8 @@ import java.util.NoSuchElementException;
 
 public interface FiddConnector {
     record Chunk<T> (long offset, long length, T info) {}
+
+    @Nullable FiddInfo getFiddInfo();
 
     /** Descending order */
     List<Long> getMessageNumbersTail(int count);
@@ -27,6 +32,9 @@ public interface FiddConnector {
     @Nullable byte[] getFiddKey(long messageNumber, byte[] key);
     /** Returns null if Fidd Keys are stored encrypted */
     @Nullable byte[] getUnencryptedFiddKey(long messageNumber);
+
+    @Nullable
+    FiddMetadataInfo getFiddMeta(long messageNumber);
 
     long getFiddMessageSize(long messageNumber);
     InputStream getFiddMessageChunk(long messageNumber, long offset, long length);

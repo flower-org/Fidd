@@ -14,8 +14,8 @@ import com.fidd.core.fiddkey.FiddKeySerializer;
 import com.fidd.core.fiddkey.ImmutableFiddKey;
 import com.fidd.core.fiddkey.ImmutableSection;
 import com.fidd.core.fiddkey.ImmutableSectionWithHeader;
-import com.fidd.core.info.ImmutableMetadataSectionInfo;
-import com.fidd.core.info.MetadataSectionInfo;
+import com.fidd.core.info.FiddMetadataInfo;
+import com.fidd.core.info.ImmutableFiddMetadataInfo;
 import com.fidd.core.info.MetadataSectionInfoSerializer;
 import com.fidd.core.logicalfile.ImmutableLogicalFileMetadata;
 import com.fidd.core.logicalfile.LogicalFileMetadata;
@@ -281,12 +281,12 @@ public class FiddPackManager {
             appendGap(outputStream, lastGapSize, randomGenerator.generator());
 
             if (alignAllMetadatas && createFiddMeta) {
-                MetadataSectionInfo metadataSectionInfo = ImmutableMetadataSectionInfo.builder()
+                FiddMetadataInfo fiddMetadataInfo = ImmutableFiddMetadataInfo.builder()
                         .offset(metadataStart)
                         .length((int)(metadataEnd - metadataStart))
                         .build();
 
-                byte[] metadataSectionInfoBytes = metadataSectionInfoSerializer.serialize(metadataSectionInfo);
+                byte[] metadataSectionInfoBytes = metadataSectionInfoSerializer.serialize(fiddMetadataInfo);
                 File metadataSectionInfoFile = new File(packedContentDirectory, "fidd.meta");
                 Files.write(metadataSectionInfoFile.toPath(), metadataSectionInfoBytes);
             }

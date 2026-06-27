@@ -1,6 +1,8 @@
 package com.fidd.data.connector;
 
 import com.fidd.connectors.FiddConnector;
+import com.fidd.core.info.FiddInfo;
+import com.fidd.core.info.FiddMetadataInfo;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -8,6 +10,11 @@ import java.io.InputStream;
 import java.util.List;
 
 public class MySqlConnector implements FiddConnector {
+    @Override
+    public @Nullable FiddInfo getFiddInfo() {
+        return null;
+    }
+
     @Override
     public List<Long> getMessageNumbersTail(int count) {
         return List.of();
@@ -36,6 +43,11 @@ public class MySqlConnector implements FiddConnector {
     @Override
     public @Nullable byte[] getUnencryptedFiddKey(long messageNumber) {
         return new byte[0];
+    }
+
+    @Override
+    public @Nullable FiddMetadataInfo getFiddMeta(long messageNumber) {
+        return null;
     }
 
     @Override

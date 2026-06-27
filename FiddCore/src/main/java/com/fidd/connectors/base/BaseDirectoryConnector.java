@@ -2,11 +2,18 @@ package com.fidd.connectors.base;
 
 import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_FILE_EXT;
 import static com.fidd.connectors.folder.FolderFiddConstants.ENCRYPTED_FIDD_KEY_SUBFOLDER;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_INFO_FILE_NAME;
 import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_KEY_FILE_NAME;
 import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_MESSAGE_FILE_NAME;
+import static com.fidd.connectors.folder.FolderFiddConstants.FIDD_META_FILE_NAME;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fidd.connectors.FiddConnector;
+import com.fidd.core.info.FiddInfo;
+import com.fidd.core.info.ImmutableFiddInfo;
+import com.fidd.core.info.ImmutableFiddMetadataInfo;
+import com.fidd.core.info.FiddMetadataInfo;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.io.FileNotFoundException;
@@ -28,7 +35,7 @@ import org.slf4j.LoggerFactory;
 public abstract class BaseDirectoryConnector implements FiddConnector {
     final static Logger LOGGER = LoggerFactory.getLogger(BaseDirectoryConnector.class);
     final static String PATH_SEPARATOR = "/";
-
+    final static ObjectMapper MAPPER = new ObjectMapper();
     public record FileListInfo(String path, boolean isDirectory) {}
     public record FileInfo(boolean isDirectory, long size, List<FileListInfo> listing) {}
 
@@ -311,6 +318,38 @@ public abstract class BaseDirectoryConnector implements FiddConnector {
                 return null;
             }
             return readAllBytes(file);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public @Nullable FiddInfo getFiddInfo() {
+        try {
+            String fiddFolderPath = fiddFolderPath();
+            if (!fiddFolderPath.endsWith(PATH_SEPARATOR)) { fiddFolderPath += PATH_SEPARATOR; }
+            String file = fiddFolderPath + PATH_SEPARATOR + FIDD_INFO_FILE_NAME;
+            if (!pathExists(file) || !pathIsRegularFile(file)) {
+                return null;
+            }
+            byte[] metaBytes = readAllBytes(file);
+
+            return MAPPER.readValue(metaBytes, ImmutableFiddInfo.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public @Nullable FiddMetadataInfo getFiddMeta(long messageNumber) {
+        try {
+            String file = messageFolderPath(messageNumber) + PATH_SEPARATOR + FIDD_META_FILE_NAME;
+            if (!pathExists(file) || !pathIsRegularFile(file)) {
+                return null;
+            }
+            byte[] metaBytes = readAllBytes(file);
+
+            return MAPPER.readValue(metaBytes, ImmutableFiddMetadataInfo.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

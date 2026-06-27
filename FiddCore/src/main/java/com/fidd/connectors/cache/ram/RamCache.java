@@ -1,6 +1,7 @@
 package com.fidd.connectors.cache.ram;
 
 import com.fidd.connectors.FiddConnector;
+import com.fidd.core.info.FiddMetadataInfo;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 

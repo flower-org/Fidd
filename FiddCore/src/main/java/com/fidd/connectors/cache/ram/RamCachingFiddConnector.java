@@ -2,6 +2,8 @@ package com.fidd.connectors.cache.ram;
 
 import com.fidd.connectors.FiddConnector;
 import com.fidd.core.common.SubInputStream;
+import com.fidd.core.info.FiddInfo;
+import com.fidd.core.info.FiddMetadataInfo;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
@@ -176,4 +178,16 @@ public class RamCachingFiddConnector implements FiddConnector {
         return unencryptedFiddKey;
     }
 
+    // TODO: NOTE: for local FiddView we don't really need to cache FiddInfo and FiddMeta,
+    //  but if this caching connector will be somehow reused on service side,
+    //  it might turn out to be useful to cache those to improve service performance.
+    @Override
+    public @Nullable FiddInfo getFiddInfo() {
+        return connector.getFiddInfo();
+    }
+
+    @Override
+    public @Nullable FiddMetadataInfo getFiddMeta(long messageNumber) {
+        return connector.getFiddMeta(messageNumber);
+    }
 }

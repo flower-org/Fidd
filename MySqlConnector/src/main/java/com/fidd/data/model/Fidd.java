@@ -6,9 +6,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -16,22 +13,38 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "fidd")
 public class Fidd {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private java.util.UUID id;
+    private UUID id;
 
     @Column(name = "name", unique = true)
     private String name;
 
-    public java.util.UUID getId() {
+    @Nullable
+    @Column(name = "description", columnDefinition = "LONGTEXT")
+    private String description;
+
+    @Column(name = "last_update_time")
+    private Long lastUpdateTime;
+
+    @Nullable
+    @Column(name = "fidd_info", columnDefinition = "LONGTEXT")
+    private String fiddInfo;
+
+    @Nullable
+    @Column(name = "certificate", columnDefinition = "LONGTEXT")
+    private String certificate;
+
+    public UUID getId() {
         return id;
     }
 
-    public void setId(java.util.UUID id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
@@ -46,23 +59,8 @@ public class Fidd {
         this.name = name;
     }
 
-    @Column(name = "last_access_time")
-    private Long lastAccessTime;
-
-    @Nullable
-    @Column(name = "info", columnDefinition = "LONGTEXT")
-    private String info;
-
-    @Nullable
-    @Column(name = "description", columnDefinition = "LONGTEXT")
-    private String description;
-
     @OneToMany(mappedBy = "fidd", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private List<FiddTag> tags;
-
-    @Nullable
-    @Column(name = "certificate", columnDefinition = "LONGTEXT")
-    private String certificate;
 
     @Nullable
     public String getDescription() {
@@ -91,12 +89,12 @@ public class Fidd {
     }
 
     @Nullable
-    public String getInfo() {
-        return info;
+    public String getFiddInfo() {
+        return fiddInfo;
     }
 
-    public void setInfo(@Nullable String info) {
-        this.info = info;
+    public void setFiddInfo(@Nullable String fiddInfo) {
+        this.fiddInfo = fiddInfo;
     }
 
     public List<Message> getMessages() {
@@ -110,14 +108,14 @@ public class Fidd {
     @PrePersist
     @PreUpdate
     public void updateLastAccessTime() {
-        this.lastAccessTime = System.currentTimeMillis();
+        this.lastUpdateTime = System.currentTimeMillis();
     }
 
-    public Long getLastAccessTime() {
-        return lastAccessTime;
+    public Long getLastUpdateTime() {
+        return lastUpdateTime;
     }
 
-    public void setLastAccessTime(Long lastAccessTime) {
-        this.lastAccessTime = lastAccessTime;
+    public void setLastUpdateTime(Long lastUpdateTime) {
+        this.lastUpdateTime = lastUpdateTime;
     }
 }
