@@ -3,6 +3,7 @@ package com.fidd.view.rest.invoker;
 import com.fidd.service.FiddContentServiceManager;
 import com.fidd.view.rest.controller.*;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -13,16 +14,33 @@ import org.slf4j.LoggerFactory;
 
 
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.handler.StaticHandler;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 
 public class FiddHttpServerVerticle extends AbstractVerticle {
 
     private static final Logger logger = LoggerFactory.getLogger(FiddHttpServerVerticle.class);
     private final String specFile;
     private static final int NETTY_FILE_SERVER_PORT = 4198;
+    private static final boolean NETTY_FILE_SERVER_SSL = System.getProperty("ssl") != null;
+    private static final Set<String> HOP_BY_HOP_HEADERS = Set.of(
+            "connection",
+            "keep-alive",
+            "proxy-authenticate",
+            "proxy-authorization",
+            "te",
+            "trailer",
+            "transfer-encoding",
+            "upgrade"
+    );
 
     private final MessagesApiHandler messagesHandler;
     private final int fiddApiServerPort;
@@ -39,7 +57,14 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
 
     @Override
     public void start(Promise<Void> startPromise) {
-        HttpClient httpClient = vertx.createHttpClient();
+        HttpClientOptions fileServerClientOptions = new HttpClientOptions()
+                .setDefaultHost("localhost")
+                .setDefaultPort(NETTY_FILE_SERVER_PORT)
+                .setSsl(NETTY_FILE_SERVER_SSL);
+        if (NETTY_FILE_SERVER_SSL) {
+            fileServerClientOptions.setTrustAll(true).setVerifyHost(false);
+        }
+        HttpClient httpClient = vertx.createHttpClient(fileServerClientOptions);
 
         RouterBuilder.create(vertx, specFile)
                 .map(builder -> {
@@ -51,14 +76,17 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
                     Router router = builder.createRouter();
                     router.errorHandler(400, this::validationFailureHandler);
 
-                        StaticHandler spaRootHandler = StaticHandler.create("spa")
+                    StaticHandler spaRootHandler = StaticHandler.create("spa")
                             .setIndexPage("index.html");
 
                     router.route("/fidds/*").handler(ctx -> {
                         HttpServerRequest req = ctx.request();
-                        httpClient.request(req.method(), NETTY_FILE_SERVER_PORT, "localhost", req.uri())
+                        httpClient.request(req.method(), req.uri())
                                 .compose(clientReq -> {
-                                    req.headers().forEach(e -> clientReq.putHeader(e.getKey(), e.getValue()));                                    if (req.method() == HttpMethod.GET || req.method() == HttpMethod.HEAD) {
+                                    MultiMap forwardedHeaders = filterEndToEndHeaders(req.headers());
+                                    forwardedHeaders.forEach(e -> clientReq.headers().add(e.getKey(), e.getValue()));
+
+                                    if (HttpMethod.GET.equals(req.method()) || HttpMethod.HEAD.equals(req.method())) {
                                         return clientReq.send();
                                     }
                                     return clientReq.send(req);
@@ -66,7 +94,8 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
                                 .onSuccess(clientResp -> {
                                     HttpServerResponse resp = ctx.response();
                                     resp.setStatusCode(clientResp.statusCode());
-                                    clientResp.headers().forEach(e -> resp.putHeader(e.getKey(), e.getValue()));
+                                    MultiMap proxiedHeaders = filterEndToEndHeaders(clientResp.headers());
+                                    proxiedHeaders.forEach(e -> resp.headers().add(e.getKey(), e.getValue()));
                                     clientResp.pipeTo(resp);
                                 })
                                 .onFailure(ctx::fail);
@@ -119,5 +148,34 @@ public class FiddHttpServerVerticle extends AbstractVerticle {
     private void validationFailureHandler(RoutingContext rc) {
          rc.response().setStatusCode(400)
                  .end("Bad Request : " + rc.failure().getMessage());
+    }
+
+    private static MultiMap filterEndToEndHeaders(MultiMap headers) {
+        MultiMap filteredHeaders = MultiMap.caseInsensitiveMultiMap();
+        Set<String> connectionScopedHeaders = extractConnectionScopedHeaders(headers);
+
+        headers.forEach(entry -> {
+            String headerName = entry.getKey();
+            String normalizedHeaderName = headerName.toLowerCase(Locale.ROOT);
+            if (HOP_BY_HOP_HEADERS.contains(normalizedHeaderName)
+                    || connectionScopedHeaders.contains(normalizedHeaderName)) {
+                return;
+            }
+            filteredHeaders.add(headerName, entry.getValue());
+        });
+
+        return filteredHeaders;
+    }
+
+    private static Set<String> extractConnectionScopedHeaders(MultiMap headers) {
+        Set<String> connectionScopedHeaders = new HashSet<>();
+        for (String connectionHeaderValue : headers.getAll("Connection")) {
+            Arrays.stream(connectionHeaderValue.split(","))
+                    .map(String::trim)
+                    .filter(token -> !token.isEmpty())
+                    .map(token -> token.toLowerCase(Locale.ROOT))
+                    .forEach(connectionScopedHeaders::add);
+        }
+        return connectionScopedHeaders;
     }
 }
